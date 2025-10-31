@@ -1,6 +1,9 @@
 import User from '../models/userModel.js';
 import SendInvitation from '../utils/SendInvitation.js';
 import TokenGenerator from '../utils/TokenGenerator.js';
+import jwt from 'jsonwebtoken';
+import config from '../config/config.js';
+import bcrypt from 'bcrypt';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
@@ -38,7 +41,23 @@ export default class AuthController {
 
   verify = async (req, res, next) => {
     try {
-      console.log('verify token');
+      const verificationToken = req.params.token;
+      const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
+      const email = tokenData.email;
+      const user = await User.findOneAndUpdate(
+        { email: email },
+        {
+          password: await bcrypt.hash(req.body.password, 10),
+          name: req.body.name,
+          isVerified: true,
+        }
+      );
+
+      res.status(200).json({
+        message: 'Registration Successful',
+        success: true,
+        user: user,
+      });
     } catch (err) {
       next(err);
     }
