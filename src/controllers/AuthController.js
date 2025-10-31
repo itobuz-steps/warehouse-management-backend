@@ -11,18 +11,20 @@ const tokenGenerator = new TokenGenerator();
 export default class AuthController {
   signup = async (req, res, next) => {
     try {
-      console.log('Check');
       const email = req.body.email;
       const isUser = await User.findOne({ email });
+      let newUser;
 
-      if (isUser) {
+      if (isUser && isUser.isVerified) {
         res.status(400);
 
         throw new Error('User Already Exists');
-      }
+      } else if (!isUser) {
+        console.log('user created');
+        newUser = new User(req.body);
 
-      const newUser = new User(req.body);
-      await newUser.save();
+        await newUser.save();
+      }
 
       const token = tokenGenerator.invitationToken(email);
 
@@ -44,6 +46,14 @@ export default class AuthController {
       const verificationToken = req.params.token;
       const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
       const email = tokenData.email;
+      const appUser = await User.findOne({ email });
+
+      if (appUser.isVerified) {
+        res.status(400);
+
+        throw new Error('User already verified');
+      }
+
       const user = await User.findOneAndUpdate(
         { email: email },
         {
@@ -59,6 +69,12 @@ export default class AuthController {
         user: user,
       });
     } catch (err) {
+      if (err.message == 'jwt expired') {
+        res.status(401).json({
+          message: 'Link Expired',
+          success: false,
+        });
+      }
       next(err);
     }
   };

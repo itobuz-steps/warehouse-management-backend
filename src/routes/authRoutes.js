@@ -6,9 +6,7 @@ const router = express.Router();
 const authController = new AuthController();
 const authValidation = new AuthValidation();
 
-console.log('check');
-
-router.post('/signup', authValidation.signupValidation, authController.signup);
-router.get('/signup/:token', authController.verify);
+router.post('/signup', authValidation.signupValidation, authController.signup); // send email
+router.get('/signup/:token', authController.verify); // send name and password
 
 export default router;
