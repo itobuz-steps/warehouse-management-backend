@@ -1,11 +1,9 @@
 import bcrypt from 'bcrypt';
-
 import User from '../models/userModel.js';
 import SendInvitation from '../utils/SendInvitation.js';
 import TokenGenerator from '../utils/TokenGenerator.js';
 import jwt from 'jsonwebtoken';
 import config from '../config/config.js';
-import bcrypt from 'bcrypt';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
