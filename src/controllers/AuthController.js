@@ -1,6 +1,9 @@
+import bcrypt from 'bcrypt';
 import User from '../models/userModel.js';
-import SendInvitation from '../utils/SendInvitation.js';
+import SendInvitation from '../utils/SendEmail.js';
 import TokenGenerator from '../utils/TokenGenerator.js';
+import jwt from 'jsonwebtoken';
+import config from '../config/config.js';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
@@ -8,18 +11,20 @@ const tokenGenerator = new TokenGenerator();
 export default class AuthController {
   signup = async (req, res, next) => {
     try {
-      console.log('Check');
       const email = req.body.email;
       const isUser = await User.findOne({ email });
+      let newUser;
 
-      if (isUser) {
+      if (isUser && isUser.isVerified) {
         res.status(400);
 
         throw new Error('User Already Exists');
-      }
+      } else if (!isUser) {
+        console.log('user created');
+        newUser = new User(req.body);
 
-      const newUser = new User(req.body);
-      await newUser.save();
+        await newUser.save();
+      }
 
       const token = tokenGenerator.invitationToken(email);
 
@@ -38,7 +43,123 @@ export default class AuthController {
 
   verify = async (req, res, next) => {
     try {
-      console.log('verify token');
+      const verificationToken = req.params.token;
+      const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
+      const email = tokenData.email;
+      const appUser = await User.findOne({ email });
+
+      if (appUser.isVerified) {
+        res.status(400);
+
+        throw new Error('User already verified');
+      }
+
+      const user = await User.findOneAndUpdate(
+        { email: email },
+        {
+          password: await bcrypt.hash(req.body.password, 10),
+          name: req.body.name,
+          isVerified: true,
+        }
+      );
+
+      res.status(200).json({
+        message: 'Registration Successful',
+        success: true,
+        user: user,
+      });
+    } catch (err) {
+      if (err.message == 'jwt expired') {
+        res.status(401).json({
+          message: 'Link Expired',
+          success: false,
+        });
+      }
+      next(err);
+    }
+  };
+
+  login = async (req, res, next) => {
+    try {
+      const email = req.body.email;
+      const password = req.body.password;
+
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        res.status(401);
+        throw new Error(`User doesn't Exists`);
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
+      if (!passwordMatch) {
+        res.status(401);
+        throw new Error('Invalid Password');
+      }
+
+      const tokenGenerator = new TokenGenerator();
+
+      const accessToken = tokenGenerator.accessToken(user._id);
+      const refreshToken = tokenGenerator.refreshToken(user._id);
+
+      res.status(200).json({
+        message: 'User Login Successful',
+        success: true,
+        accessToken,
+        refreshToken,
+        user,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  forgetPassword = async (req, res, next) => {
+    try {
+      const { email, otp, newPassword } = req.body;
+
+      if (!email || !otp || !newPassword) {
+        res.status(400);
+        throw new Error(`Please enter all fields!`);
+      }
+
+      if (otp.length !== 6) {
+        res.status(400);
+        throw new Error(`OTP should be 6 digits!`);
+      }
+
+      const otpDoc = await otpModel.findOne({ email });
+
+      const otpArrLength = otpDoc.otp.length;
+
+      if (!otpDoc || otpArrLength === 0) {
+        res.status(400);
+        throw new Error(`Please resend OTP!`);
+      }
+
+      const latestOtp = otpDoc.otp[otpArrLength - 1];
+      const otpCreated = new Date(otpDoc.updatedAt).getTime();
+
+      if (Date.now() - otpCreated > 60 * 5000) {
+        res.status(403);
+        throw new Error(`OTP expired, please request a new one`);
+      }
+
+      if (latestOtp !== otp) {
+        res.status(401);
+        return next(new Error(`Wrong OTP`));
+      }
+
+      const user = await userModel.findOne({ email });
+
+      user.isVerified = true;
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'OTP verified successfully',
+      });
     } catch (err) {
       next(err);
     }
