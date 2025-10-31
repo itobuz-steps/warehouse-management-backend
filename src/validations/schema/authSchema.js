@@ -4,7 +4,7 @@ export const signupSchema = yup.object({
   name: yup.string().default(''),
   email: yup.string().required('Email is required'),
   isVerified: yup.boolean().default(false),
-  isActive: yup.boolean().default(),
-  password: yup.string().default(null),
+  isActive: yup.boolean().default(false),
+  password: yup.string().default(''),
   role: yup.string().default('manager'),
 });

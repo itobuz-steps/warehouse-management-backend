@@ -27,7 +27,7 @@ export default class AuthController {
       mailSender.sendInvitationEmail(email, link);
 
       res.status(200).json({
-        message: 'OTP Sent Successfully',
+        message: 'Invitation Link Sent Successfully.',
         success: true,
         user: newUser,
       });
