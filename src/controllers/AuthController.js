@@ -1,3 +1,5 @@
+import bcrypt from 'bcrypt';
+
 import User from '../models/userModel.js';
 import SendInvitation from '../utils/SendInvitation.js';
 import TokenGenerator from '../utils/TokenGenerator.js';
@@ -8,7 +10,6 @@ const tokenGenerator = new TokenGenerator();
 export default class AuthController {
   signup = async (req, res, next) => {
     try {
-      console.log('Check');
       const email = req.body.email;
       const isUser = await User.findOne({ email });
 
@@ -39,6 +40,42 @@ export default class AuthController {
   verify = async (req, res, next) => {
     try {
       console.log('verify token');
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  login = async (req, res, next) => {
+    try {
+      const email = req.body.email;
+      const password = req.body.password;
+
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        res.status(401);
+        throw new Error(`User doesn't Exists`);
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
+      if (!passwordMatch) {
+        res.status(401);
+        throw new Error('Invalid Password');
+      }
+
+      const tokenGenerator = new TokenGenerator();
+
+      const accessToken = tokenGenerator.accessToken(user._id);
+      const refreshToken = tokenGenerator.refreshToken(user._id);
+
+      res.status(200).json({
+        message: 'User Login Successful',
+        success: true,
+        accessToken,
+        refreshToken,
+        user,
+      });
     } catch (err) {
       next(err);
     }

@@ -11,4 +11,6 @@ console.log('check');
 router.post('/signup', authValidation.signupValidation, authController.signup);
 router.get('/signup/:token', authController.verify);
 
+router.post('/login', authValidation.loginValidation, authController.login);
+
 export default router;
