@@ -4,11 +4,13 @@ import config from './config/config.js';
 import connectDatabase from './config/dbConfig.js';
 import authRoutes from './routes/authRoutes.js';
 import errorHandler from './error/errorHandler.js';
+import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(loggerMiddleware);
 
 const port = config.PORT;
 

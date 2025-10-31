@@ -8,3 +8,8 @@ export const signupSchema = yup.object({
   password: yup.string().default(''),
   role: yup.string().default('manager'),
 });
+
+export const loginSchema = yup.object({
+  email: yup.string().required(),
+  password: yup.string().required(),
+});
