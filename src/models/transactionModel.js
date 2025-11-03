@@ -27,10 +27,10 @@ const transactionModel = new mongoose.Schema(
     orderNumber: {
       type: String,
     },
-    shipment: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Shipment',
-    },
+    // shipment: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: 'Shipment',
+    // },
     // For Adjustments
     reason: {
       type: String,

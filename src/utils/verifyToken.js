@@ -9,7 +9,7 @@ export default async function tokenValidator(token) {
     const isUser = await User.findOne({ _id: userId });
     console.log('userdata : ', isUser);
 
-    return isUser.role;
+    return isUser;
   } catch (error) {
     return error;
   }
