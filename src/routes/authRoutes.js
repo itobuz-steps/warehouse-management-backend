@@ -7,7 +7,7 @@ const authController = new AuthController();
 const authValidation = new AuthValidation();
 
 router.post('/signup', authValidation.signupValidation, authController.signup); // send email
-router.get('/signup/:token', authController.verify); // send name and password
+router.post('/signup/:token', authController.verify); // send name and password
 
 router.post('/login', authValidation.loginValidation, authController.login); // email and password
 

@@ -4,6 +4,7 @@ dotenv.config();
 
 const config = {
   PORT: process.env.PORT,
+  FRONTEND_URL: process.env.FRONTEND_URL,
 
   DB_URI: process.env.DB_URI,
 
