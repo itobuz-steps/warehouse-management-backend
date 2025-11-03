@@ -1,6 +1,7 @@
 import {
   createProductSchema,
   updateProductSchema,
+  deleteProductSchema,
 } from '../schema/productSchema.js';
 import { ValidationError } from 'yup';
 
@@ -37,6 +38,23 @@ export default class ProductValidation {
         return new Error(err.errors.join(', '));
       }
 
+      next(err);
+    }
+  };
+
+  deleteProductValidation = async (req, res, next) => {
+    try {
+      await deleteProductSchema.validate(req.params, {
+        abortEarly: false,
+        stripUnknown: true,
+      });
+
+      next();
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400);
+        return new Error(err.errors.join(', '));
+      }
       next(err);
     }
   };

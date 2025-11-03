@@ -1,7 +1,6 @@
 import Product from '../models/productModel.js';
 
 export default class ProductController {
-    
   getProducts = async (req, res, next) => {
     try {
       const products = await Product.find();
@@ -40,6 +39,28 @@ export default class ProductController {
       res.status(201).json(newProduct);
     } catch (error) {
       next(error);
+    }
+  };
+
+  deleteProduct = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const updatedProduct = await Product.findOneAndUpdate(
+        { _id: id },
+        { is_archived: true },
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      res.json({
+        message: 'Product archived successfully',
+        product: updatedProduct,
+      });
+    } catch (err) {
+      next(err);
     }
   };
 }

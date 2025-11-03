@@ -39,3 +39,9 @@ export const updateProductSchema = yup.object({
   is_archived: yup.boolean().optional(),
   created_by: yup.string().optional(),
 });
+
+export const deleteProductSchema = yup.object({
+  id: yup.string().required('Product ID is required'),
+});
+
+
