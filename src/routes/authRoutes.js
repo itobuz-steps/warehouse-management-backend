@@ -11,4 +11,15 @@ router.get('/signup/:token', authController.verify); // send name and password
 
 router.post('/login', authValidation.loginValidation, authController.login);
 
+router.post(
+  '/send-otp/',
+  authValidation.sendOtpValidation,
+  authController.sendOtp
+);
+router.post(
+  '/forgot-password/:email',
+  authValidation.forgotPasswordValidation,
+  authController.forgotPassword
+);
+
 export default router;

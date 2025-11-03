@@ -14,6 +14,12 @@ export const loginSchema = yup.object({
   password: yup.string().required(),
 });
 
-export const forgetPassword = yup.Object({
-  
+export const forgotPasswordSchema = yup.object({
+  email: yup.string().required('Email is required'),
+  otp: yup.string().required('OTP is required'),
+  password: yup.string().required(),
+})
+
+export const sendOtpSchema = yup.object({
+  email: yup.string().required('Email is required'),
 })

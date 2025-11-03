@@ -1,12 +1,15 @@
 import bcrypt from 'bcrypt';
 import User from '../models/userModel.js';
+import OTP from '../models/otpModel.js';
 import SendInvitation from '../utils/SendEmail.js';
 import TokenGenerator from '../utils/TokenGenerator.js';
 import jwt from 'jsonwebtoken';
 import config from '../config/config.js';
+import OtpGenerator from '../utils/OtpGenerator.js';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
+const genOtp = new OtpGenerator();
 
 export default class AuthController {
   signup = async (req, res, next) => {
@@ -115,13 +118,23 @@ export default class AuthController {
     }
   };
 
-  forgetPassword = async (req, res, next) => {
+  forgotPassword = async (req, res, next) => {
     try {
-      const { email, otp, newPassword } = req.body;
+      const prevEmail = req.params;
+      const { email, otp, password } = req.body;
 
-      if (!email || !otp || !newPassword) {
-        res.status(400);
-        throw new Error(`Please enter all fields!`);
+      if (prevEmail !== email) {
+        res.status(404);
+        throw new Error(
+          'Email mismatch: please use the same email address that received the OTP.'
+        );
+      }
+
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        res.status(404);
+        throw new Error(`User does not exist!`);
       }
 
       if (otp.length !== 6) {
@@ -129,7 +142,7 @@ export default class AuthController {
         throw new Error(`OTP should be 6 digits!`);
       }
 
-      const otpDoc = await otpModel.findOne({ email });
+      const otpDoc = await OTP.findOne({ email });
 
       const otpArrLength = otpDoc.otp.length;
 
@@ -151,14 +164,36 @@ export default class AuthController {
         return next(new Error(`Wrong OTP`));
       }
 
-      const user = await userModel.findOne({ email });
-
-      user.isVerified = true;
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
       await user.save();
 
       return res.status(200).json({
         success: true,
         message: 'OTP verified successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  sendOtp = async (req, res, next) => {
+    try {
+      const email = req.body.email;
+      const isUser = await User.findOne({ email });
+
+      if (!isUser) {
+        res.status(404);
+
+        throw new Error('User does not exists');
+      }
+
+      genOtp.generateOtp(email);
+
+      res.status(200).json({
+        success: true,
+        message: 'OTP sent successfully',
+        email,
       });
     } catch (err) {
       next(err);
