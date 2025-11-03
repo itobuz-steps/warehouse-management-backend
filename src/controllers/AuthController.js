@@ -190,6 +190,19 @@ export default class AuthController {
         throw new Error('User does not exists');
       }
 
+      const userOtpDoc = await OTP.findOne({ email });
+      console.log(userOtpDoc);
+
+      if (userOtpDoc) {
+        const lastUpdated = new Date(userOtpDoc.updatedAt).getTime();
+        const now = Date.now();
+
+        if (now - lastUpdated < 1000 * 60) {
+          res.status(425);
+          throw new Error('Please wait 1 minute before requesting another OTP');
+        }
+      }
+
       genOtp.generateOtp(email);
 
       res.status(200).json({
