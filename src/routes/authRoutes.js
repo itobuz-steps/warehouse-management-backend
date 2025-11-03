@@ -9,7 +9,7 @@ const authValidation = new AuthValidation();
 router.post('/signup', authValidation.signupValidation, authController.signup); // send email
 router.get('/signup/:token', authController.verify); // send name and password
 
-router.post('/login', authValidation.loginValidation, authController.login);
+router.post('/login', authValidation.loginValidation, authController.login); // email and password
 
 router.post(
   '/send-otp/',

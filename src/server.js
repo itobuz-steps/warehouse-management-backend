@@ -5,6 +5,7 @@ import connectDatabase from './config/dbConfig.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import errorHandler from './error/errorHandler.js';
+import adminRoutes from './routes/adminRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 
 const app = express();
@@ -17,11 +18,8 @@ const port = config.PORT;
 
 connectDatabase();
 
-app.get('/', (req, res) => {
-  res.send('Hello');
-});
-
 app.use('/user/auth', authRoutes);
+app.use('/user/admin/', adminRoutes);
 app.use('/product', productRoutes);
 
 app.use(errorHandler);
