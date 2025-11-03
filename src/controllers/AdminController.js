@@ -48,6 +48,13 @@ export default class AdminController {
   removeWarehouse = async (req, res, next) => {
     try {
       const warehouseId = req.params.warehouseId;
+      const warehouse = await Warehouse.findOne({ warehouseId });
+
+      if (!warehouse.active) {
+        res.status(400);
+
+        throw new Error('Warehouse Already Deleted');
+      }
 
       const updatedWarehouse = await Warehouse.findByIdAndUpdate(
         warehouseId,
@@ -79,6 +86,13 @@ export default class AdminController {
   restoreWarehouse = async (req, res, next) => {
     try {
       const warehouseId = req.params.warehouseId;
+      const warehouse = await Warehouse.findOne({ warehouseId });
+
+      if (warehouse.active) {
+        res.status(400);
+
+        throw new Error('Warehouse Already Active');
+      }
 
       const updatedWarehouse = await Warehouse.findByIdAndUpdate(
         warehouseId,
