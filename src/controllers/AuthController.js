@@ -28,7 +28,7 @@ export default class AuthController {
 
       const token = tokenGenerator.invitationToken(email);
 
-      const link = `${req.protocol}://${req.get('host')}/signup/${token}`;
+      const link = `${req.protocol}://${req.get('host')}/user/auth/signup/${token}`;
       mailSender.sendInvitationEmail(email, link);
 
       res.status(200).json({
