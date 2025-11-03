@@ -14,4 +14,22 @@ router.post(
   adminController.addWarehouse
 ); // send name , location, description(optional), managerIds[]
 
+router.post(
+  '/update-warehouse/:warehouseId',
+  isAdmin,
+  adminController.updateWarehouse
+);
+
+router.post(
+  '/remove-warehouse/:warehouseId',
+  isAdmin,
+  adminController.removeWarehouse
+);
+
+router.post(
+  '/restore-warehouse/:warehouseId',
+  isAdmin,
+  adminController.restoreWarehouse
+);
+
 export default router;
