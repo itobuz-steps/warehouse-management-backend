@@ -3,6 +3,7 @@ import cors from 'cors';
 import config from './config/config.js';
 import connectDatabase from './config/dbConfig.js';
 import authRoutes from './routes/authRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 import errorHandler from './error/errorHandler.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/user/auth', authRoutes);
+app.use('/product', productRoutes);
 
 app.use(errorHandler);
 
