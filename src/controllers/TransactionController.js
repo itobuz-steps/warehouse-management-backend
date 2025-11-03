@@ -4,6 +4,16 @@ import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
 
 export default class TransactionController {
+  getTransactions = async (req, res, next) => {
+    try {
+      const transactions = await Transaction.find().populate(
+        'product performedBy'
+      );
+      res.json(transactions);
+    } catch (error) {
+      next(error);
+    }
+  };
 
   createStockIn = async (req, res, next) => {
     try {
