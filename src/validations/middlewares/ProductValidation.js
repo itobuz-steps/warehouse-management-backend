@@ -4,7 +4,9 @@ import { ValidationError } from 'yup';
 export default class ProductValidation {
   createProductValidation = async (req, res, next) => {
     try {
-      await createProductSchema.validate(req.body, {
+      const productData = JSON.parse(req.body.data);
+
+      await createProductSchema.validate(productData, {
         abortEarly: false, // return all validation errors
         stripUnknown: true, // remove unexpected fields
       });

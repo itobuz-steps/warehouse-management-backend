@@ -9,7 +9,7 @@ const productValidation = new ProductValidation();
 
 const storage = multer.diskStorage({
   destination: 'uploads/product',
-    filename: function (req, file, cb) {
+  filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
     cb(null, file.fieldname + '-' + uniqueSuffix + ext);
@@ -21,7 +21,7 @@ const upload = multer({ storage, limits: { fileSize: 0.5 * 1024 * 1024 } });
 const router = express.Router();
 router.post(
   '/',
-  upload.single('product_img'),
+  upload.array('product_img', 8),
   productValidation.createProductValidation,
   productController.createProduct
 );
