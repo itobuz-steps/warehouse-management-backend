@@ -11,5 +11,11 @@ router.post(
   productValidation.createProductValidation,
   productController.createProduct
 );
+router.get('/', productController.getProducts);
+router.patch(
+  '/:id',
+  productValidation.updateProductValidation,
+  productController.updateProduct
+);
 
 export default router;
