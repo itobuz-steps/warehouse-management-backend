@@ -7,5 +7,6 @@ const router = express.Router();
 
 router.get('/', transactionController.getTransactions);
 router.post('/stock-in', transactionController.createStockIn);
+router.post('/stock-out', transactionController.createStockOut);
 
 export default router;
