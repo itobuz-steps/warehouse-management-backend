@@ -1,12 +1,15 @@
 import bcrypt from 'bcrypt';
 import User from '../models/userModel.js';
-import SendInvitation from '../utils/SendInvitation.js';
+import OTP from '../models/otpModel.js';
+import SendInvitation from '../utils/SendEmail.js';
 import TokenGenerator from '../utils/TokenGenerator.js';
 import jwt from 'jsonwebtoken';
 import config from '../config/config.js';
+import OtpGenerator from '../utils/OtpGenerator.js';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
+const genOtp = new OtpGenerator();
 
 export default class AuthController {
   signup = async (req, res, next) => {
@@ -109,6 +112,89 @@ export default class AuthController {
         accessToken,
         refreshToken,
         user,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  forgotPassword = async (req, res, next) => {
+    try {
+      const prevEmail = req.params.email;
+      console.log(prevEmail);
+
+      const { email, otp, password } = req.body;
+
+      if (prevEmail !== email) {
+        res.status(404);
+        throw new Error(
+          'Email mismatch: please use the same email address that received the OTP.'
+        );
+      }
+
+      const user = await User.findOne({ email });
+
+      if (!user) {
+        res.status(404);
+        throw new Error(`User does not exist!`);
+      }
+
+      if (otp.length !== 6) {
+        res.status(400);
+        throw new Error(`OTP should be 6 digits!`);
+      }
+
+      const otpDoc = await OTP.findOne({ email });
+
+      const otpArrLength = otpDoc.otp.length;
+
+      if (!otpDoc || otpArrLength === 0) {
+        res.status(400);
+        throw new Error(`Please resend OTP!`);
+      }
+
+      const latestOtp = otpDoc.otp[otpArrLength - 1];
+      const otpCreated = new Date(otpDoc.updatedAt).getTime();
+
+      if (Date.now() - otpCreated > 60 * 5000) {
+        res.status(403);
+        throw new Error(`OTP expired, please request a new one`);
+      }
+
+      if (latestOtp !== otp) {
+        res.status(401);
+        return next(new Error(`Wrong OTP`));
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      user.password = hashedPassword;
+      await user.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'OTP verified successfully',
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  sendOtp = async (req, res, next) => {
+    try {
+      const email = req.body.email;
+      const isUser = await User.findOne({ email });
+
+      if (!isUser) {
+        res.status(404);
+        throw new Error('User does not exists');
+      }
+
+      genOtp.generateOtp(email);
+
+      res.status(200).json({
+        success: true,
+        message: 'OTP sent successfully',
+        email,
       });
     } catch (err) {
       next(err);
