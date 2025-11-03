@@ -1,4 +1,7 @@
-import { createProductSchema } from '../schema/productSchema.js';
+import {
+  createProductSchema,
+  updateProductSchema,
+} from '../schema/productSchema.js';
 import { ValidationError } from 'yup';
 
 export default class ProductValidation {
@@ -13,7 +16,25 @@ export default class ProductValidation {
     } catch (err) {
       if (err instanceof ValidationError) {
         res.status(400);
-        next(new Error(err.errors.join(', ')));
+        return new Error(err.errors.join(', '));
+      }
+
+      next(err);
+    }
+  };
+
+  updateProductValidation = async (req, res, next) => {
+    try {
+      await updateProductSchema.validate(req.body, {
+        abortEarly: false,
+        stripUnknown: true,
+      });
+
+      next();
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400);
+        return new Error(err.errors.join(', '));
       }
 
       next(err);
