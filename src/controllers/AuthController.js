@@ -120,7 +120,9 @@ export default class AuthController {
 
   forgotPassword = async (req, res, next) => {
     try {
-      const prevEmail = req.params;
+      const prevEmail = req.params.email;
+      console.log(prevEmail);
+
       const { email, otp, password } = req.body;
 
       if (prevEmail !== email) {
@@ -184,7 +186,6 @@ export default class AuthController {
 
       if (!isUser) {
         res.status(404);
-
         throw new Error('User does not exists');
       }
 

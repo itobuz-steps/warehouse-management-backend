@@ -15,7 +15,7 @@ export default class SendEmail {
       });
 
       const info = await transporter.sendMail({
-        from: 'System - warehouse management',
+        from: config.MAIL_USER,
         to: email,
         subject: title,
         html: body,
@@ -43,7 +43,7 @@ export default class SendEmail {
     }
   };
 
-  sendOtp = async (email, otp, next) => {
+  sendOtpHelper = async (email, otp, next) => {
     try {
       const mailResponse = await this.mailSender(
         email,

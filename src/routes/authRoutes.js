@@ -16,6 +16,7 @@ router.post(
   authValidation.sendOtpValidation,
   authController.sendOtp
 );
+
 router.post(
   '/forgot-password/:email',
   authValidation.forgotPasswordValidation,
