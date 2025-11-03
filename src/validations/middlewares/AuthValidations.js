@@ -1,4 +1,4 @@
-import { signupSchema, loginSchema } from '../schema/authSchema.js';
+import { signupSchema, loginSchema, forgotPasswordSchema, sendOtpSchema} from '../schema/authSchema.js';
 import { ValidationError } from 'yup';
 
 export default class AuthValidation {
@@ -43,4 +43,41 @@ export default class AuthValidation {
       next(err);
     }
   };
+
+  forgotPasswordValidation = async (req, res, next) => {
+    try {
+      await forgotPasswordSchema.validate(req.body, {
+        abortEarly: false,
+        stripUnknown: true,
+      });
+
+      next();
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400);
+        next(new Error(err.errors.join(', ')));
+      }
+
+      next(err);
+    }
+  };
+
+  sendOtpValidation = async (req, res, next) => {
+    try {
+      await sendOtpSchema.validate(req.body, {
+        abortEarly: false,
+        stripUnknown: true,
+      });
+
+      next();
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400);
+        next(new Error(err.errors.join(', ')));
+      }
+
+      next(err);
+    }
+  };
+  
 }
