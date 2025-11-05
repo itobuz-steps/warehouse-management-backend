@@ -21,7 +21,7 @@ const upload = multer({ storage, limits: { fileSize: 0.5 * 1024 * 1024 } });
 const router = express.Router();
 router.post(
   '/',
-  upload.array('product_img', 8),
+  upload.array('product-img', 8),
   productValidation.createProductValidation,
   productController.createProduct
 );

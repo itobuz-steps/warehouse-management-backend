@@ -1,5 +1,11 @@
-import { signupSchema, loginSchema, forgotPasswordSchema, sendOtpSchema} from '../schema/authSchema.js';
+import {
+  signupSchema,
+  loginSchema,
+  forgotPasswordSchema,
+  sendOtpSchema,
+} from '../schema/authSchema.js';
 import { ValidationError } from 'yup';
+import { updateProductSchema } from '../schema/productSchema.js';
 
 export default class AuthValidation {
   signupValidation = async (req, res, next) => {
@@ -79,5 +85,22 @@ export default class AuthValidation {
       next(err);
     }
   };
-  
+
+  updateProfileValidation = async (req, res, next) => {
+    try {
+      await updateProductSchema.validate(req.body, {
+        abortEarly: false,
+        stripUnknown: true,
+      });
+
+      next();
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400);
+        next(new Error(err.errors.join(', ')));
+      }
+
+      next(err);
+    }
+  };
 }
