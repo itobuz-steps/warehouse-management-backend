@@ -50,6 +50,44 @@ export default class AuthController {
     try {
       const verificationToken = req.params.token;
       const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
+      // const email = tokenData.email;
+      // const appUser = await User.findOne({ email });
+
+      // if (appUser.isVerified) {
+      //   res.status(400);
+
+      //   throw new Error('User already verified');
+      // }
+
+      // const user = await User.findOneAndUpdate(
+      //   { email: email },
+      //   {
+      //     password: await bcrypt.hash(req.body.password, 10),
+      //     name: req.body.name,
+      //     isVerified: true,
+      //   }
+      // );
+
+      res.status(200).json({
+        message: 'token valid',
+        success: true,
+        tokenData,
+      });
+    } catch (err) {
+      if (err.message == 'jwt expired') {
+        res.status(401).json({
+          message: 'Link Expired',
+          success: false,
+        });
+      }
+      next(err);
+    }
+  };
+
+  setPassword = async (req, res, next) => {
+    try {
+      const verificationToken = req.params.token;
+      const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
       const email = tokenData.email;
       const appUser = await User.findOne({ email });
 
@@ -69,9 +107,9 @@ export default class AuthController {
       );
 
       res.status(200).json({
-        message: 'Registration Successful',
+        message: 'Registration successful.',
         success: true,
-        user: user,
+        user,
       });
     } catch (err) {
       if (err.message == 'jwt expired') {
