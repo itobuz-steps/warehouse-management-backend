@@ -20,7 +20,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 0.5 * 1024 * 1024 } });
 
 router.post('/signup', authValidation.signupValidation, authController.signup); // send email
-router.post('/signup/:token', authController.verify); // send name and password
+router.post('/signup/:token', authController.verify);
+router.post('/signup/set-password/:token', authController.setPassword); // send name and password
 
 router.post('/login', authValidation.loginValidation, authController.login); // email and password
 
