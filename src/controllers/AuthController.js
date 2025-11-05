@@ -230,12 +230,8 @@ export default class AuthController {
       const name = req.body.name || '';
       const profileImage = req.file ? req.file.filename : '';
 
-      if (!name && !profileImage) {
-        throw new Error(`Either image or name field is required!`);
-      } else if (!profileImage) {
+      if (!profileImage) {
         user.name = name;
-      } else if (!name) {
-        user.profileImage = profileImage;
       } else {
         user.name = name;
         user.profileImage = profileImage;

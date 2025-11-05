@@ -39,7 +39,7 @@ router.post(
 router.patch(
   '/update-profile',
   upload.single('profile-img'),
-  // authValidation.updateProfileValidation,
+  authValidation.updateProfileValidation,
   authController.updateProfile
 );
 

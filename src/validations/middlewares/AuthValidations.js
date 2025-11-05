@@ -3,9 +3,9 @@ import {
   loginSchema,
   forgotPasswordSchema,
   sendOtpSchema,
+  updateProfileSchema
 } from '../schema/authSchema.js';
 import { ValidationError } from 'yup';
-import { updateProductSchema } from '../schema/productSchema.js';
 
 export default class AuthValidation {
   signupValidation = async (req, res, next) => {
@@ -88,7 +88,7 @@ export default class AuthValidation {
 
   updateProfileValidation = async (req, res, next) => {
     try {
-      await updateProductSchema.validate(req.body, {
+      await updateProfileSchema.validate(req.body, {
         abortEarly: false,
         stripUnknown: true,
       });
