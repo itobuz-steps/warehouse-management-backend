@@ -8,7 +8,7 @@ import errorHandler from './error/errorHandler.js';
 import adminRoutes from './routes/adminRoutes.js';
 import profileRoutes from './routes/profileRoutes.js'
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
-import transactionRoutes from './routes/transactionRoutes.js'
+import transactionRoutes from './routes/transactionRoutes.js';
 
 const app = express();
 
