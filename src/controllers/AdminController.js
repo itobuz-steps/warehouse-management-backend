@@ -1,4 +1,5 @@
 import Warehouse from '../models/warehouseModel.js';
+import User from '../models/userModel.js';
 
 export default class AdminController {
   addWarehouse = async (req, res, next) => {
@@ -115,6 +116,34 @@ export default class AdminController {
         success: true,
         message: 'Warehouse successfully Restored',
         warehouse: updatedWarehouse,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getManagers = async (req, res, next) => {
+    try {
+      const managers = await User.find({ role: 'manager', isActive: true });
+
+      res.status(200).json({
+        message: 'All Managers',
+        success: true,
+        managers,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getWarehouses = async (req, res, next) => {
+    try {
+      const managers = await Warehouse.find({ active: true });
+
+      res.status(200).json({
+        message: 'All Managers',
+        success: true,
+        managers,
       });
     } catch (err) {
       next(err);
