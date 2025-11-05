@@ -39,10 +39,12 @@ export default class ProductController {
         ...productData,
       });
 
-      const productImage = req.file ? req.file.filename : null;
+      const productImages = req.files
+        ? req.files.map((file) => file.filename)
+        : [];
 
-      if (productImage) {
-        newProduct.product_img = productImage;
+      if (productImages.length > 0) {
+        newProduct.productImage = productImages;
       }
 
       await newProduct.save();

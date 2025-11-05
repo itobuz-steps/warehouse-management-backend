@@ -17,7 +17,7 @@ const productModel = new mongoose.Schema(
     description: {
       type: String,
     },
-    product_img: {
+    productImage: {
       type: [String],
     },
     price: {
@@ -30,26 +30,26 @@ const productModel = new mongoose.Schema(
       default: 0,
       min: 0,
     },
-    min_stock_level: {
+    minStockLevel: {
       type: Number,
       default: 0,
       min: 0,
     },
-    warehouse_id: {
+    warehouseId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Warehouse',
       required: true,
     },
-    location_id: {
+    locationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Location',
       required: true,
     },
-    is_archived: {
+    isArchived: {
       type: Boolean,
       default: false,
     },
-    created_by: {
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,

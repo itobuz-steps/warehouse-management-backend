@@ -6,6 +6,7 @@ import TokenGenerator from '../utils/TokenGenerator.js';
 import jwt from 'jsonwebtoken';
 import config from '../config/config.js';
 import OtpGenerator from '../utils/OtpGenerator.js';
+import tokenValidator from '../utils/verifyToken.js';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
@@ -209,6 +210,42 @@ export default class AuthController {
         success: true,
         message: 'OTP sent successfully',
         email,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  updateProfile = async (req, res, next) => {
+    try {
+      const bearer_token = req.headers.authorization;
+      const access_token = bearer_token.split(' ')[1];
+      const user = await tokenValidator(access_token);
+
+      if (!user) {
+        res.status(401);
+        throw new Error(`User doesn't Exists`);
+      }
+
+      const name = req.body.name || '';
+      const profileImage = req.file ? req.file.filename : '';
+
+      if (!name && !profileImage) {
+        throw new Error(`Either image or name field is required!`);
+      } else if (!profileImage) {
+        user.name = name;
+      } else if (!name) {
+        user.profileImage = profileImage;
+      } else {
+        user.name = name;
+        user.profileImage = profileImage;
+      }
+
+      await user.save();
+
+      res.status(200).json({
+        success: true,
+        message: 'User profile updated successfully!',
       });
     } catch (err) {
       next(err);
