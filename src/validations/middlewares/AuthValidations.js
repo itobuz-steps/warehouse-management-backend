@@ -5,7 +5,6 @@ import {
   sendOtpSchema,
 } from '../schema/authSchema.js';
 import { ValidationError } from 'yup';
-import { updateProductSchema } from '../schema/productSchema.js';
 
 export default class AuthValidation {
   signupValidation = async (req, res, next) => {
@@ -71,24 +70,6 @@ export default class AuthValidation {
   sendOtpValidation = async (req, res, next) => {
     try {
       await sendOtpSchema.validate(req.body, {
-        abortEarly: false,
-        stripUnknown: true,
-      });
-
-      next();
-    } catch (err) {
-      if (err instanceof ValidationError) {
-        res.status(400);
-        next(new Error(err.errors.join(', ')));
-      }
-
-      next(err);
-    }
-  };
-
-  updateProfileValidation = async (req, res, next) => {
-    try {
-      await updateProductSchema.validate(req.body, {
         abortEarly: false,
         stripUnknown: true,
       });

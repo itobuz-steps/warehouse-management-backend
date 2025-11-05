@@ -6,7 +6,6 @@ import TokenGenerator from '../utils/TokenGenerator.js';
 import jwt from 'jsonwebtoken';
 import config from '../config/config.js';
 import OtpGenerator from '../utils/OtpGenerator.js';
-import tokenValidator from '../utils/verifyToken.js';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
@@ -50,6 +49,44 @@ export default class AuthController {
     try {
       const verificationToken = req.params.token;
       const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
+      // const email = tokenData.email;
+      // const appUser = await User.findOne({ email });
+
+      // if (appUser.isVerified) {
+      //   res.status(400);
+
+      //   throw new Error('User already verified');
+      // }
+
+      // const user = await User.findOneAndUpdate(
+      //   { email: email },
+      //   {
+      //     password: await bcrypt.hash(req.body.password, 10),
+      //     name: req.body.name,
+      //     isVerified: true,
+      //   }
+      // );
+
+      res.status(200).json({
+        message: 'token valid',
+        success: true,
+        tokenData,
+      });
+    } catch (err) {
+      if (err.message == 'jwt expired') {
+        res.status(401).json({
+          message: 'Link Expired',
+          success: false,
+        });
+      }
+      next(err);
+    }
+  };
+
+  setPassword = async (req, res, next) => {
+    try {
+      const verificationToken = req.params.token;
+      const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
       const email = tokenData.email;
       const appUser = await User.findOne({ email });
 
@@ -69,9 +106,9 @@ export default class AuthController {
       );
 
       res.status(200).json({
-        message: 'Registration Successful',
+        message: 'Registration successful.',
         success: true,
-        user: user,
+        user,
       });
     } catch (err) {
       if (err.message == 'jwt expired') {
@@ -123,7 +160,6 @@ export default class AuthController {
   forgotPassword = async (req, res, next) => {
     try {
       const prevEmail = req.params.email;
-      console.log(prevEmail);
 
       const { email, otp, password } = req.body;
 
@@ -210,42 +246,6 @@ export default class AuthController {
         success: true,
         message: 'OTP sent successfully',
         email,
-      });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  updateProfile = async (req, res, next) => {
-    try {
-      const bearer_token = req.headers.authorization;
-      const access_token = bearer_token.split(' ')[1];
-      const user = await tokenValidator(access_token);
-
-      if (!user) {
-        res.status(401);
-        throw new Error(`User doesn't Exists`);
-      }
-
-      const name = req.body.name || '';
-      const profileImage = req.file ? req.file.filename : '';
-
-      if (!name && !profileImage) {
-        throw new Error(`Either image or name field is required!`);
-      } else if (!profileImage) {
-        user.name = name;
-      } else if (!name) {
-        user.profileImage = profileImage;
-      } else {
-        user.name = name;
-        user.profileImage = profileImage;
-      }
-
-      await user.save();
-
-      res.status(200).json({
-        success: true,
-        message: 'User profile updated successfully!',
       });
     } catch (err) {
       next(err);
