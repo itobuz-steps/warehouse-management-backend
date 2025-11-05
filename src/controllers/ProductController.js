@@ -23,6 +23,7 @@ export default class ProductController {
 
       if (!updatedProduct) {
         res.status(404);
+        res.json({ success: false });
         throw new Error('Product not found');
       }
       res.json(updatedProduct);
@@ -60,15 +61,18 @@ export default class ProductController {
       const { id } = req.params;
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
-        { is_archived: true },
+        { isArchived: true },
         { new: true }
       );
 
       if (!updatedProduct) {
-        return res.status(404).json({ message: 'Product not found' });
+        res.status(404);
+        res.json({ success: false });
+        throw new Error('Product not found');
       }
 
       res.json({
+        success: true,
         message: 'Product archived successfully',
         product: updatedProduct,
       });

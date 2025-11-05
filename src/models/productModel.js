@@ -5,6 +5,7 @@ const productModel = new mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
     },
     sku: {
       type: String,
@@ -13,6 +14,7 @@ const productModel = new mongoose.Schema(
     },
     category: {
       type: [String],
+      required: true,
     },
     description: {
       type: String,
@@ -25,34 +27,20 @@ const productModel = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    quantity: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    minStockLevel: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
-    warehouseId: {
-      type: mongoose.Schema.Types.ObjectId,
+    warehouseIds: {
+      type: [mongoose.Schema.Types.ObjectId],
       ref: 'Warehouse',
       required: true,
     },
-    locationId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Location',
-      required: true,
-    },
-    isArchived: {
-      type: Boolean,
-      default: false,
-    },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+    },
+
+    isArchived: {
+      type: Boolean,
+      default: false,
     },
   },
   {
@@ -62,4 +50,3 @@ const productModel = new mongoose.Schema(
 
 const Product = mongoose.model('Product', productModel);
 export default Product;
-
