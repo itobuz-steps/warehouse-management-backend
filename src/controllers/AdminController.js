@@ -1,10 +1,21 @@
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
+import mongoose from 'mongoose';
 
 export default class AdminController {
   addWarehouse = async (req, res, next) => {
     try {
-      const newWarehouse = new Warehouse(req.body);
+      let { name, location, description, managers: managerIds } = req.body;
+
+      managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(id));
+
+      // Create the warehouse document
+      const newWarehouse = new Warehouse({
+        name,
+        location,
+        description,
+        managerIds,
+      });
 
       newWarehouse.save();
 
@@ -124,7 +135,8 @@ export default class AdminController {
 
   getManagers = async (req, res, next) => {
     try {
-      const managers = await User.find({ role: 'manager', isActive: true });
+      const managers = await User.find({ role: 'manager', isVerified: true });
+      console.log(managers);
 
       res.status(200).json({
         message: 'All Managers',
