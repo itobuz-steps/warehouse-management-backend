@@ -241,18 +241,16 @@ export default class AuthController {
 
       const decoded = jwt.verify(refresh_token, refresh_secret);
 
-      if (decoded) {
-        const tokens = tokenGenerator.generateToken(decoded.userId);
-        const accessToken = tokens.access;
-        const refreshToken = tokens.refresh;
+      const tokens = tokenGenerator.generateToken(decoded.userId);
+      const accessToken = tokens.access;
+      const refreshToken = tokens.refresh;
 
-        res.status(200).json({
-          message: 'Token Regenerated successfully',
-          success: true,
-          accessToken,
-          refreshToken,
-        });
-      }
+      res.status(200).json({
+        message: 'Token Regenerated successfully',
+        success: true,
+        accessToken,
+        refreshToken,
+      });
     } catch (err) {
       res.status(401);
       next(err);
