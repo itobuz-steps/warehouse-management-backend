@@ -4,7 +4,7 @@ const transactionModel = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ['IN', 'OUT', 'ADJUSTMENT'],
+      enum: ['IN', 'OUT', 'ADJUSTMENT', 'TRANSFER'],
       required: true,
     },
     product: {
@@ -44,6 +44,11 @@ const transactionModel = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    sourceWarehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
+    destinationWarehouse: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Warehouse',
     },
     // For undo functionality
     canUndo: {
