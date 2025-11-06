@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Product from '../models/productModel.js';
+import Quantity from '../models/quantityModel.js';
 
 export default class ProductController {
   getProducts = async (req, res, next) => {
@@ -80,6 +81,32 @@ export default class ProductController {
         product: updatedProduct,
       });
     } catch (err) {
+      next(err);
+    }
+  };
+
+  addProductQuantity = async (req, res, next) => {
+    try {
+      const productId = new mongoose.Types.ObjectId(req.body.productId);
+      const warehouseId = new mongoose.Types.ObjectId(req.body.warehouseId);
+      const { quantity, limit } = req.body;
+
+      const quantityObj = {
+        productId,
+        warehouseId,
+        quantity,
+        limit,
+      };
+      const result = await Quantity.create(quantityObj);
+      console.log(result);
+
+      res.status(200).json({
+        message: 'Product Quantity Updated',
+        success: true,
+        result,
+      });
+    } catch (err) {
+      res.status(500);
       next(err);
     }
   };

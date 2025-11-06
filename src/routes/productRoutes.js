@@ -26,6 +26,8 @@ router.post(
   productController.createProduct
 );
 
+router.post('/product-quantity', productController.addProductQuantity);
+
 router.get('/', productController.getProducts);
 
 router.patch(
