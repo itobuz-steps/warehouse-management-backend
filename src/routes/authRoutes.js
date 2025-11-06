@@ -12,6 +12,8 @@ router.post('/signup/set-password/:token', authController.setPassword); // send 
 
 router.post('/login', authValidation.loginValidation, authController.login); // email and password
 
+router.post('/refresh', authController.refresh);
+
 router.post(
   '/send-otp/',
   authValidation.sendOtpValidation,

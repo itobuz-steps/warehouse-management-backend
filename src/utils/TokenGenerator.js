@@ -12,33 +12,25 @@ export default class TokenGenerator {
     return invitation;
   };
 
-  accessToken = (id) => {
+  generateToken = (id) => {
     try {
-      const secretKey = config.ACCESS_SECRET_KEY;
-      const expiry = config.ACCESS_TOKEN_EXPIRY;
-
-      const accessToken = jwt.sign({ id }, secretKey, {
-        expiresIn: expiry,
+      const access = config.ACCESS_SECRET_KEY;
+      const refresh = config.REFRESH_SECRET_KEY;
+      const accessExpiry = config.ACCESS_TOKEN_EXPIRY;
+      const refreshExpiry = config.REFRESH_TOKEN_EXPIRY;
+      const accessToken = jwt.sign({ id }, access, {
+        expiresIn: accessExpiry,
+      });
+      const refreshToken = jwt.sign({ id }, refresh, {
+        expiresIn: refreshExpiry,
       });
 
-      return accessToken;
+      return {
+        access: accessToken,
+        refresh: refreshToken,
+      };
     } catch (err) {
-      console.log(err);
-    }
-  };
-
-  refreshToken = (id) => {
-    try {
-      const secretKey = config.REFRESH_SECRET_KEY;
-      const expiry = config.REFRESH_TOKEN_EXPIRY;
-
-      const refreshToken = jwt.sign({ id }, secretKey, {
-        expiresIn: expiry,
-      });
-
-      return refreshToken;
-    } catch (err) {
-      console.log(err);
+      return err;
     }
   };
 }
