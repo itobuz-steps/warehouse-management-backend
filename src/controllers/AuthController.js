@@ -49,23 +49,6 @@ export default class AuthController {
     try {
       const verificationToken = req.params.token;
       const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
-      // const email = tokenData.email;
-      // const appUser = await User.findOne({ email });
-
-      // if (appUser.isVerified) {
-      //   res.status(400);
-
-      //   throw new Error('User already verified');
-      // }
-
-      // const user = await User.findOneAndUpdate(
-      //   { email: email },
-      //   {
-      //     password: await bcrypt.hash(req.body.password, 10),
-      //     name: req.body.name,
-      //     isVerified: true,
-      //   }
-      // );
 
       res.status(200).json({
         message: 'token valid',
@@ -140,10 +123,9 @@ export default class AuthController {
         throw new Error('Invalid Password');
       }
 
-      const tokenGenerator = new TokenGenerator();
-
-      const accessToken = tokenGenerator.accessToken(user._id);
-      const refreshToken = tokenGenerator.refreshToken(user._id);
+      const tokens = tokenGenerator.generateToken(user._id);
+      const accessToken = tokens.access;
+      const refreshToken = tokens.refresh;
 
       res.status(200).json({
         message: 'User Login Successful',
@@ -248,6 +230,31 @@ export default class AuthController {
         email,
       });
     } catch (err) {
+      next(err);
+    }
+  };
+
+  refresh = async (req, res, next) => {
+    try {
+      const refresh_token = req.headers.authorization.split(' ')[1];
+      const refresh_secret = config.REFRESH_SECRET_KEY;
+
+      const decoded = jwt.verify(refresh_token, refresh_secret);
+
+      if (decoded) {
+        const tokens = tokenGenerator.generateToken(decoded.userId);
+        const accessToken = tokens.access;
+        const refreshToken = tokens.refresh;
+
+        res.status(200).json({
+          message: 'Token Regenerated successfully',
+          success: true,
+          accessToken,
+          refreshToken,
+        });
+      }
+    } catch (err) {
+      res.status(401);
       next(err);
     }
   };
