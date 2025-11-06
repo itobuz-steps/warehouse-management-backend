@@ -32,4 +32,8 @@ router.post(
   adminController.restoreWarehouse
 );
 
+router.get('/get-managers', isAdmin, adminController.getManagers);
+
+router.get('/get-warehouses', isAdmin, adminController.getWarehouses);
+
 export default router;
