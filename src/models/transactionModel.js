@@ -21,10 +21,16 @@ const transactionModel = new mongoose.Schema(
       type: String,
     },
     // For Stock OUT
-    customer: {
+    customerName: {
       type: String,
     },
-    orderNumber: {
+    customerEmail: {
+      type: String,
+    },
+    customerPhone: {
+      type: Number,
+    },
+    customerAddress: {
       type: String,
     },
     // shipment: {
