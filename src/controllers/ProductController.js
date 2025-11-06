@@ -3,7 +3,7 @@ import Product from '../models/productModel.js';
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
-      const products = await Product.find();
+      const products = await Product.find({ isArchived: false });
       res.json(products);
     } catch (error) {
       next(error);
@@ -34,25 +34,27 @@ export default class ProductController {
 
   createProduct = async (req, res, next) => {
     try {
-      const productData = JSON.parse(req.body.data);
+      console.log(req.files);
 
-      const newProduct = await Product.create({
-        ...productData,
+      const { name, sku, category, description, price } = req.body;
+
+      const product = await Product.create({
+        name,
+        sku,
+        category,
+        description,
+        price,
+        productImage: req.files.map((f) => f.path),
       });
 
-      const productImages = req.files
-        ? req.files.map((file) => file.filename)
-        : [];
-
-      if (productImages.length > 0) {
-        newProduct.productImage = productImages;
-      }
-
-      await newProduct.save();
-
-      res.status(201).json(newProduct);
-    } catch (error) {
-      next(error);
+      res.status(201).json({
+        message: 'Product Successfully Saved',
+        success: true,
+        product,
+      });
+    } catch (err) {
+      res.status(400);
+      next(err);
     }
   };
 
