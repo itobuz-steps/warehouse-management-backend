@@ -8,7 +8,8 @@ import { ValidationError } from 'yup';
 export default class ProductValidation {
   createProductValidation = async (req, res, next) => {
     try {
-      const productData = JSON.parse(req.body.data);
+      const productData = req.body;
+      console.log(productData);
 
       await createProductSchema.validate(productData, {
         abortEarly: false, // return all validation errors

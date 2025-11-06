@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Product from '../models/productModel.js';
 
 export default class ProductController {
@@ -34,17 +35,17 @@ export default class ProductController {
 
   createProduct = async (req, res, next) => {
     try {
-      console.log(req.files);
+      const { name, category, description, price } = req.body;
 
-      const { name, sku, category, description, price } = req.body;
+      const createdBy = new mongoose.Types.ObjectId(req.body.createdBy);
 
       const product = await Product.create({
         name,
-        sku,
         category,
         description,
         price,
         productImage: req.files.map((f) => f.path),
+        createdBy,
       });
 
       res.status(201).json({
@@ -60,7 +61,7 @@ export default class ProductController {
 
   deleteProduct = async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = req.params;
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
         { isArchived: true },
@@ -73,7 +74,7 @@ export default class ProductController {
         throw new Error('Product not found');
       }
 
-      res.json({
+      res.status(200).json({
         success: true,
         message: 'Product archived successfully',
         product: updatedProduct,

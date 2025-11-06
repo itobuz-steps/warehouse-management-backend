@@ -6,7 +6,7 @@ const warehouseModel = new mongoose.Schema(
       type: String,
       required: true,
     },
-    location: {
+    address: {
       type: String,
       unique: true,
       required: true,

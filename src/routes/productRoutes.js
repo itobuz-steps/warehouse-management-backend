@@ -22,11 +22,9 @@ const upload = multer({ storage, limits: { fileSize: 0.5 * 1024 * 1024 } });
 router.post(
   '/',
   upload.array('productImage', 8),
-  // productValidation.createProductValidation,
+  productValidation.createProductValidation,
   productController.createProduct
 );
-
-// router.post('/', productController.createProduct);
 
 router.get('/', productController.getProducts);
 

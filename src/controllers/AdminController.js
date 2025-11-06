@@ -5,14 +5,14 @@ import mongoose from 'mongoose';
 export default class AdminController {
   addWarehouse = async (req, res, next) => {
     try {
-      let { name, location, description, managers: managerIds } = req.body;
+      let { name, address, description, managers: managerIds } = req.body;
 
       managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(id));
 
       // Create the warehouse document
       const newWarehouse = new Warehouse({
         name,
-        location,
+        address,
         description,
         managerIds,
       });

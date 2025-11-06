@@ -7,11 +7,6 @@ const productModel = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    sku: {
-      type: String,
-      required: true,
-      unique: true,
-    },
     category: {
       type: String,
       required: true,
