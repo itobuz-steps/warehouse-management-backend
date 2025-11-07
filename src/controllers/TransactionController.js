@@ -41,7 +41,7 @@ export default class TransactionController {
       const transactions = [];
 
       for (const item of products) {
-        const { name, quantity } = item;
+        const { name, quantity, limit } = item;
 
         const product = await Product.findOne({ name });
 
@@ -62,6 +62,7 @@ export default class TransactionController {
             warehouseId: warehouse._id,
             productId: product._id,
             quantity,
+            limit,
           });
         }
 
