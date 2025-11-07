@@ -1,7 +1,5 @@
 import Transaction from '../models/transactionModel.js';
 import tokenValidator from '../utils/verifyToken.js';
-import Product from '../models/productModel.js';
-import Warehouse from '../models/warehouseModel.js';
 import Quantity from '../models/quantityModel.js';
 import mongoose from 'mongoose';
 
@@ -23,45 +21,29 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const bearer_token = req.headers.authorization;
-      const access_token = bearer_token.split(' ')[1];
-      const { products, supplier, notes, destinationWarehouse } = req.body;
-
+      const access_token = req.headers.authorization.split(' ')[1];
       const userId = await tokenValidator(access_token);
-      // console.log(userId._id.toString());
 
-      const warehouse = await Warehouse.findOne({ name: destinationWarehouse });
-
-      if (!warehouse) {
-        return res
-          .status(400)
-          .json({ message: 'Destination warehouse not found' });
-      }
+      const { products, supplier, notes, destinationWarehouse } = req.body;
 
       const transactions = [];
 
       for (const item of products) {
-        const { name, quantity } = item;
-
-        const product = await Product.findOne({ name });
-
-        if (!product) {
-          await session.abortTransaction();
-          return res.status(400).json({ message: `Product ${name} not found` });
-        }
+        const { productId, quantity, limit } = item;
 
         let quantityRecord = await Quantity.findOne({
-          warehouseId: warehouse._id,
-          productId: product._id,
+          warehouseId: destinationWarehouse,
+          productId,
         });
 
         if (quantityRecord) {
           quantityRecord.quantity += quantity;
         } else {
           quantityRecord = new Quantity({
-            warehouseId: warehouse._id,
-            productId: product._id,
+            warehouseId: destinationWarehouse,
+            productId,
             quantity,
+            limit,
           });
         }
 
@@ -69,10 +51,10 @@ export default class TransactionController {
 
         const transaction = new Transaction({
           type: 'IN',
-          product: product._id,
+          product: productId,
           quantity,
           supplier,
-          destinationWarehouse: warehouse._id,
+          destinationWarehouse,
           notes,
           performedBy: userId._id,
         });
@@ -85,6 +67,7 @@ export default class TransactionController {
       session.endSession();
 
       res.status(201).json({
+        success: true,
         message: 'Stock-in transactions created successfully',
         transactions,
       });
@@ -100,54 +83,34 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const bearer_token = req.headers.authorization;
-      const access_token = bearer_token.split(' ')[1];
+      const access_token = req.headers.authorization.split(' ')[1];
+      const userId = await tokenValidator(access_token);
+
       const {
         products,
         customerName,
         customerEmail,
         customerPhone,
         customerAddress,
+        orderNumber,
         notes,
         sourceWarehouse,
       } = req.body;
 
-      const userId = await tokenValidator(access_token);
-
-      const warehouse = await Warehouse.findOne({ name: sourceWarehouse });
-      
-      if (!warehouse) {
-        return res.status(400).json({ message: 'Source warehouse not found' });
-      }
-
       const transactions = [];
 
       for (const item of products) {
-        const { name, quantity } = item;
-
-        const product = await Product.findOne({ name });
-        
-        if (!product) {
-          await session.abortTransaction();
-          return res.status(400).json({ message: `Product ${name} not found` });
-        }
+        const { productId, quantity } = item;
 
         const quantityRecord = await Quantity.findOne({
-          warehouseId: warehouse._id,
-          productId: product._id,
+          warehouseId: sourceWarehouse,
+          productId,
         });
-
-        if (!quantityRecord) {
-          await session.abortTransaction();
-          return res.status(400).json({
-            message: `No stock record found for ${name} in ${sourceWarehouse}`,
-          });
-        }
 
         if (quantityRecord.quantity < quantity) {
           await session.abortTransaction();
           return res.status(400).json({
-            message: `Insufficient stock for ${name}. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
+            message: `Insufficient stock. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
           });
         }
 
@@ -156,13 +119,14 @@ export default class TransactionController {
 
         const transaction = new Transaction({
           type: 'OUT',
-          product: product._id,
+          product: productId,
           quantity,
           customerName,
           customerEmail,
           customerPhone,
           customerAddress,
-          sourceWarehouse: warehouse._id,
+          sourceWarehouse,
+          orderNumber,
           notes,
           performedBy: userId._id,
         });
@@ -175,8 +139,166 @@ export default class TransactionController {
       session.endSession();
 
       res.status(201).json({
+        success: true,
         message: 'Stock-out transactions created successfully',
         transactions,
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      next(error);
+    }
+  };
+
+  createTransfer = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const access_token = req.headers.authorization?.split(' ')[1];
+      const userId = await tokenValidator(access_token);
+
+      const { products, notes, sourceWarehouse, destinationWarehouse } =
+        req.body;
+
+      if (sourceWarehouse === destinationWarehouse) {
+        return res.status(400).json({
+          message: 'Source and destination warehouses cannot be the same',
+        });
+      }
+
+      const transactions = [];
+      const updatedQuantities = [];
+
+      for (const { productId, quantity } of products) {
+        const sourceQuantity = await Quantity.findOne({
+          warehouseId: sourceWarehouse,
+          productId,
+        });
+
+        if (!sourceQuantity) {
+          await session.abortTransaction();
+          return res.status(404).json({
+            message: `Product ${productId} not found in source warehouse`,
+          });
+        }
+
+        if (sourceQuantity.quantity < quantity) {
+          await session.abortTransaction();
+          return res.status(400).json({
+            message: `Insufficient stock for product ${productId}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
+          });
+        }
+
+        sourceQuantity.quantity -= quantity;
+        await sourceQuantity.save({ session });
+
+        let destQuantity = await Quantity.findOne({
+          warehouseId: destinationWarehouse,
+          productId,
+        });
+
+        if (!destQuantity) {
+          destQuantity = new Quantity({
+            warehouseId: destinationWarehouse,
+            productId,
+            quantity: 0,
+            limit: 0,
+          });
+        }
+
+        destQuantity.quantity += quantity;
+        await destQuantity.save({ session });
+
+        updatedQuantities.push({
+          productId,
+          sourceQuantity,
+          destQuantity,
+        });
+
+        const outTransaction = new Transaction({
+          type: 'OUT',
+          product: productId,
+          quantity,
+          notes,
+          sourceWarehouse,
+          destinationWarehouse,
+          performedBy: userId._id,
+        });
+
+        const inTransaction = new Transaction({
+          type: 'IN',
+          product: productId,
+          quantity,
+          notes,
+          sourceWarehouse,
+          destinationWarehouse,
+          performedBy: userId._id,
+        });
+
+        const [createdOut, createdIn] = await Promise.all([
+          outTransaction.save({ session }),
+          inTransaction.save({ session }),
+        ]);
+
+        transactions.push(createdOut, createdIn);
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json({
+        success: true,
+        message: 'Stock transfer completed successfully',
+        transactions,
+        updatedQuantities,
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      next(error);
+    }
+  };
+
+  createAdjustment = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const access_token = req.headers.authorization.split(' ')[1];
+      const userId = await tokenValidator(access_token);
+
+      const { productId, warehouseId, quantity, reason, notes } = req.body;
+
+      let quantityRecord = await Quantity.findOne({
+        warehouseId,
+        productId,
+      });
+
+      quantityRecord.quantity -= quantity;
+      await quantityRecord.save({ session });
+
+      const transaction = new Transaction({
+        type: 'ADJUSTMENT',
+        product: productId,
+        quantity,
+        reason,
+        notes,
+        destinationWarehouse: warehouseId,
+        performedBy: userId._id,
+      });
+
+      const createdTransaction = await transaction.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json({
+        success: true,
+        message: 'Stock adjustment recorded successfully',
+        transaction: createdTransaction,
+        updatedQuantity: quantityRecord,
       });
     } catch (error) {
       await session.abortTransaction();
