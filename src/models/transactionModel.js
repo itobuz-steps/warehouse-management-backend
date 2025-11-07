@@ -33,6 +33,9 @@ const transactionModel = new mongoose.Schema(
     customerAddress: {
       type: String,
     },
+    orderNumber:{
+      type: Number,
+    },
     // shipment: {
     //   type: mongoose.Schema.Types.ObjectId,
     //   ref: 'Shipment',

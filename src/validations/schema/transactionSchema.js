@@ -4,7 +4,7 @@ export const stockInSchema = yup.object({
   products: yup
     .array()
     .of(
-      yup.object().shape({
+      yup.object({
         productId: yup.string().required('Product is required'),
         quantity: yup
           .number()
@@ -30,7 +30,7 @@ export const stockOutSchema = yup.object({
   products: yup
     .array()
     .of(
-      yup.object().shape({
+      yup.object({
         productId: yup.string().required('Product is required'),
         quantity: yup
           .number()
@@ -69,4 +69,25 @@ export const adjustmentSchema = yup.object({
     .positive('Quantity must be greater than 0'),
   reason: yup.string().trim().required('Reason is required'),
   notes: yup.string().trim().nullable(),
+});
+
+export const transferSchema = yup.object({
+  sourceWarehouse: yup.string().required('Source warehouse is required'),
+  destinationWarehouse: yup
+    .string()
+    .required('Destination warehouse is required'),
+  notes: yup.string().nullable(),
+  products: yup
+    .array()
+    .of(
+      yup.object({
+        productId: yup.string().required('Product ID is required'),
+        quantity: yup
+          .number()
+          .required('Quantity is required')
+          .positive('Quantity must be greater than zero'),
+      })
+    )
+    .required('Products list is required')
+    .min(1, 'At least one product must be transferred'),
 });

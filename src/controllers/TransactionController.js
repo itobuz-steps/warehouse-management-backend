@@ -85,13 +85,14 @@ export default class TransactionController {
     try {
       const access_token = req.headers.authorization.split(' ')[1];
       const userId = await tokenValidator(access_token);
-      
+
       const {
         products,
         customerName,
         customerEmail,
         customerPhone,
         customerAddress,
+        orderNumber,
         notes,
         sourceWarehouse,
       } = req.body;
@@ -125,6 +126,7 @@ export default class TransactionController {
           customerPhone,
           customerAddress,
           sourceWarehouse,
+          orderNumber,
           notes,
           performedBy: userId._id,
         });
@@ -148,6 +150,117 @@ export default class TransactionController {
     }
   };
 
+  createTransfer = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const access_token = req.headers.authorization?.split(' ')[1];
+      const userId = await tokenValidator(access_token);
+
+      const { products, notes, sourceWarehouse, destinationWarehouse } =
+        req.body;
+
+      if (sourceWarehouse === destinationWarehouse) {
+        return res.status(400).json({
+          message: 'Source and destination warehouses cannot be the same',
+        });
+      }
+
+      const transactions = [];
+      const updatedQuantities = [];
+
+      for (const { productId, quantity } of products) {
+        const sourceQuantity = await Quantity.findOne({
+          warehouseId: sourceWarehouse,
+          productId,
+        });
+
+        if (!sourceQuantity) {
+          await session.abortTransaction();
+          return res.status(404).json({
+            message: `Product ${productId} not found in source warehouse`,
+          });
+        }
+
+        if (sourceQuantity.quantity < quantity) {
+          await session.abortTransaction();
+          return res.status(400).json({
+            message: `Insufficient stock for product ${productId}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
+          });
+        }
+
+        sourceQuantity.quantity -= quantity;
+        await sourceQuantity.save({ session });
+
+        let destQuantity = await Quantity.findOne({
+          warehouseId: destinationWarehouse,
+          productId,
+        });
+
+        if (!destQuantity) {
+          destQuantity = new Quantity({
+            warehouseId: destinationWarehouse,
+            productId,
+            quantity: 0,
+            limit: 0,
+          });
+        }
+
+        destQuantity.quantity += quantity;
+        await destQuantity.save({ session });
+
+        updatedQuantities.push({
+          productId,
+          sourceQuantity,
+          destQuantity,
+        });
+
+        const outTransaction = new Transaction({
+          type: 'OUT',
+          product: productId,
+          quantity,
+          notes,
+          sourceWarehouse,
+          destinationWarehouse,
+          performedBy: userId._id,
+        });
+
+        const inTransaction = new Transaction({
+          type: 'IN',
+          product: productId,
+          quantity,
+          notes,
+          sourceWarehouse,
+          destinationWarehouse,
+          performedBy: userId._id,
+        });
+
+        const [createdOut, createdIn] = await Promise.all([
+          outTransaction.save({ session }),
+          inTransaction.save({ session }),
+        ]);
+
+        transactions.push(createdOut, createdIn);
+      }
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json({
+        success: true,
+        message: 'Stock transfer completed successfully',
+        transactions,
+        updatedQuantities,
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
+      next(error);
+    }
+  };
+
   createAdjustment = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -155,7 +268,7 @@ export default class TransactionController {
     try {
       const access_token = req.headers.authorization.split(' ')[1];
       const userId = await tokenValidator(access_token);
-      
+
       const { productId, warehouseId, quantity, reason, notes } = req.body;
 
       let quantityRecord = await Quantity.findOne({

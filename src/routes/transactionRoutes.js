@@ -2,9 +2,10 @@ import express from 'express';
 import TransactionController from '../controllers/TransactionController.js';
 import { validate } from '../validations/middlewares/validator.js';
 import {
-    adjustmentSchema,
+  adjustmentSchema,
   stockInSchema,
   stockOutSchema,
+  transferSchema,
 } from '../validations/schema/transactionSchema.js';
 
 const transactionController = new TransactionController();
@@ -22,6 +23,11 @@ router.post(
   validate(stockOutSchema),
   transactionController.createStockOut
 );
-router.post('/adjustment', validate(adjustmentSchema), transactionController.createAdjustment)
+router.post(
+  '/adjustment',
+  validate(adjustmentSchema),
+  transactionController.createAdjustment
+);
+router.post('/transfer', validate(transferSchema), transactionController.createTransfer);
 
 export default router;
