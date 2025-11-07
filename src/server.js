@@ -4,6 +4,7 @@ import config from './config/config.js';
 import connectDatabase from './config/dbConfig.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
+import quantityRoutes from './routes/quantityRoutes.js';
 import errorHandler from './error/errorHandler.js';
 import adminRoutes from './routes/adminRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
@@ -26,6 +27,7 @@ connectDatabase();
 app.use('/user/auth', authRoutes);
 app.use('/user/admin/', adminRoutes);
 app.use('/product', productRoutes);
+app.use('/quantity', quantityRoutes);
 app.use('/transaction', transactionRoutes);
 app.use('/profile', profileRoutes);
 
