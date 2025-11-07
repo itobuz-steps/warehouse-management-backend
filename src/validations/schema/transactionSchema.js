@@ -1,6 +1,6 @@
 import * as yup from 'yup';
 
-export const stockInSchema = yup.object().shape({
+export const stockInSchema = yup.object({
   products: yup
     .array()
     .of(
@@ -26,7 +26,7 @@ export const stockInSchema = yup.object().shape({
   notes: yup.string().optional().default(''),
 });
 
-export const stockOutSchema = yup.object().shape({
+export const stockOutSchema = yup.object({
   products: yup
     .array()
     .of(
@@ -58,4 +58,15 @@ export const stockOutSchema = yup.object().shape({
     .trim(),
 
   notes: yup.string().optional().default(''),
+});
+
+export const adjustmentSchema = yup.object({
+  productId: yup.string().trim().required('Product is required'),
+  warehouseId: yup.string().trim().required('Warehouse is required'),
+  quantity: yup
+    .number()
+    .required('Quantity is required')
+    .positive('Quantity must be greater than 0'),
+  reason: yup.string().trim().required('Reason is required'),
+  notes: yup.string().trim().nullable(),
 });

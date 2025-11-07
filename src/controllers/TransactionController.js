@@ -22,9 +22,9 @@ export default class TransactionController {
 
     try {
       const access_token = req.headers.authorization.split(' ')[1];
-      const { products, supplier, notes, destinationWarehouse } = req.body;
-
       const userId = await tokenValidator(access_token);
+
+      const { products, supplier, notes, destinationWarehouse } = req.body;
 
       const transactions = [];
 
@@ -83,8 +83,9 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const bearer_token = req.headers.authorization;
-      const access_token = bearer_token.split(' ')[1];
+      const access_token = req.headers.authorization.split(' ')[1];
+      const userId = await tokenValidator(access_token);
+      
       const {
         products,
         customerName,
@@ -94,8 +95,6 @@ export default class TransactionController {
         notes,
         sourceWarehouse,
       } = req.body;
-
-      const userId = await tokenValidator(access_token);
 
       const transactions = [];
 
@@ -141,6 +140,52 @@ export default class TransactionController {
         success: true,
         message: 'Stock-out transactions created successfully',
         transactions,
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+      next(error);
+    }
+  };
+
+  createAdjustment = async (req, res, next) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const access_token = req.headers.authorization.split(' ')[1];
+      const userId = await tokenValidator(access_token);
+      
+      const { productId, warehouseId, quantity, reason, notes } = req.body;
+
+      let quantityRecord = await Quantity.findOne({
+        warehouseId,
+        productId,
+      });
+
+      quantityRecord.quantity -= quantity;
+      await quantityRecord.save({ session });
+
+      const transaction = new Transaction({
+        type: 'ADJUSTMENT',
+        product: productId,
+        quantity,
+        reason,
+        notes,
+        destinationWarehouse: warehouseId,
+        performedBy: userId._id,
+      });
+
+      const createdTransaction = await transaction.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(201).json({
+        success: true,
+        message: 'Stock adjustment recorded successfully',
+        transaction: createdTransaction,
+        updatedQuantity: quantityRecord,
       });
     } catch (error) {
       await session.abortTransaction();

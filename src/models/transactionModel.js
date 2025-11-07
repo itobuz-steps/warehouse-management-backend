@@ -40,7 +40,6 @@ const transactionModel = new mongoose.Schema(
     // For Adjustments
     reason: {
       type: String,
-      enum: ['Damage', 'Loss', 'Found', 'Correction', 'Other'],
     },
     notes: {
       type: String,
