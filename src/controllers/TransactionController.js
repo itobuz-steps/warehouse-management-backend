@@ -1,7 +1,5 @@
 import Transaction from '../models/transactionModel.js';
 import tokenValidator from '../utils/verifyToken.js';
-import Product from '../models/productModel.js';
-import Warehouse from '../models/warehouseModel.js';
 import Quantity from '../models/quantityModel.js';
 import mongoose from 'mongoose';
 
@@ -23,44 +21,27 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const bearer_token = req.headers.authorization;
-      const access_token = bearer_token.split(' ')[1];
+      const access_token = req.headers.authorization.split(' ')[1];
       const { products, supplier, notes, destinationWarehouse } = req.body;
 
       const userId = await tokenValidator(access_token);
-      // console.log(userId._id.toString());
-
-      const warehouse = await Warehouse.findOne({ name: destinationWarehouse });
-
-      if (!warehouse) {
-        return res
-          .status(400)
-          .json({ message: 'Destination warehouse not found' });
-      }
 
       const transactions = [];
 
       for (const item of products) {
-        const { name, quantity, limit } = item;
-
-        const product = await Product.findOne({ name });
-
-        if (!product) {
-          await session.abortTransaction();
-          return res.status(400).json({ message: `Product ${name} not found` });
-        }
+        const { productId, quantity, limit } = item;
 
         let quantityRecord = await Quantity.findOne({
-          warehouseId: warehouse._id,
-          productId: product._id,
+          warehouseId: destinationWarehouse,
+          productId,
         });
 
         if (quantityRecord) {
           quantityRecord.quantity += quantity;
         } else {
           quantityRecord = new Quantity({
-            warehouseId: warehouse._id,
-            productId: product._id,
+            warehouseId: destinationWarehouse,
+            productId,
             quantity,
             limit,
           });
@@ -70,10 +51,10 @@ export default class TransactionController {
 
         const transaction = new Transaction({
           type: 'IN',
-          product: product._id,
+          product: productId,
           quantity,
           supplier,
-          destinationWarehouse: warehouse._id,
+          destinationWarehouse,
           notes,
           performedBy: userId._id,
         });
@@ -86,6 +67,7 @@ export default class TransactionController {
       session.endSession();
 
       res.status(201).json({
+        success: true,
         message: 'Stock-in transactions created successfully',
         transactions,
       });
@@ -115,40 +97,20 @@ export default class TransactionController {
 
       const userId = await tokenValidator(access_token);
 
-      const warehouse = await Warehouse.findOne({ name: sourceWarehouse });
-      
-      if (!warehouse) {
-        return res.status(400).json({ message: 'Source warehouse not found' });
-      }
-
       const transactions = [];
 
       for (const item of products) {
-        const { name, quantity } = item;
-
-        const product = await Product.findOne({ name });
-        
-        if (!product) {
-          await session.abortTransaction();
-          return res.status(400).json({ message: `Product ${name} not found` });
-        }
+        const { productId, quantity } = item;
 
         const quantityRecord = await Quantity.findOne({
-          warehouseId: warehouse._id,
-          productId: product._id,
+          warehouseId: sourceWarehouse,
+          productId,
         });
-
-        if (!quantityRecord) {
-          await session.abortTransaction();
-          return res.status(400).json({
-            message: `No stock record found for ${name} in ${sourceWarehouse}`,
-          });
-        }
 
         if (quantityRecord.quantity < quantity) {
           await session.abortTransaction();
           return res.status(400).json({
-            message: `Insufficient stock for ${name}. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
+            message: `Insufficient stock. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
           });
         }
 
@@ -157,13 +119,13 @@ export default class TransactionController {
 
         const transaction = new Transaction({
           type: 'OUT',
-          product: product._id,
+          product: productId,
           quantity,
           customerName,
           customerEmail,
           customerPhone,
           customerAddress,
-          sourceWarehouse: warehouse._id,
+          sourceWarehouse,
           notes,
           performedBy: userId._id,
         });
@@ -176,6 +138,7 @@ export default class TransactionController {
       session.endSession();
 
       res.status(201).json({
+        success: true,
         message: 'Stock-out transactions created successfully',
         transactions,
       });

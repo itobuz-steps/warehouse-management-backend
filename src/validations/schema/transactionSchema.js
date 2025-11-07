@@ -5,7 +5,7 @@ export const stockInSchema = yup.object().shape({
     .array()
     .of(
       yup.object().shape({
-        name: yup.string().required('Product name is required'),
+        productId: yup.string().required('Product is required'),
         quantity: yup
           .number()
           .required('Quantity is required')
@@ -31,7 +31,7 @@ export const stockOutSchema = yup.object().shape({
     .array()
     .of(
       yup.object().shape({
-        name: yup.string().required('Product name is required'),
+        productId: yup.string().required('Product is required'),
         quantity: yup
           .number()
           .required('Quantity is required')
