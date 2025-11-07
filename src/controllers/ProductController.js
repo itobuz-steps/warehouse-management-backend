@@ -5,8 +5,11 @@ import Quantity from '../models/quantityModel.js';
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
-      const products = await Product.find({ isArchived: false });
-      res.json(products);
+      const products = await Product.find({ isArchived: false }).populate(
+        'createdBy'
+      );
+
+      res.status(200).json(products);
     } catch (error) {
       next(error);
     }
@@ -87,8 +90,8 @@ export default class ProductController {
 
   addProductQuantity = async (req, res, next) => {
     try {
-      const productId = new mongoose.Types.ObjectId(req.body.productId);
-      const warehouseId = new mongoose.Types.ObjectId(req.body.warehouseId);
+      const productId = req.body.productId;
+      const warehouseId = req.body.warehouseId;
       const { quantity, limit } = req.body;
 
       const quantityObj = {
@@ -97,8 +100,11 @@ export default class ProductController {
         quantity,
         limit,
       };
-      const result = await Quantity.create(quantityObj);
-      console.log(result);
+      let result = await Quantity.create(quantityObj);
+
+      result = await Quantity.findById({ _id: result._id }).populate(
+        'warehouseId productId'
+      );
 
       res.status(200).json({
         message: 'Product Quantity Updated',
@@ -110,4 +116,26 @@ export default class ProductController {
       next(err);
     }
   };
+
+  getProductQuantityAcrossAllWarehouse = async (req, res, next) => {
+    try {
+      const productId = req.params.productId;
+
+      const result = await Quantity.aggregate([
+        { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+        { $group: { _id: productId, quantity: { $sum: '$quantity' } } },
+      ]);
+
+      res.status(200).json(result);
+    } catch (err) {
+      res.status(500);
+      next(err);
+    }
+  };
 }
+
+getProductQuantityAcrossAllWarehouse = async (req, res, next) => {
+  try {
+    const { productId, warehouseId } = req;
+  } catch (err) {}
+};

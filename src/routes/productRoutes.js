@@ -30,6 +30,17 @@ router.post('/product-quantity', productController.addProductQuantity);
 
 router.get('/', productController.getProducts);
 
+// getting total quantity of a product across all warehouse
+router.get(
+  '/product-quantity/:productId',
+  productController.getProductQuantityAcrossAllWarehouse
+);
+
+router.get(
+  '/product-quantity?warehouseId=:warehouseId&productId=:productId',
+  productController.getProductQuantityAcrossAllWarehouse
+);
+
 router.patch(
   '/:id',
   productValidation.updateProductValidation,
