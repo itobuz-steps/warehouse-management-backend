@@ -1,9 +1,11 @@
+import mongoose from 'mongoose';
 import Product from '../models/productModel.js';
+import Quantity from '../models/quantityModel.js';
 
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
-      const products = await Product.find();
+      const products = await Product.find({ isArchived: false });
       res.json(products);
     } catch (error) {
       next(error);
@@ -34,31 +36,33 @@ export default class ProductController {
 
   createProduct = async (req, res, next) => {
     try {
-      const productData = JSON.parse(req.body.data);
+      const { name, category, description, price } = req.body;
 
-      const newProduct = await Product.create({
-        ...productData,
+      const createdBy = new mongoose.Types.ObjectId(req.body.createdBy);
+
+      const product = await Product.create({
+        name,
+        category,
+        description,
+        price,
+        productImage: req.files.map((f) => f.path),
+        createdBy,
       });
 
-      const productImages = req.files
-        ? req.files.map((file) => file.filename)
-        : [];
-
-      if (productImages.length > 0) {
-        newProduct.productImage = productImages;
-      }
-
-      await newProduct.save();
-
-      res.status(201).json(newProduct);
-    } catch (error) {
-      next(error);
+      res.status(201).json({
+        message: 'Product Successfully Saved',
+        success: true,
+        product,
+      });
+    } catch (err) {
+      res.status(400);
+      next(err);
     }
   };
 
   deleteProduct = async (req, res, next) => {
     try {
-      const { id } = req.params;
+      const id = req.params;
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
         { isArchived: true },
@@ -71,12 +75,38 @@ export default class ProductController {
         throw new Error('Product not found');
       }
 
-      res.json({
+      res.status(200).json({
         success: true,
         message: 'Product archived successfully',
         product: updatedProduct,
       });
     } catch (err) {
+      next(err);
+    }
+  };
+
+  addProductQuantity = async (req, res, next) => {
+    try {
+      const productId = new mongoose.Types.ObjectId(req.body.productId);
+      const warehouseId = new mongoose.Types.ObjectId(req.body.warehouseId);
+      const { quantity, limit } = req.body;
+
+      const quantityObj = {
+        productId,
+        warehouseId,
+        quantity,
+        limit,
+      };
+      const result = await Quantity.create(quantityObj);
+      console.log(result);
+
+      res.status(200).json({
+        message: 'Product Quantity Updated',
+        success: true,
+        result,
+      });
+    } catch (err) {
+      res.status(500);
       next(err);
     }
   };

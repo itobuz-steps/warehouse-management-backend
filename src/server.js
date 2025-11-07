@@ -6,7 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import errorHandler from './error/errorHandler.js';
 import adminRoutes from './routes/adminRoutes.js';
-import profileRoutes from './routes/profileRoutes.js'
+import profileRoutes from './routes/profileRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 
@@ -14,6 +14,8 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.use(loggerMiddleware);
 app.use('/uploads', express.static('uploads'));
 
@@ -24,7 +26,7 @@ connectDatabase();
 app.use('/user/auth', authRoutes);
 app.use('/user/admin/', adminRoutes);
 app.use('/product', productRoutes);
-app.use('/transaction', transactionRoutes); 
+app.use('/transaction', transactionRoutes);
 app.use('/profile', profileRoutes);
 
 app.use(errorHandler);

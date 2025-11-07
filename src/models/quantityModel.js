@@ -15,10 +15,12 @@ const quantityModel = new mongoose.Schema(
     quantity: {
       type: Number,
       required: true,
+      default: 0,
     },
     limit: {
       type: Number,
       required: true,
+      default: 100,
     },
   },
   {

@@ -7,14 +7,21 @@ const productModel = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    sku: {
+    category: {
       type: String,
       required: true,
-      unique: true,
-    },
-    category: {
-      type: [String],
-      required: true,
+      enum: [
+        'Electronics',
+        'Furniture',
+        'Clothing',
+        'Food & Beverage',
+        'Medical Supplies',
+        'Industrial Tools',
+        'Automotive Parts',
+        'Office Supplies',
+        'Accessories',
+        'Others',
+      ],
     },
     description: {
       type: String,
@@ -27,17 +34,10 @@ const productModel = new mongoose.Schema(
       required: true,
       min: 0,
     },
-    warehouseIds: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: 'Warehouse',
-      required: true,
-    },
-
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
-
     isArchived: {
       type: Boolean,
       default: false,
