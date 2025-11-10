@@ -35,7 +35,9 @@ export default class ProductController {
       }
 
       if (req.files && req.files.length > 0) {
-        updates.productImage = req.files.map((f) => f.path);
+        updates.productImage = req.files.map(
+          (file) => `${req.protocol}://${req.get('host')}/${file.path}`
+        );
       }
 
       const updatedProduct = await Product.findOneAndUpdate(
@@ -69,7 +71,9 @@ export default class ProductController {
         category,
         description,
         price,
-        productImage: req.files.map((f) => f.path),
+        productImage: req.files.map(
+          (file) => `${req.protocol}://${req.get('host')}/${file.path}`
+        ),
         createdBy: new mongoose.Types.ObjectId(`${req.body.createdBy}`),
       });
 
@@ -102,7 +106,7 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product archived successfully',
-        product: updatedProduct,
+        data: updatedProduct,
       });
     } catch (err) {
       res.status(400);
@@ -128,7 +132,7 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product restored successfully',
-        product: updatedProduct,
+        data: updatedProduct,
       });
     } catch (err) {
       res.status(400);
