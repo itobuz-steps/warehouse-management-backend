@@ -3,6 +3,7 @@ import ProductController from '../controllers/ProductController.js';
 import ProductValidation from '../validations/middlewares/ProductValidation.js';
 import multer from 'multer';
 import path from 'path';
+import config from '../config/config.js';
 
 const router = express.Router();
 const productController = new ProductController();
@@ -17,7 +18,10 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage, limits: { fileSize: 0.5 * 1024 * 1024 } });
+const upload = multer({
+  storage,
+  limits: { fileSize: config.UPLOAD_FILE_SIZE },
+});
 
 router.post(
   '/',
@@ -28,8 +32,9 @@ router.post(
 
 router.get('/', productController.getProducts);
 
-router.patch(
+router.put(
   '/:id',
+  upload.array('productImage', 8),
   productValidation.updateProductValidation,
   productController.updateProduct
 );
@@ -38,6 +43,12 @@ router.delete(
   '/:id',
   productValidation.deleteProductValidation,
   productController.deleteProduct
+);
+
+router.patch(
+  '/:id',
+  productValidation.restoreProductValidation,
+  productController.restoreProduct
 );
 
 export default router;

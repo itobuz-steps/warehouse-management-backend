@@ -8,13 +8,13 @@ export default class QuantityController {
       const productId = req.body.productId;
       const warehouseId = req.body.warehouseId;
       const { quantity, limit } = req.body;
-
       const quantityObj = {
         productId,
         warehouseId,
         quantity,
         limit,
       };
+
       let result = await Quantity.create(quantityObj);
 
       result = await Quantity.findById({ _id: result._id }).populate(
