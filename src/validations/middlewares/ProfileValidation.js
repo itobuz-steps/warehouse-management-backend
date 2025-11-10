@@ -1,4 +1,4 @@
-import { updateProfileSchema } from "../schema/profileSchema.js";
+import { updateProfileSchema } from '../schema/profileSchema.js';
 import { ValidationError } from 'yup';
 
 export default class ProfileValidation {

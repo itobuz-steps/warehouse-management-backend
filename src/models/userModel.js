@@ -32,6 +32,10 @@ const userModel = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
     wareHouseIds: {
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'Warehouse',

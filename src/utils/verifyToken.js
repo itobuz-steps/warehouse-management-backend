@@ -6,7 +6,11 @@ export default async function tokenValidator(token) {
   try {
     const tokenData = jwt.verify(token, config.ACCESS_SECRET_KEY);
     const userId = tokenData.id;
-    const isUser = await User.findOne({ _id: userId });
+    
+    const isUser = await User.findOne({
+      $and: [{ _id: userId }, { isDeleted: false }],
+    });
+
     console.log('userdata : ', isUser);
 
     return isUser;

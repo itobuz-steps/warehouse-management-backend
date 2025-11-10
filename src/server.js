@@ -10,6 +10,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
+import verifyToken from './validations/middlewares/verifyToken.js';
 
 const app = express();
 
@@ -29,7 +30,7 @@ app.use('/user/admin/', adminRoutes);
 app.use('/product', productRoutes);
 app.use('/quantity', quantityRoutes);
 app.use('/transaction', transactionRoutes);
-app.use('/profile', profileRoutes);
+app.use('/profile',verifyToken, profileRoutes);
 
 app.use(errorHandler);
 

@@ -36,3 +36,4 @@ export default async function isAdmin(req, res, next) {
     next(error);
   }
 }
+

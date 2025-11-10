@@ -20,6 +20,8 @@ const config = {
 
   REFRESH_SECRET_KEY: process.env.REFRESH_SECRET_KEY,
   REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY,
+
+  UPLOAD_FILE_SIZE: process.env.UPLOAD_FILE_SIZE,
 };
 
 export default config;

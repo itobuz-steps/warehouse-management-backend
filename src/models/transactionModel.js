@@ -33,7 +33,7 @@ const transactionModel = new mongoose.Schema(
     customerAddress: {
       type: String,
     },
-    orderNumber:{
+    orderNumber: {
       type: Number,
     },
     // shipment: {
