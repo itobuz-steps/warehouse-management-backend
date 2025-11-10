@@ -10,8 +10,10 @@ export default class ProfileController {
         throw new Error(`User doesn't Exists`);
       }
  
+      const profile = req.file ? req.file.filename : '';
+
       user.name = req.body.name || '';
-      user.profileImage = req.file ? req.file.filename : '';
+      user.profileImage = `${req.protocol}://${req.get('host')}/uploads/user/${profile}`,
 
       await user.save();
 
@@ -44,10 +46,10 @@ export default class ProfileController {
       res.status(200).json({
         message: 'Data fetched successfully!',
         success: true,
-        data: {
-          user,
-          managerData: managers || [],
-        },
+        
+        user,
+        managerData: managers || [],
+       
       });
 
     } catch (err) {
