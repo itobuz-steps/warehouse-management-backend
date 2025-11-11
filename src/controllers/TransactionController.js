@@ -1,5 +1,4 @@
 import Transaction from '../models/transactionModel.js';
-import tokenValidator from '../utils/verifyToken.js';
 import Quantity from '../models/quantityModel.js';
 import mongoose from 'mongoose';
 
@@ -21,8 +20,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const { products, supplier, notes, destinationWarehouse } = req.body;
 
@@ -83,8 +81,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const {
         products,
@@ -155,8 +152,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization?.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const { products, notes, sourceWarehouse, destinationWarehouse } =
         req.body;
@@ -266,8 +262,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const { productId, warehouseId, quantity, reason, notes } = req.body;
 
