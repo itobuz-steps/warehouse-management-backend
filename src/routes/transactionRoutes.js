@@ -28,6 +28,10 @@ router.post(
   validate(adjustmentSchema),
   transactionController.createAdjustment
 );
-router.post('/transfer', validate(transferSchema), transactionController.createTransfer);
+router.post(
+  '/transfer',
+  validate(transferSchema),
+  transactionController.createTransfer
+);
 
 export default router;

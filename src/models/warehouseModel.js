@@ -8,7 +8,6 @@ const warehouseModel = new mongoose.Schema(
     },
     address: {
       type: String,
-      unique: true,
       required: true,
     },
     description: {

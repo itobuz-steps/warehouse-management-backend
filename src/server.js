@@ -30,7 +30,7 @@ app.use('/user/admin/', verifyToken, adminRoutes);
 app.use('/product', verifyToken, productRoutes);
 app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', transactionRoutes);
-app.use('/profile', profileRoutes);
+app.use('/profile',verifyToken, profileRoutes);
 
 app.use(errorHandler);
 

@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import config from '../config/config.js';
 import ProfileValidation from '../validations/middlewares/ProfileValidation.js';
 import ProfileController from '../controllers/profileController.js';
 
@@ -17,7 +18,14 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage, limits: { fileSize: 0.5 * 1024 * 1024 } });
+const upload = multer({
+  storage,
+  limits: { fileSize: config.UPLOAD_FILE_SIZE },
+});
+
+router.delete('/', profileController.deleteUser);
+
+router.get('/', profileController.getUserDetails);
 
 router.patch(
   '/update-profile',

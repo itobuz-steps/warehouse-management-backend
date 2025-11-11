@@ -23,4 +23,3 @@ export const forgotPasswordSchema = yup.object({
 export const sendOtpSchema = yup.object({
   email: yup.string().required('Email is required'),
 });
-

@@ -109,7 +109,7 @@ export default class AuthController {
       const email = req.body.email;
       const password = req.body.password;
 
-      const user = await User.findOne({ email });
+      const user = await User.findOne({ email, isDeleted: false });
 
       if (!user) {
         res.status(401);
