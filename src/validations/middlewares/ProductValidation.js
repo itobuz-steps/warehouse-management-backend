@@ -8,10 +8,9 @@ import { ValidationError } from 'yup';
 export default class ProductValidation {
   createProductValidation = async (req, res, next) => {
     try {
-      const productData = req.body;
-      console.log(productData);
+      req.body.createdBy = req.userId;
 
-      await createProductSchema.validate(productData, {
+      await createProductSchema.validate(req.body, {
         abortEarly: false, // return all validation errors
         stripUnknown: true, // remove unexpected fields
       });
@@ -46,6 +45,23 @@ export default class ProductValidation {
   };
 
   deleteProductValidation = async (req, res, next) => {
+    try {
+      await deleteProductSchema.validate(req.params, {
+        abortEarly: false,
+        stripUnknown: true,
+      });
+
+      next();
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        res.status(400);
+        return new Error(err.errors.join(', '));
+      }
+      next(err);
+    }
+  };
+
+  restoreProductValidation = async (req, res, next) => {
     try {
       await deleteProductSchema.validate(req.params, {
         abortEarly: false,

@@ -26,9 +26,9 @@ const port = config.PORT;
 connectDatabase();
 
 app.use('/user/auth', authRoutes);
-app.use('/user/admin/', adminRoutes);
-app.use('/product', productRoutes);
-app.use('/quantity', quantityRoutes);
+app.use('/user/admin/', verifyToken, adminRoutes);
+app.use('/product', verifyToken, productRoutes);
+app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', transactionRoutes);
 app.use('/profile',verifyToken, profileRoutes);
 

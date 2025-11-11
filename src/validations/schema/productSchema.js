@@ -47,3 +47,7 @@ export const updateProductSchema = yup.object({
 export const deleteProductSchema = yup.object({
   id: yup.string().required('Product ID is required'),
 });
+
+export const restoreProductSchema = yup.object({
+  id: yup.string().required('Product ID is required'),
+});

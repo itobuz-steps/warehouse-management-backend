@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
 import Product from '../models/productModel.js';
+import mongoose from 'mongoose';
 
 export default class ProductController {
   getProducts = async (req, res, next) => {
@@ -8,16 +8,37 @@ export default class ProductController {
         'createdBy'
       );
 
-      res.status(200).json(products);
+      res
+        .status(200)
+        .json({ message: 'All Products', success: true, data: products });
     } catch (error) {
+      res.status(400);
       next(error);
     }
   };
 
   updateProduct = async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const updates = req.body;
+      const id = req.params.id;
+      // const { name, category, description, price } = req.body;
+      const updates = {};
+
+      // if (name) updates.name = name;
+      // if (category) updates.category = category;
+      // if (description) updates.description = description;
+      // if (price) updates.price = price;
+
+      for (const [key, value] of Object.entries(req.body)) {
+        if (value) {
+          updates[key] = value;
+        }
+      }
+
+      if (req.files && req.files.length > 0) {
+        updates.productImage = req.files.map(
+          (file) => `${req.protocol}://${req.get('host')}/${file.path}`
+        );
+      }
 
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
@@ -27,11 +48,16 @@ export default class ProductController {
 
       if (!updatedProduct) {
         res.status(404);
-        res.json({ success: false });
         throw new Error('Product not found');
       }
-      res.json(updatedProduct);
+
+      res.status(201).json({
+        message: 'Product updated successfully',
+        success: true,
+        data: updatedProduct,
+      });
     } catch (error) {
+      res.status(400);
       next(error);
     }
   };
@@ -40,21 +66,21 @@ export default class ProductController {
     try {
       const { name, category, description, price } = req.body;
 
-      const createdBy = new mongoose.Types.ObjectId(req.body.createdBy);
-
       const product = await Product.create({
         name,
         category,
         description,
         price,
-        productImage: req.files.map((f) => f.path),
-        createdBy,
+        productImage: req.files.map(
+          (file) => `${req.protocol}://${req.get('host')}/${file.path}`
+        ),
+        createdBy: new mongoose.Types.ObjectId(`${req.body.createdBy}`),
       });
 
       res.status(201).json({
         message: 'Product Successfully Saved',
         success: true,
-        product,
+        data: product,
       });
     } catch (err) {
       res.status(400);
@@ -64,7 +90,8 @@ export default class ProductController {
 
   deleteProduct = async (req, res, next) => {
     try {
-      const id = req.params;
+      const id = req.params.id;
+
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
         { isArchived: true },
@@ -73,16 +100,42 @@ export default class ProductController {
 
       if (!updatedProduct) {
         res.status(404);
-        res.json({ success: false });
         throw new Error('Product not found');
       }
 
-      res.status(200).json({
+      res.status(201).json({
         success: true,
         message: 'Product archived successfully',
-        product: updatedProduct,
+        data: updatedProduct,
       });
     } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  restoreProduct = async (req, res, next) => {
+    try {
+      const id = req.params.id;
+
+      const updatedProduct = await Product.findOneAndUpdate(
+        { _id: id },
+        { isArchived: false },
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        res.status(404);
+        throw new Error('Product not found');
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Product restored successfully',
+        data: updatedProduct,
+      });
+    } catch (err) {
+      res.status(400);
       next(err);
     }
   };
