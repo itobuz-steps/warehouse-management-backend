@@ -3,25 +3,23 @@ import User from '../models/userModel.js';
 export default class ProfileController {
   updateProfile = async (req, res, next) => {
     try {
-      const user = await User.findById({_id: req.userId});
+      const user = await User.findById({ _id: req.userId, isDeleted: false });
 
       if (!user) {
         res.status(401);
         throw new Error(`User doesn't Exists`);
       }
- 
+
       const profile = req.file ? req.file.filename : '';
 
       user.name = req.body.name || '';
-      user.profileImage = `${req.protocol}://${req.get('host')}/uploads/user/${profile}`,
-
-      await user.save();
+      ((user.profileImage = `${req.protocol}://${req.get('host')}/uploads/user/${profile}`),
+        await user.save());
 
       res.status(200).json({
         success: true,
         message: 'User profile updated successfully!',
       });
-
     } catch (err) {
       next(err);
     }
@@ -29,29 +27,34 @@ export default class ProfileController {
 
   getUserDetails = async (req, res, next) => {
     try {
-      const user = await User.findById({_id: req.userId});
+      const user = await User.findOne({ _id: req.userId, isDeleted: false });
 
       if (!user) {
         res.status(401);
         throw new Error(`User doesn't Exists`);
       }
 
-      let managers = [];
+      let verifiedManagers = [];
+      let unverifiedManagers = [];
 
       if (user.role === 'admin') {
-        managers = await User.find({ role: 'manager' });
-        console.log(managers);
+        verifiedManagers = await User.find({
+          role: 'manager',
+          isVerified: true,
+          isDeleted: false,
+        });
+        unverifiedManagers = await User.find({
+          role: 'manager',
+          isVerified: false,
+          isDeleted: false,
+        });
       }
 
       res.status(200).json({
         message: 'Data fetched successfully!',
         success: true,
-        
-        user,
-        managerData: managers || [],
-       
+        data: { user, verifiedManagers, unverifiedManagers },
       });
-
     } catch (err) {
       next(err);
     }
@@ -59,8 +62,8 @@ export default class ProfileController {
 
   deleteUser = async (req, res, next) => {
     try {
-      const user = await User.findById({_id: req.userId});
-    
+      const user = await User.findById({ _id: req.userId, isDeleted: false });
+
       if (!user) {
         res.status(404);
         throw new Error(`User doesn't Exists`);
@@ -79,7 +82,6 @@ export default class ProfileController {
         message: 'User deleted Successfully!',
         success: true,
       });
-
     } catch (err) {
       next(err);
     }
