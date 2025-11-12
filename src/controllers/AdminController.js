@@ -7,7 +7,7 @@ export default class AdminController {
     try {
       let { name, address, description, managers: managerIds } = req.body;
 
-      managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(id));
+      managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(`${id}`));
 
       // Create the warehouse document
       const newWarehouse = new Warehouse({
@@ -50,7 +50,7 @@ export default class AdminController {
       res.status(200).json({
         success: true,
         message: 'Warehouse successfully Updated',
-        warehouse: updatedWarehouse,
+        data: updatedWarehouse,
       });
     } catch (err) {
       next(err);
@@ -64,7 +64,6 @@ export default class AdminController {
 
       if (!warehouse.active) {
         res.status(400);
-
         throw new Error('Warehouse Already Deleted');
       }
 
@@ -81,14 +80,13 @@ export default class AdminController {
 
       if (!updatedWarehouse) {
         res.status(404);
-
         throw new Error('No warehouse found');
       }
 
       res.status(200).json({
         success: true,
         message: 'Warehouse successfully Removed',
-        warehouse: updatedWarehouse,
+        data: updatedWarehouse,
       });
     } catch (err) {
       next(err);
@@ -98,11 +96,11 @@ export default class AdminController {
   restoreWarehouse = async (req, res, next) => {
     try {
       const warehouseId = req.params.warehouseId;
+
       const warehouse = await Warehouse.findOne({ warehouseId });
 
       if (warehouse.active) {
         res.status(400);
-
         throw new Error('Warehouse Already Active');
       }
 
@@ -119,14 +117,13 @@ export default class AdminController {
 
       if (!updatedWarehouse) {
         res.status(404);
-
         throw new Error('No warehouse found');
       }
 
       res.status(200).json({
         success: true,
         message: 'Warehouse successfully Restored',
-        warehouse: updatedWarehouse,
+        data: updatedWarehouse,
       });
     } catch (err) {
       next(err);
@@ -141,7 +138,7 @@ export default class AdminController {
       res.status(200).json({
         message: 'All Managers',
         success: true,
-        managers,
+        data: managers,
       });
     } catch (err) {
       next(err);
@@ -150,12 +147,12 @@ export default class AdminController {
 
   getWarehouses = async (req, res, next) => {
     try {
-      const managers = await Warehouse.find({ active: true });
+      const warehouses = await Warehouse.find().populate('managerIds');
 
       res.status(200).json({
-        message: 'All Managers',
+        message: 'All Warehouses',
         success: true,
-        managers,
+        data: warehouses,
       });
     } catch (err) {
       next(err);
