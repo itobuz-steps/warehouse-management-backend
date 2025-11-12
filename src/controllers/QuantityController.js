@@ -24,10 +24,9 @@ export default class QuantityController {
       res.status(200).json({
         message: 'Product Quantity Updated',
         success: true,
-        result,
+        data: result,
       });
     } catch (err) {
-      res.status(500);
       next(err);
     }
   };
@@ -38,7 +37,7 @@ export default class QuantityController {
       const productId = req.params.productId;
 
       const result = await Quantity.aggregate([
-        { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+        { $match: { productId: new mongoose.Types.ObjectId(`${productId}`) } },
         {
           $group: {
             _id: productId,
@@ -47,9 +46,12 @@ export default class QuantityController {
         },
       ]);
 
-      res.status(200).json(result);
+      res.status(200).json({
+        message: 'All Product Total Quantity',
+        success: true,
+        data: result,
+      });
     } catch (err) {
-      res.status(500);
       next(err);
     }
   };
@@ -58,13 +60,16 @@ export default class QuantityController {
   getProductQuantityAcrossSpecificWarehouse = async (req, res, next) => {
     try {
       const { productId, warehouseId } = req.query;
-      console.log(productId, warehouseId);
 
       const result = await Quantity.find({ productId, warehouseId }).populate(
         'productId warehouseId'
       );
 
-      res.status(200).json(result);
+      res.status(200).json({
+        message: 'Warehouse Specific Product Quantity',
+        success: true,
+        data: result,
+      });
     } catch (err) {
       next(err);
     }
@@ -76,7 +81,11 @@ export default class QuantityController {
       const warehouseId = req.params.warehouseId;
 
       const result = await Quantity.aggregate([
-        { $match: { warehouseId: new mongoose.Types.ObjectId(warehouseId) } },
+        {
+          $match: {
+            warehouseId: new mongoose.Types.ObjectId(`${warehouseId}`),
+          },
+        },
         {
           $lookup: {
             from: 'products', // collection name in MongoDB
@@ -88,8 +97,11 @@ export default class QuantityController {
         { $unwind: '$product' }, // converts array → object
       ]);
 
-      console.log(result);
-      res.status(200).json(result);
+      res.status(200).json({
+        message: 'Specific Warehouse all products',
+        success: true,
+        data: result,
+      });
     } catch (err) {
       res.status(500);
       next(err);
@@ -101,11 +113,13 @@ export default class QuantityController {
     try {
       const productId = req.params.productId;
 
-      console.log(productId);
-
       const result = await Quantity.find({ productId }).populate('warehouseId');
-      console.log(result);
-      res.status(200).json(result);
+
+      res.status(200).json({
+        message: 'Warehouse where that specific Product is stored',
+        success: true,
+        data: result,
+      });
     } catch (err) {
       res.status(500);
       next(err);
