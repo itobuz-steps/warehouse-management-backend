@@ -1,16 +1,16 @@
 import express from 'express';
 import AdminController from '../controllers/AdminController.js';
 import isAdmin from '../validations/middlewares/checkAdmin.js';
-import WarehouseValidator from '../validations/middlewares/WarehouseValidator.js';
+import { validate } from '../validations/middlewares/validator.js';
+import { warehouseSchema } from '../validations/schema/warehouseSchema.js';
 
 const router = express.Router();
 const adminController = new AdminController();
-const warehouseValidator = new WarehouseValidator();
 
 router.post(
   '/add-warehouse',
   isAdmin,
-  warehouseValidator.warehouseValidation,
+  validate(warehouseSchema),
   adminController.addWarehouse
 ); // send name , location, description(optional), managerIds[]
 

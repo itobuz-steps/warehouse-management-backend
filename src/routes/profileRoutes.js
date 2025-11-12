@@ -2,12 +2,12 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import config from '../config/config.js';
-import ProfileValidation from '../validations/middlewares/ProfileValidation.js';
 import ProfileController from '../controllers/profileController.js';
+import { validate } from '../validations/middlewares/validator.js';
+import { updateProfileSchema } from '../validations/schema/profileSchema.js';
 
 const router = express.Router();
 const profileController = new ProfileController();
-const profileValidation = new ProfileValidation();
 
 const storage = multer.diskStorage({
   destination: 'uploads/user',
@@ -30,7 +30,7 @@ router.get('/', profileController.getUserDetails);
 router.patch(
   '/update-profile',
   upload.single('profile-img'),
-  profileValidation.updateProfileValidation,
+  validate(updateProfileSchema),
   profileController.updateProfile
 );
 

@@ -1,6 +1,8 @@
 import express from 'express';
 import AuthController from '../controllers/AuthController.js';
 import AuthValidation from '../validations/middlewares/AuthValidations.js';
+import { validate } from '../validations/middlewares/validator.js';
+import { forgotPasswordSchema, loginSchema, sendOtpSchema } from '../validations/schema/authSchema.js';
 
 const router = express.Router();
 const authController = new AuthController();
@@ -10,19 +12,19 @@ router.post('/signup', authValidation.signupValidation, authController.signup); 
 router.post('/signup/:token', authController.verify);
 router.post('/signup/set-password/:token', authController.setPassword); // send name and password
 
-router.post('/login', authValidation.loginValidation, authController.login); // email and password
+router.post('/login', validate(loginSchema), authController.login); // email and password
 
 router.post('/refresh', authController.refresh);
 
 router.post(
   '/send-otp/',
-  authValidation.sendOtpValidation,
+  validate(sendOtpSchema),
   authController.sendOtp
 );
 
 router.post(
   '/forgot-password/:email',
-  authValidation.forgotPasswordValidation,
+  validate(forgotPasswordSchema),
   authController.forgotPassword
 );
 
