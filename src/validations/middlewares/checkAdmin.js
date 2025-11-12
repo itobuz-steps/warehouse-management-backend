@@ -10,6 +10,7 @@ export default async function isAdmin(req, res, next) {
     }
 
     const parts = bearer_token.split(' ');
+    
     if (parts.length !== 2) {
       res.status(401);
       throw new Error('Invalid authorization header format');
