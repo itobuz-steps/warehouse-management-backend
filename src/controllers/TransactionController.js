@@ -24,10 +24,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const userId = req.userId;
-
       const { products, supplier, notes, destinationWarehouse } = req.body;
-
       const transactions = [];
 
       for (const item of products) {
@@ -58,7 +55,7 @@ export default class TransactionController {
           supplier,
           destinationWarehouse,
           notes,
-          performedBy: userId._id,
+          performedBy: req.userId,
         });
 
         const createdTransaction = await transaction.save({ session });
@@ -66,6 +63,7 @@ export default class TransactionController {
       }
 
       await session.commitTransaction();
+
       session.endSession();
 
       res.status(201).json({
@@ -85,8 +83,6 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const userId = req.userId;
-
       const {
         products,
         customerName,
@@ -129,7 +125,7 @@ export default class TransactionController {
           sourceWarehouse,
           orderNumber,
           notes,
-          performedBy: userId._id,
+          performedBy: req.userId,
         });
 
         const createdTransaction = await transaction.save({ session });
@@ -156,8 +152,6 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const userId = req.userId;
-
       const { products, notes, sourceWarehouse, destinationWarehouse } =
         req.body;
 
@@ -216,32 +210,19 @@ export default class TransactionController {
           destQuantity,
         });
 
-        const outTransaction = new Transaction({
-          type: 'OUT',
+        const transaction = new Transaction({
+          type: 'TRANSFER',
           product: productId,
           quantity,
           notes,
           sourceWarehouse,
           destinationWarehouse,
-          performedBy: userId._id,
+          performedBy: req.userId,
         });
 
-        const inTransaction = new Transaction({
-          type: 'IN',
-          product: productId,
-          quantity,
-          notes,
-          sourceWarehouse,
-          destinationWarehouse,
-          performedBy: userId._id,
-        });
+        const transferTransaction = await transaction.save({ session });
 
-        const [createdOut, createdIn] = await Promise.all([
-          outTransaction.save({ session }),
-          inTransaction.save({ session }),
-        ]);
-
-        transactions.push(createdOut, createdIn);
+        transactions.push(transferTransaction);
       }
 
       await session.commitTransaction();
@@ -265,8 +246,6 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const userId = req.userId;
-
       const { productId, warehouseId, quantity, reason, notes } = req.body;
 
       let quantityRecord = await Quantity.findOne({
@@ -284,7 +263,7 @@ export default class TransactionController {
         reason,
         notes,
         destinationWarehouse: warehouseId,
-        performedBy: userId._id,
+        performedBy: req.userId,
       });
 
       const createdTransaction = await transaction.save({ session });
