@@ -103,7 +103,6 @@ export default class QuantityController {
         data: result,
       });
     } catch (err) {
-      res.status(500);
       next(err);
     }
   };
@@ -121,7 +120,6 @@ export default class QuantityController {
         data: result,
       });
     } catch (err) {
-      res.status(500);
       next(err);
     }
   };
