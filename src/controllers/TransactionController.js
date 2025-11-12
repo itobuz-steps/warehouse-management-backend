@@ -1,5 +1,4 @@
 import Transaction from '../models/transactionModel.js';
-import tokenValidator from '../utils/verifyToken.js';
 import Quantity from '../models/quantityModel.js';
 import mongoose from 'mongoose';
 
@@ -10,7 +9,11 @@ export default class TransactionController {
         'product performedBy sourceWarehouse destinationWarehouse'
       );
 
-      res.json(transactions);
+      res.status(201).json({
+        message: 'All Transactions',
+        success: true,
+        data: transactions,
+      });
     } catch (error) {
       next(error);
     }
@@ -21,8 +24,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const { products, supplier, notes, destinationWarehouse } = req.body;
 
@@ -69,7 +71,7 @@ export default class TransactionController {
       res.status(201).json({
         success: true,
         message: 'Stock-in transactions created successfully',
-        transactions,
+        data: transactions,
       });
     } catch (error) {
       await session.abortTransaction();
@@ -83,8 +85,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const {
         products,
@@ -141,7 +142,7 @@ export default class TransactionController {
       res.status(201).json({
         success: true,
         message: 'Stock-out transactions created successfully',
-        transactions,
+        data: transactions,
       });
     } catch (error) {
       await session.abortTransaction();
@@ -155,8 +156,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization?.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const { products, notes, sourceWarehouse, destinationWarehouse } =
         req.body;
@@ -250,8 +250,7 @@ export default class TransactionController {
       res.status(201).json({
         success: true,
         message: 'Stock transfer completed successfully',
-        transactions,
-        updatedQuantities,
+        data: { transactions, updatedQuantities },
       });
     } catch (error) {
       await session.abortTransaction();
@@ -266,8 +265,7 @@ export default class TransactionController {
     session.startTransaction();
 
     try {
-      const access_token = req.headers.authorization.split(' ')[1];
-      const userId = await tokenValidator(access_token);
+      const userId = req.userId;
 
       const { productId, warehouseId, quantity, reason, notes } = req.body;
 
@@ -297,8 +295,10 @@ export default class TransactionController {
       res.status(201).json({
         success: true,
         message: 'Stock adjustment recorded successfully',
-        transaction: createdTransaction,
-        updatedQuantity: quantityRecord,
+        data: {
+          transaction: createdTransaction,
+          updatedQuantity: quantityRecord,
+        },
       });
     } catch (error) {
       await session.abortTransaction();
