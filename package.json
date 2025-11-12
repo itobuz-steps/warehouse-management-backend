@@ -30,6 +30,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.10",
     "otp-generator": "^4.0.1",
+    "pdf-lib": "^1.17.1",
     "yup": "^1.7.1"
   },
   "devDependencies": {
