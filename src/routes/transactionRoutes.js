@@ -13,6 +13,11 @@ const transactionController = new TransactionController();
 const router = express.Router();
 
 router.get('/', transactionController.getTransactions);
+router.get(
+  '/warehouse-specific-transaction/:warehouseId',
+  transactionController.getWarehouseSpecificTransactions
+);
+
 router.post(
   '/stock-in',
   validate(stockInSchema),

@@ -19,6 +19,83 @@ export default class TransactionController {
     }
   };
 
+  getWarehouseSpecificTransactions = async (req, res, next) => {
+    try {
+      const { warehouseId } = req.params;
+      const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
+
+      const result = await Transaction.aggregate([
+        {
+          $match: {
+            $or: [
+              { sourceWarehouse: warehouseObjectId },
+              { destinationWarehouse: warehouseObjectId },
+            ],
+          },
+        },
+        // Join with products collection
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        // Join with users (performedBy)
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'performedBy',
+            foreignField: '_id',
+            as: 'performedBy',
+          },
+        },
+        { $unwind: { path: '$performedBy', preserveNullAndEmptyArrays: true } },
+        // Join with warehouses
+        {
+          $lookup: {
+            from: 'warehouses',
+            localField: 'sourceWarehouse',
+            foreignField: '_id',
+            as: 'sourceWarehouse',
+          },
+        },
+        {
+          $unwind: {
+            path: '$sourceWarehouse',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $lookup: {
+            from: 'warehouses',
+            localField: 'destinationWarehouse',
+            foreignField: '_id',
+            as: 'destinationWarehouse',
+          },
+        },
+        {
+          $unwind: {
+            path: '$destinationWarehouse',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        // Sort newest first
+        { $sort: { createdAt: -1 } },
+      ]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Warehouse-specific transactions fetched successfully',
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   createStockIn = async (req, res, next) => {
     const session = await mongoose.startSession();
     session.startTransaction();
