@@ -2,7 +2,7 @@ import { ValidationError } from 'yup';
 
 export const validate = (schema) => async (req, res, next) => {
   try {
-    req.body = await schema.validate(req.body, {
+    await schema.validate(req.body, {
       abortEarly: false, // return all validation errors
       stripUnknown: true, // remove unexpected fields
     });

@@ -1,28 +1,12 @@
-import tokenValidator from '../../utils/verifyToken.js';
+import User from '../../models/userModel.js';
 
 export default async function isAdmin(req, res, next) {
   try {
-    const bearer_token = req.headers.authorization;
+    const userId = req.userId;
 
-    if (!bearer_token) {
-      res.status(401);
-      throw new Error('Authorization header missing');
-    }
-
-    const parts = bearer_token.split(' ');
-    
-    if (parts.length !== 2) {
-      res.status(401);
-      throw new Error('Invalid authorization header format');
-    }
-
-    const access_token = parts[1];
-    const user = await tokenValidator(access_token);
-
-    if (!user || user instanceof Error) {
-      res.status(401);
-      throw new Error('Invalid or expired token');
-    }
+    const user = await User.findOne({
+      $and: [{ _id: userId }, { isDeleted: false }],
+    });
 
     if (user.role !== 'admin') {
       res.status(403); // Forbidden
@@ -37,4 +21,3 @@ export default async function isAdmin(req, res, next) {
     next(error);
   }
 }
-
