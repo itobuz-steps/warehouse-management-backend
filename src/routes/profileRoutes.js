@@ -26,6 +26,7 @@ const upload = multer({
 router.delete('/', profileController.deleteUser);
 
 router.get('/', profileController.getUserDetails);
+router.get('/me', profileController.getCurrentUser);
 
 router.patch(
   '/update-profile',

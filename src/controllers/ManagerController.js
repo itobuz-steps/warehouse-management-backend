@@ -2,7 +2,7 @@ import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
 
 export default class ManagerController {
-  getWarehousesByManager = async (req, res) => {
+  getWarehousesByManager = async (req, res, next) => {
     try {
       const { managerId } = req.params;
 
@@ -27,17 +27,19 @@ export default class ManagerController {
         select: 'name email role',
       });
 
-      res.status(200).json({
-        manager: {
-          id: manager._id,
-          name: manager.name,
-          email: manager.email,
+      return res.status(200).json({
+        success: true,
+        data: {
+          manager: {
+            id: manager._id,
+            name: manager.name,
+            email: manager.email,
+          },
+          assignedWarehouses: warehouses,
         },
-        assignedWarehouses: warehouses,
       });
     } catch (error) {
-      console.error('Error fetching manager warehouses:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+      next(error);
     }
   };
 }
