@@ -7,7 +7,7 @@ import productRoutes from './routes/productRoutes.js';
 import quantityRoutes from './routes/quantityRoutes.js';
 import errorHandler from './error/errorHandler.js';
 import adminRoutes from './routes/adminRoutes.js';
-import managerRoutes from './routes/managerRoutes.js';
+import warehouseRoutes from './routes/warehouseRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
@@ -28,7 +28,7 @@ connectDatabase();
 
 app.use('/user/auth', authRoutes);
 app.use('/user/admin/', verifyToken, adminRoutes);
-app.use('/user/manager', verifyToken, managerRoutes);
+app.use('/warehouse', verifyToken, warehouseRoutes);
 app.use('/product', verifyToken, productRoutes);
 app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', verifyToken, transactionRoutes);
