@@ -10,11 +10,13 @@ export default class ManagerController {
       const manager = await User.findById(managerId);
 
       if (!manager) {
-        return res.status(404).json({ message: 'Manager not found' });
+        res.status(404);
+        throw new Error('Manager not found');
       }
 
       if (manager.role !== 'manager') {
-        return res.status(400).json({ message: 'User is not a manager' });
+        res.status(400);
+        throw new Error('User is not Manager');
       }
 
       // Find warehouses where this manager is assigned
