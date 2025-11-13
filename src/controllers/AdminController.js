@@ -144,18 +144,4 @@ export default class AdminController {
       next(err);
     }
   };
-
-  getWarehouses = async (req, res, next) => {
-    try {
-      const warehouses = await Warehouse.find().populate('managerIds');
-
-      res.status(200).json({
-        message: 'All Warehouses',
-        success: true,
-        data: warehouses,
-      });
-    } catch (err) {
-      next(err);
-    }
-  };
 }
