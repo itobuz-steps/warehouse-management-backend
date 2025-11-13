@@ -9,6 +9,7 @@ import errorHandler from './error/errorHandler.js';
 import adminRoutes from './routes/adminRoutes.js';
 import warehouseRoutes from './routes/warehouseRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js'
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import verifyToken from './validations/middlewares/verifyToken.js';
@@ -33,6 +34,7 @@ app.use('/product', verifyToken, productRoutes);
 app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', verifyToken, transactionRoutes);
 app.use('/profile', verifyToken, profileRoutes);
+app.use('/dashboard/', verifyToken, dashboardRoutes);
 
 app.use(errorHandler);
 

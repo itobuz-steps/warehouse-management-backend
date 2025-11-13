@@ -60,7 +60,7 @@ export default class AdminController {
   removeWarehouse = async (req, res, next) => {
     try {
       const warehouseId = req.params.warehouseId;
-      const warehouse = await Warehouse.findOne({ warehouseId });
+      const warehouse = await Warehouse.findOne({ _id: warehouseId });
 
       if (!warehouse.active) {
         res.status(400);
@@ -86,43 +86,6 @@ export default class AdminController {
       res.status(200).json({
         success: true,
         message: 'Warehouse successfully Removed',
-        data: updatedWarehouse,
-      });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-  restoreWarehouse = async (req, res, next) => {
-    try {
-      const warehouseId = req.params.warehouseId;
-
-      const warehouse = await Warehouse.findOne({ warehouseId });
-
-      if (warehouse.active) {
-        res.status(400);
-        throw new Error('Warehouse Already Active');
-      }
-
-      const updatedWarehouse = await Warehouse.findByIdAndUpdate(
-        warehouseId,
-        {
-          active: true,
-        },
-        {
-          new: true,
-          runValidators: true,
-        }
-      );
-
-      if (!updatedWarehouse) {
-        res.status(404);
-        throw new Error('No warehouse found');
-      }
-
-      res.status(200).json({
-        success: true,
-        message: 'Warehouse successfully Restored',
         data: updatedWarehouse,
       });
     } catch (err) {
