@@ -1,7 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import http from 'http';
 import config from './config/config.js';
 import connectDatabase from './config/dbConfig.js';
+import { initSocket } from './socket.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import quantityRoutes from './routes/quantityRoutes.js';
@@ -25,6 +27,11 @@ app.use('/uploads', express.static('uploads'));
 const port = config.PORT;
 
 connectDatabase();
+
+const server = http.createServer(app);
+
+// Init WebSocket
+initSocket(server);
 
 app.use('/user/auth', authRoutes);
 app.use('/user/admin/', verifyToken, adminRoutes);
