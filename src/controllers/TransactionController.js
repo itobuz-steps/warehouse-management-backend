@@ -1,6 +1,7 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 import mongoose from 'mongoose';
+import generatePdf from '../services/generatePdf.js';
 
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
@@ -360,6 +361,25 @@ export default class TransactionController {
       await session.abortTransaction();
       session.endSession();
       next(error);
+    }
+  };
+
+  generateInvoice = async (req, res, next) => {
+    try {
+      const transactionId = req.params.id;
+
+      const transaction = await Transaction.findById(transactionId).populate(
+        'product performedBy sourceWarehouse'
+      );
+
+      const result = await generatePdf(transaction);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=invoice.pdf');
+
+      res.status(200).send(Buffer.from(result));
+    } catch (err) {
+      next(err);
     }
   };
 }
