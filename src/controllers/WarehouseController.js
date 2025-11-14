@@ -23,14 +23,7 @@ export default class WarehouseController {
 
         return res.status(200).json({
           success: true,
-          data: {
-            manager: {
-              id: user._id,
-              name: user.name,
-              email: user.email,
-            },
-            assignedWarehouses: warehouses,
-          },
+          data: warehouses,
         });
       }
 
