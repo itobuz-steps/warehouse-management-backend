@@ -30,11 +30,21 @@ export default class AdminController {
 
   updateWarehouse = async (req, res, next) => {
     try {
+      let { name, address, description, managers: managerIds } = req.body;
       const warehouseId = req.params.warehouseId;
+
+      console.log(warehouseId);
+
+      managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(`${id}`));
 
       const updatedWarehouse = await Warehouse.findByIdAndUpdate(
         warehouseId,
-        req.body,
+        {
+          name,
+          address,
+          description,
+          managerIds,
+        },
         {
           new: true,
           runValidators: true,
