@@ -1,5 +1,6 @@
 import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
+import Quantity from '../models/quantityModel.js';
 
 export default class ProductController {
   getProducts = async (req, res, next) => {
@@ -14,6 +15,78 @@ export default class ProductController {
     } catch (error) {
       res.status(400);
       next(error);
+    }
+  };
+
+  searchProducts = async (req, res, next) => {
+    try {
+      const { search, category, sort, warehouseId } = req.query;
+
+      const filter = { isArchived: false };
+
+      if (category) {
+        filter.category = category;
+      }
+
+      if (search) {
+        filter.name = { $regex: search, $options: 'i' };
+      }
+
+      if (warehouseId) {
+        const quantities = await Quantity.find({ warehouseId }).select(
+          'productId'
+        );
+        const productIds = quantities.map((q) => q.productId);
+
+        if (productIds.length === 0) {
+          return res.status(200).json({ success: true, data: [] });
+        }
+
+        filter._id = { $in: productIds };
+      }
+
+      let query = Product.find(filter);
+
+      if (sort === 'name_asc') {
+        query = query.sort({ name: 1 });
+      } else if (sort === 'name_desc') {
+        query = query.sort({ name: -1 });
+      } else if (sort === 'category_asc') {
+        query = query.sort({ category: 1 });
+      } else if (sort === 'quantity_asc' || sort === 'quantity_desc') {
+        const sortOrder = sort === 'quantity_asc' ? 1 : -1;
+
+        const aggregation = [
+          { $match: filter },
+          {
+            $lookup: {
+              from: 'quantities',
+              localField: '_id',
+              foreignField: 'productId',
+              as: 'productQuantities',
+            },
+          },
+          {
+            $addFields: {
+              totalQuantity: { $sum: '$productQuantities.quantity' },
+            },
+          },
+          { $sort: { totalQuantity: sortOrder } },
+          {
+            $project: {
+              productQuantities: 0,
+            },
+          },
+        ];
+
+        const products = await Product.aggregate(aggregation);
+        return res.status(200).json({ success: true, data: products });
+      }
+
+      const products = await query;
+      res.status(200).json({ success: true, data: products });
+    } catch (err) {
+      next(err);
     }
   };
 
