@@ -26,12 +26,6 @@ router.post(
   adminController.removeWarehouse
 );
 
-router.post(
-  '/restore-warehouse/:warehouseId',
-  isAdmin,
-  adminController.restoreWarehouse
-);
-
 router.get('/get-managers', isAdmin, adminController.getManagers);
 
 export default router;
