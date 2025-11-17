@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { NOTIFICATION_TYPES } from '../constants/notificationTypes.js';
 
 const notificationSchema = new mongoose.Schema(
   {
@@ -9,7 +10,7 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['LOW_STOCK', 'PENDING_SHIPMENT'],
+      enum: Object.values(NOTIFICATION_TYPES),
       required: true,
     },
     title: String,

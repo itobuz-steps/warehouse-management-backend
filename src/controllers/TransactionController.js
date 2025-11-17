@@ -1,8 +1,10 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
+import Notifications from '../utils/Notifications.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 
+const notifications = new Notifications();
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
@@ -189,6 +191,8 @@ export default class TransactionController {
           });
         }
 
+        const previousQty = quantityRecord.quantity;
+
         quantityRecord.quantity -= quantity;
         await quantityRecord.save({ session });
 
@@ -208,6 +212,15 @@ export default class TransactionController {
 
         const createdTransaction = await transaction.save({ session });
         transactions.push(createdTransaction);
+
+        await notifications.notifyPendingShipment(productId, sourceWarehouse);
+
+        if (
+          quantityRecord.quantity <= quantityRecord.limit &&
+          previousQty > quantityRecord.limit
+        ) {
+          await notifications.notifyLowStock(productId, sourceWarehouse);
+        }
       }
 
       await session.commitTransaction();
@@ -250,9 +263,10 @@ export default class TransactionController {
 
         if (!sourceQuantity) {
           await session.abortTransaction();
-          return res.status(404).json({
-            message: `Product ${productId} not found in source warehouse`,
+          res.status(404).json({
+            success: false,
           });
+          throw new Error(`Product ${productId} not found in source warehouse`);
         }
 
         if (sourceQuantity.quantity < quantity) {
@@ -262,9 +276,13 @@ export default class TransactionController {
           });
         }
 
+        const prevQty = sourceQuantity.quantity;
+
+        // subtract from source
         sourceQuantity.quantity -= quantity;
         await sourceQuantity.save({ session });
 
+        // destination increase
         let destQuantity = await Quantity.findOne({
           warehouseId: destinationWarehouse,
           productId,
@@ -282,12 +300,9 @@ export default class TransactionController {
         destQuantity.quantity += quantity;
         await destQuantity.save({ session });
 
-        updatedQuantities.push({
-          productId,
-          sourceQuantity,
-          destQuantity,
-        });
+        updatedQuantities.push({ productId, sourceQuantity, destQuantity });
 
+        // Create transaction
         const transaction = new Transaction({
           type: 'TRANSFER',
           product: productId,
@@ -298,9 +313,15 @@ export default class TransactionController {
           performedBy: req.userId,
         });
 
-        const transferTransaction = await transaction.save({ session });
+        const newTx = await transaction.save({ session });
+        transactions.push(newTx);
 
-        transactions.push(transferTransaction);
+        if (
+          sourceQuantity.quantity <= sourceQuantity.limit &&
+          prevQty > sourceQuantity.limit
+        ) {
+          await Notifications.notifyLowStock(productId, sourceWarehouse);
+        }
       }
 
       await session.commitTransaction();
@@ -314,7 +335,6 @@ export default class TransactionController {
     } catch (error) {
       await session.abortTransaction();
       session.endSession();
-
       next(error);
     }
   };
@@ -326,11 +346,11 @@ export default class TransactionController {
     try {
       const { productId, warehouseId, quantity, reason, notes } = req.body;
 
-      let quantityRecord = await Quantity.findOne({
-        warehouseId,
-        productId,
-      });
+      let quantityRecord = await Quantity.findOne({ warehouseId, productId });
 
+      const prevQty = quantityRecord.quantity;
+
+      // adjust
       quantityRecord.quantity -= quantity;
       await quantityRecord.save({ session });
 
@@ -348,6 +368,13 @@ export default class TransactionController {
 
       await session.commitTransaction();
       session.endSession();
+
+      if (
+        quantityRecord.quantity <= quantityRecord.limit &&
+        prevQty > quantityRecord.limit
+      ) {
+        await Notifications.notifyLowStock(productId, warehouseId);
+      }
 
       res.status(201).json({
         success: true,
