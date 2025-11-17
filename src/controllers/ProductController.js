@@ -22,67 +22,68 @@ export default class ProductController {
     try {
       const { search, category, sort, warehouseId } = req.query;
 
-      let productIds = [];
-      if (warehouseId) {
-        const quantities = await Quantity.find({ warehouseId });
-        productIds = quantities.map((q) => q.productId);
+      const filter = { isArchived: false };
+
+      if (category) {
+        filter.category = category;
       }
 
-      let productsQuery = Product.find({
-        isArchived: false,
-        ...(productIds.length > 0 && { _id: { $in: productIds } }),
-        ...(category && { category }),
-        ...(search && { name: { $regex: search, $options: 'i' } }),
-      });
+      if (search) {
+        filter.name = { $regex: search, $options: 'i' };
+      }
 
-      // Sort by name or category
-      const sortOption = {};
-      if (sort === 'name_asc') sortOption.name = 1;
-      if (sort === 'name_desc') sortOption.name = -1;
-      if (sort === 'category_asc') sortOption.category = 1;
+      if (warehouseId) {
+        const quantities = await Quantity.find({ warehouseId }).select(
+          'productId'
+        );
+        const productIds = quantities.map((q) => q.productId);
 
-      // Quantity sorting requires aggregation
-      if (sort === 'quantity_asc' || sort === 'quantity_desc') {
-        const pipeline = [
-          ...(warehouseId
-            ? [
-                {
-                  $match: {
-                    warehouseId: new mongoose.Types.ObjectId(warehouseId),
-                  },
-                },
-              ]
-            : []),
+        if (productIds.length === 0) {
+          return res.status(200).json({ success: true, data: [] });
+        }
+
+        filter._id = { $in: productIds };
+      }
+
+      let query = Product.find(filter);
+
+      if (sort === 'name_asc') {
+        query = query.sort({ name: 1 });
+      } else if (sort === 'name_desc') {
+        query = query.sort({ name: -1 });
+      } else if (sort === 'category_asc') {
+        query = query.sort({ category: 1 });
+      } else if (sort === 'quantity_asc' || sort === 'quantity_desc') {
+        const sortOrder = sort === 'quantity_asc' ? 1 : -1;
+
+        const aggregation = [
+          { $match: filter },
           {
             $lookup: {
-              from: 'products',
-              localField: 'productId',
-              foreignField: '_id',
-              as: 'product',
+              from: 'quantities',
+              localField: '_id',
+              foreignField: 'productId',
+              as: 'productQuantities',
             },
           },
-          { $unwind: '$product' },
-          ...(search
-            ? [
-                {
-                  $match: { 'product.name': { $regex: search, $options: 'i' } },
-                },
-              ]
-            : []),
-          ...(category ? [{ $match: { 'product.category': category } }] : []),
-          { $sort: { quantity: sort === 'quantity_asc' ? 1 : -1 } },
+          {
+            $addFields: {
+              totalQuantity: { $sum: '$productQuantities.quantity' },
+            },
+          },
+          { $sort: { totalQuantity: sortOrder } },
+          {
+            $project: {
+              productQuantities: 0,
+            },
+          },
         ];
 
-        const result = await Quantity.aggregate(pipeline);
-        return res.status(200).json({ success: true, data: result });
+        const products = await Product.aggregate(aggregation);
+        return res.status(200).json({ success: true, data: products });
       }
 
-      // Apply sorting if name/category
-      if (Object.keys(sortOption).length > 0) {
-        productsQuery = productsQuery.sort(sortOption);
-      }
-
-      const products = await productsQuery.exec();
+      const products = await query;
       res.status(200).json({ success: true, data: products });
     } catch (err) {
       next(err);
