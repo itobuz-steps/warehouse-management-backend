@@ -61,4 +61,40 @@ export default class SendEmail {
       next(error);
     }
   };
+
+  sendLowStockEmail = async (email, user, product, warehouse, next) => {
+    try {
+      const mailResponse = await this.mailSender(
+        email,
+        'Low Stock Alert',
+        `
+        <h2>Low Stock Alert</h2>
+        <p>Hello ${user.name || ''},</p>
+        <p>The product <b>${product.name}</b> in <b>${warehouse.name}</b> is below the stock limit.</p>
+        <p>Please restock it as soon as possible.</p>
+      `
+      );
+
+      console.log('Low stock email sent:', mailResponse);
+    } catch (error) {
+      next(error);
+    }
+  };
+  sendPendingShipmentEmail = async (email, user, product, warehouse, next) => {
+    try {
+      const mailResponse = await this.mailSender(
+        email,
+        'Pending Shipment Alert',
+        `
+        <h2>Pending Shipment Alert</h2>
+        <p>Hello ${user.name || ''},</p>
+        <p>A shipment for <b>${product.name}</b> in <b>${warehouse.name}</b> is still pending.</p>
+      `
+      );
+
+      console.log('Pending shipment email sent:', mailResponse);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
