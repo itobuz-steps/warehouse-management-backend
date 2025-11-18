@@ -28,6 +28,7 @@ export default class ProfileController {
   getCurrentUser = async (req, res, next) => {
     try {
       const user = await User.findById(req.userId).select('-password');
+      
       if (!user) {
         res.status(404);
         throw new Error('User not found.');
@@ -38,6 +39,7 @@ export default class ProfileController {
         success: true,
         data: { user },
       });
+
     } catch (err) {
       next(err);
     }

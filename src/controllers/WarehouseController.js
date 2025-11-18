@@ -16,7 +16,7 @@ export default class WarehouseController {
 
       if (user.role === 'manager') {
         // Get only warehouses assigned to this manager
-        warehouses = await Warehouse.find({ managerIds: user._id }).populate({
+        warehouses = await Warehouse.find({ managerIds: user._id, active: true }).populate({
           path: 'managerIds',
           select: 'name email role',
         });
@@ -37,7 +37,7 @@ export default class WarehouseController {
 
       if (user.role === 'admin') {
         // Get all warehouses
-        warehouses = await Warehouse.find().populate({
+        warehouses = await Warehouse.find({active: true}).populate({
           path: 'managerIds',
           select: 'name email role',
         });
