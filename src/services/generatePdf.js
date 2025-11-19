@@ -1,19 +1,18 @@
-import { PDFDocument, PageSizes, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PageSizes, rgb } from 'pdf-lib';
 import fs from 'fs/promises';
 import path, { dirname } from 'path';
+import * as fontkit from 'fontkit';
 import { fileURLToPath } from 'url';
 
 const generatePdf = async (transaction) => {
   // Create new PDF document
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage(PageSizes.A4);
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const height = page.getSize().height;
 
   // Get the image file path
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
+
   const imagePath = path.join(
     __dirname,
     '../assets/images/warehouse-logo-removebg-preview.png'
@@ -31,6 +30,26 @@ const generatePdf = async (transaction) => {
   // Draw background logo
   drawImage(page, pngImage, 150, 250, 300, 300, 0.2);
 
+  pdfDoc.registerFontkit(fontkit);
+
+  // ---- LOAD UNICODE FONTS ----
+  const regularFontPath = path.join(
+    __dirname,
+    '../assets/fonts/NotoSans-Regular.ttf'
+  );
+  const boldFontPath = path.join(
+    __dirname,
+    '../assets/fonts/NotoSans-Bold.ttf'
+  );
+
+  const regularFontBytes = await fs.readFile(regularFontPath);
+  const boldFontBytes = await fs.readFile(boldFontPath);
+
+  const font = await pdfDoc.embedFont(regularFontBytes);
+  const boldFont = await pdfDoc.embedFont(boldFontBytes);
+
+  const height = page.getSize().height;
+
   const {
     product,
     customerName,
@@ -40,6 +59,7 @@ const generatePdf = async (transaction) => {
     quantity,
     performedBy,
     createdAt,
+    sourceWarehouse,
     _id,
   } = transaction;
 
@@ -83,7 +103,7 @@ const generatePdf = async (transaction) => {
   writeText(
     page,
     'CUSTOMER DETAILS',
-    200,
+    230,
     cursorY,
     14,
     boldFont,
@@ -121,8 +141,8 @@ const generatePdf = async (transaction) => {
   writeText(page, `Phone: `, 60, cursorY, 12, font);
   writeText(
     page,
-    `${customerPhone}`,
-    100,
+    `+91 ${customerPhone}`,
+    105,
     cursorY,
     12,
     boldFont,
@@ -135,7 +155,7 @@ const generatePdf = async (transaction) => {
   writeText(
     page,
     customerAddress,
-    110,
+    115,
     cursorY,
     12,
     boldFont,
@@ -152,11 +172,11 @@ const generatePdf = async (transaction) => {
   );
 
   // === PRODUCT DETAILS ===
-  cursorY -= lineGap * 3;
+  cursorY -= lineGap * 2;
   writeText(
     page,
     'TRANSACTION DETAILS',
-    200,
+    220,
     cursorY,
     14,
     boldFont,
@@ -179,7 +199,7 @@ const generatePdf = async (transaction) => {
   // Product Unit Price
   cursorY -= lineGap;
   writeText(page, `Unit Price: `, 80, cursorY, 12, font);
-  writeText(page, `$${unitPrice.toFixed(2)}`, 450, cursorY, 12, boldFont);
+  writeText(page, `₹${unitPrice.toFixed(2)}`, 450, cursorY, 12, boldFont);
 
   // Total Quantity
   cursorY -= lineGap;
@@ -202,7 +222,7 @@ const generatePdf = async (transaction) => {
   );
   writeText(
     page,
-    `$${totalPrice.toFixed(2)}`,
+    `₹${totalPrice.toFixed(2)}`,
     450,
     cursorY,
     12,
@@ -213,6 +233,31 @@ const generatePdf = async (transaction) => {
   cursorY -= lineGap * 2;
 
   const formattedDate = new Date(createdAt).toLocaleString();
+
+  // Product supplied from
+  cursorY -= lineGap;
+  writeText(page, `Supplied From: `, 60, cursorY, 12, boldFont);
+  writeText(
+    page,
+    `${sourceWarehouse?.name || 'N/A'}`,
+    160,
+    cursorY,
+    12,
+    font,
+    rgb(0.725, 0.478, 0.529)
+  );
+  // Product supplied from
+  cursorY -= lineGap;
+  writeText(page, `Address: `, 60, cursorY, 12, boldFont);
+  writeText(
+    page,
+    `${sourceWarehouse?.address || 'N/A'}`,
+    120,
+    cursorY,
+    12,
+    font,
+    rgb(0.725, 0.478, 0.529)
+  );
 
   // Manager Name
   cursorY -= lineGap;
@@ -233,7 +278,7 @@ const generatePdf = async (transaction) => {
   writeText(
     page,
     `${performedBy?.email || 'N/A'}`,
-    110,
+    105,
     cursorY,
     12,
     font,
@@ -246,7 +291,7 @@ const generatePdf = async (transaction) => {
   writeText(
     page,
     `${formattedDate}`,
-    110,
+    104,
     cursorY,
     12,
     font,
@@ -267,7 +312,7 @@ const generatePdf = async (transaction) => {
   writeText(
     page,
     'Thank you for your business!',
-    200,
+    210,
     cursorY,
     12,
     font,
