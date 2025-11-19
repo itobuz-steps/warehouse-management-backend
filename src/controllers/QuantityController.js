@@ -39,6 +39,16 @@ export default class QuantityController {
       const result = await Quantity.aggregate([
         { $match: { productId: new mongoose.Types.ObjectId(`${productId}`) } },
         {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        { $match: { 'product.isArchived': false } },
+        {
           $group: {
             _id: productId,
             quantity: { $sum: '$quantity' },
@@ -61,9 +71,12 @@ export default class QuantityController {
     try {
       const { productId, warehouseId } = req.query;
 
-      const result = await Quantity.find({ productId, warehouseId }).populate(
-        'productId warehouseId'
-      );
+      const result = await Quantity.find({ productId, warehouseId })
+        .populate({
+          path: 'productId',
+          match: { isArchived: false },
+        })
+        .populate('warehouseId');
 
       res.status(200).json({
         message: 'Warehouse Specific Product Quantity',
@@ -95,6 +108,7 @@ export default class QuantityController {
           },
         },
         { $unwind: '$product' }, // converts array → object
+        { $match: { 'product.isArchived': false } },
       ]);
 
       res.status(200).json({
@@ -112,7 +126,12 @@ export default class QuantityController {
     try {
       const productId = req.params.productId;
 
-      const result = await Quantity.find({ productId }).populate('warehouseId');
+      const result = await Quantity.find({ productId })
+        .populate({
+          path: 'productId',
+          match: { isArchived: false },
+        })
+        .populate('warehouseId');
 
       res.status(200).json({
         message: 'Warehouse where that specific Product is stored',

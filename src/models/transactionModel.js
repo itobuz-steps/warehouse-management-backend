@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
+import { transactionTypes } from '../config/constants.js';
 
 const transactionModel = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: ['IN', 'OUT', 'ADJUSTMENT', 'TRANSFER'],
+      enum: Object.values(transactionTypes),
       required: true,
     },
     product: {

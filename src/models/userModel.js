@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { userTypes } from '../config/constants.js';
 
 const userModel = new mongoose.Schema(
   {
@@ -16,7 +17,7 @@ const userModel = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['manager', 'admin'],
+      enum: Object.values(userTypes)
     },
     isVerified: {
       type: Boolean,
