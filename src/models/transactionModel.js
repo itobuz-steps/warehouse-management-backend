@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { transactionTypes } from '../config/constants.js';
+import transactionTypes from '../constants/transactionTypes.js';
 
 const transactionModel = new mongoose.Schema(
   {
