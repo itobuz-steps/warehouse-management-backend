@@ -1,10 +1,13 @@
+import mongoose from 'mongoose';
 import Notification from '../models/notificationModel.js';
+import Transaction from '../models/transactionModel.js';
+import shipmentTypes from '../constants/shipmentTypes.js';
 
 export default class NotificationsController {
   getUserNotifications = async (req, res, next) => {
     try {
       const notifications = await Notification.find({ userId: req.userId })
-        .populate('relatedProduct warehouse')
+        .populate('relatedProduct warehouse transactionId')
         .sort({ createdAt: -1 });
 
       res.status(200).json({
@@ -43,6 +46,27 @@ export default class NotificationsController {
       res.status(200).json({
         success: true,
         message: 'All notifications marked as seen',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  changeShipmentStatus = async (req, res, next) => {
+    try {
+      const transaction = await Transaction.findByIdAndUpdate(
+        new mongoose.Types.ObjectId(`${req.params}`),
+        {
+          shipment: shipmentTypes.SHIPPED,
+        }
+      );
+
+      console.log(transaction);
+
+      res.status(201).json({
+        message: 'Status Changed to Shipped Successfully',
+        success: true,
+        data: transaction,
       });
     } catch (error) {
       next(error);

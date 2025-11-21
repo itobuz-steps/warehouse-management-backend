@@ -25,7 +25,7 @@ export default class Notifications {
     }
   };
 
-  notifyPendingShipment = async (productId, warehouseId) => {
+  notifyPendingShipment = async (productId, warehouseId, transactionId) => {
     const product = await Product.findById(productId);
     const warehouse = await Warehouse.findById(warehouseId);
 
@@ -38,9 +38,10 @@ export default class Notifications {
         users,
         type: notificationTypes.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',
-        message: `A shipment for ${product.name} from ${warehouse.name} is pending.`,
+        message: `A shipment for ${product.name} from ${warehouse.name} is pending. TransactionId: ${transactionId}`,
         product,
         warehouse,
+        transactionId,
       });
     }
   };

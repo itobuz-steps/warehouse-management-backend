@@ -18,6 +18,7 @@ const notificationModel = new mongoose.Schema(
     relatedProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
     seen: { type: Boolean, default: false },
+    transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
   },
   { timestamps: true }
 );

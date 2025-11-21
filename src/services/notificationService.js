@@ -12,6 +12,7 @@ export const sendNotificationToUsers = async ({
   message,
   product,
   warehouse,
+  transactionId,
 }) => {
   // 1. Save in DB
   const data = users.map((u) => ({
@@ -21,6 +22,7 @@ export const sendNotificationToUsers = async ({
     message,
     relatedProduct: product?._id,
     warehouse: warehouse?._id,
+    transactionId: transactionId,
   }));
 
   await Notification.insertMany(data);

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import transactionTypes from '../constants/transactionTypes.js';
+import shipmentTypes from '../constants/shipmentTypes.js';
 
 const transactionModel = new mongoose.Schema(
   {
@@ -37,10 +38,12 @@ const transactionModel = new mongoose.Schema(
     orderNumber: {
       type: Number,
     },
-    // shipment: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: 'Shipment',
-    // },
+    shipment: {
+      type: String,
+      enum: Object.values(shipmentTypes),
+      default: shipmentTypes.PENDING,
+    },
+
     // For Adjustments
     reason: {
       type: String,
