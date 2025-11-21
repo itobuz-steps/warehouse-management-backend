@@ -51,6 +51,4 @@ router.patch(
   productController.restoreProduct
 );
 
-router.get('/search', productController.searchProducts);
-
 export default router;
