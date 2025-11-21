@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Notification from '../models/notificationModel.js';
 import Transaction from '../models/transactionModel.js';
-import shipmentTypes from '../constants/shipmentTypes.js';
+import SHIPMENT_TYPES from '../constants/shipmentTypes.js';
 
 export default class NotificationsController {
   getUserNotifications = async (req, res, next) => {
@@ -57,7 +57,7 @@ export default class NotificationsController {
       const transaction = await Transaction.findByIdAndUpdate(
         new mongoose.Types.ObjectId(`${req.params}`),
         {
-          shipment: shipmentTypes.SHIPPED,
+          shipment: SHIPMENT_TYPES.SHIPPED,
         }
       );
 

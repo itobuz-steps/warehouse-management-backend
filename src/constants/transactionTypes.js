@@ -1,8 +1,8 @@
-const transactionTypes = {
+const TRANSACTION_TYPES = {
   IN: 'IN',
   OUT: 'OUT',
   ADJUSTMENT: 'ADJUSTMENT',
   TRANSFER: 'TRANSFER',
 };
 
-export default transactionTypes;
+export default TRANSACTION_TYPES;

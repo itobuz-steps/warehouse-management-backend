@@ -1,4 +1,4 @@
-const categoryTypes = {
+const CATEGORY_TYPES = {
   ELECTRONICS: 'Electronics',
   FURNITURE: 'Furniture',
   CLOTHING: 'Clothing',
@@ -11,4 +11,4 @@ const categoryTypes = {
   OTHERS: 'Others',
 };
 
-export default categoryTypes;
+export default CATEGORY_TYPES;

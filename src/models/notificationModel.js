@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import notificationTypes from '../constants/notificationTypes.js';
+import NOTIFICATION_TYPES from '../constants/notificationTypes.js';
 
 const notificationModel = new mongoose.Schema(
   {
@@ -10,7 +10,7 @@ const notificationModel = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: Object.values(notificationTypes),
+      enum: Object.values(NOTIFICATION_TYPES),
       required: true,
     },
     title: String,

@@ -1,6 +1,6 @@
-const notificationTypes = {
+const NOTIFICATION_TYPES = {
   LOW_STOCK: 'LOW_STOCK',
   PENDING_SHIPMENT: 'PENDING_SHIPMENT',
 };
 
-export default notificationTypes;
+export default NOTIFICATION_TYPES;

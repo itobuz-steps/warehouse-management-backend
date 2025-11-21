@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import transactionTypes from '../constants/transactionTypes.js';
-import shipmentTypes from '../constants/shipmentTypes.js';
+import TRANSACTION_TYPES from '../constants/transactionTypes.js';
+import SHIPMENT_TYPES from '../constants/shipmentTypes.js';
 
 const transactionModel = new mongoose.Schema(
   {
     type: {
       type: String,
-      enum: Object.values(transactionTypes),
+      enum: Object.values(TRANSACTION_TYPES),
       required: true,
     },
     product: {
@@ -40,8 +40,8 @@ const transactionModel = new mongoose.Schema(
     },
     shipment: {
       type: String,
-      enum: Object.values(shipmentTypes),
-      default: shipmentTypes.PENDING,
+      enum: Object.values(SHIPMENT_TYPES),
+      default: SHIPMENT_TYPES.PENDING,
     },
 
     // For Adjustments
