@@ -6,13 +6,12 @@ import { subDays, eachDayOfInterval, format } from 'date-fns';
 export default class DashboardController {
   getTopProducts = async (req, res, next) => {
     try {
-      const selectedWarehouseId = req.params.selectedWarehouse;
-      const objectId = new mongoose.Types.ObjectId(selectedWarehouseId);
+      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
 
       const topProducts = await Quantity.aggregate([
         {
           $match: {
-            warehouseId: objectId,
+            warehouseId: warehouseId,
           },
         },
         {
@@ -52,7 +51,6 @@ export default class DashboardController {
         success: true,
         topProducts,
       });
-      
     } catch (err) {
       res.status(400);
       next(err);
@@ -61,6 +59,8 @@ export default class DashboardController {
 
   getInventoryByCategory = async (req, res, next) => {
     try {
+      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+
       const productsCategory = await Product.aggregate([
         {
           $group: {
@@ -83,6 +83,8 @@ export default class DashboardController {
 
   getProductTransaction = async (req, res, next) => {
     try {
+      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+
       const transactionDetail = await this.getDaysTransaction();
 
       res.status(200).json({
@@ -149,5 +151,120 @@ export default class DashboardController {
     });
 
     return sevenDays;
+  };
+
+  getTransactionStats = async (req, res, next) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+
+      //for sales overview.
+      const sales = await Transaction.aggregate([
+        { $match: { type: 'OUT', sourceWarehouse: warehouseId } },
+
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'productData',
+          },
+        },
+
+        { $unwind: '$productData' },
+
+        {
+          $group: {
+            _id: null,
+            TotalSales: {
+              $sum: {
+                $multiply: ['$quantity', '$productData.price'],
+              },
+            },
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+            totalSales: 1,
+          },
+        },
+      ]);
+
+      //for purchase overview
+      const purchase = await Transaction.aggregate([
+        {
+          $match: {
+            type: 'IN',
+            destinationWarehouse: warehouseId,
+          },
+        },
+
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'productData',
+          },
+        },
+
+        {
+          $unwind: '$productData',
+        },
+
+        {
+          $group: {
+            _id: null,
+            totalPurchase: {
+              $sum: { $multiply: ['$quantity', '$productData.price'] },
+            },
+            purchaseQuantity: { $sum: '$quantity' },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            totalPurchase: 1,
+            purchaseQuantity: 1,
+          },
+        },
+      ]);
+
+      //for inventory summary.
+      const inventory = await Quantity.aggregate([
+        {
+          $match: {
+            warehouseId: warehouseId,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalQuantity: { $sum: '$quantity' },
+          },
+        },
+        { $project: { _id: 0, totalQty: 1 } },
+      ]);
+
+      // const pendingInventoryOut = await Transaction.countDocuments({
+      //   type: 'OUT',
+      //   isUndone: true,
+      // });
+
+      res.status(200).json({
+        message: 'Data fetched successfully',
+        success: true,
+        data: {
+          sales: sales[0],
+          purchase: purchase[0],
+          inventory: inventory[0],
+        },
+      });
+
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
   };
 }
