@@ -1,5 +1,5 @@
 import { sendNotificationToUsers } from '../services/notificationService.js';
-import { NOTIFICATION_TYPES } from '../constants/notificationTypes.js';
+import notificationTypes from '../constants/notificationTypes.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
@@ -16,7 +16,7 @@ export default class Notifications {
     if (users.length > 0) {
       await sendNotificationToUsers({
         users,
-        type: NOTIFICATION_TYPES.LOW_STOCK,
+        type: notificationTypes.LOW_STOCK,
         title: 'Low Stock Alert',
         message: `${product.name} is running low in ${warehouse.name}`,
         product,
@@ -25,7 +25,7 @@ export default class Notifications {
     }
   };
 
-  notifyPendingShipment = async (productId, warehouseId) => {
+  notifyPendingShipment = async (productId, warehouseId, transactionId) => {
     const product = await Product.findById(productId);
     const warehouse = await Warehouse.findById(warehouseId);
 
@@ -36,11 +36,12 @@ export default class Notifications {
     if (users.length > 0) {
       await sendNotificationToUsers({
         users,
-        type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
+        type: notificationTypes.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',
-        message: `A shipment for ${product.name} from ${warehouse.name} is pending.`,
+        message: `A shipment for ${product.name} from ${warehouse.name} is pending. TransactionId: ${transactionId}`,
         product,
         warehouse,
+        transactionId,
       });
     }
   };

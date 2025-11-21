@@ -1,5 +1,5 @@
 import Notification from '../models/notificationModel.js';
-import { NOTIFICATION_TYPES } from '../constants/notificationTypes.js';
+import notificationTypes from '../constants/notificationTypes.js';
 import { io } from '../socket.js';
 import SendEmail from '../utils/SendEmail.js';
 
@@ -12,6 +12,7 @@ export const sendNotificationToUsers = async ({
   message,
   product,
   warehouse,
+  transactionId,
 }) => {
   // 1. Save in DB
   const data = users.map((u) => ({
@@ -21,6 +22,7 @@ export const sendNotificationToUsers = async ({
     message,
     relatedProduct: product?._id,
     warehouse: warehouse?._id,
+    transactionId: transactionId,
   }));
 
   await Notification.insertMany(data);
@@ -37,7 +39,7 @@ export const sendNotificationToUsers = async ({
   // 3. Email sending
 
   for (let user of users) {
-    if (type === NOTIFICATION_TYPES.LOW_STOCK) {
+    if (type === notificationTypes.LOW_STOCK) {
       await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
     } else {
       await sendMail.sendPendingShipmentEmail(
