@@ -55,7 +55,7 @@ export default class NotificationsController {
   changeShipmentStatus = async (req, res, next) => {
     try {
       const transaction = await Transaction.findByIdAndUpdate(
-        new mongoose.Types.ObjectId(`${req.params}`),
+        new mongoose.Types.ObjectId(`${req.params.id}`),
         {
           shipment: SHIPMENT_TYPES.SHIPPED,
         }
