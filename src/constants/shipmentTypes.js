@@ -1,6 +1,6 @@
-const shipmentTypes = {
+const SHIPMENT_TYPES = {
   PENDING: 'PENDING',
   SHIPPED: 'SHIPPED',
 };
 
-export default shipmentTypes;
+export default SHIPMENT_TYPES;

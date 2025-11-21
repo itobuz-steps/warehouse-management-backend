@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import userTypes from '../constants/userTypes.js';
+import USER_TYPES from '../constants/userTypes.js';
 
 const userModel = new mongoose.Schema(
   {
@@ -17,7 +17,7 @@ const userModel = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: Object.values(userTypes),
+      enum: Object.values(USER_TYPES),
     },
     isVerified: {
       type: Boolean,

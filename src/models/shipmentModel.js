@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import shipmentTypes from '../constants/shipmentTypes';
+import SHIPMENT_TYPES from '../constants/shipmentTypes';
 
 const shipmentModel = new mongoose.Schema(
   {
@@ -10,8 +10,8 @@ const shipmentModel = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: Object.values(shipmentTypes),
-      default: shipmentTypes.PENDING,
+      enum: Object.values(SHIPMENT_TYPES),
+      default: SHIPMENT_TYPES.PENDING,
     },
     notificationId: {
       type: mongoose.Schema.Types.ObjectId,

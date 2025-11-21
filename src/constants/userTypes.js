@@ -1,6 +1,6 @@
-const userTypes = {
+const USER_TYPES = {
   MANAGER: 'manager',
   ADMIN: 'admin',
 };
 
-export default userTypes;
+export default USER_TYPES;

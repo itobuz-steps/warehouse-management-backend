@@ -1,5 +1,5 @@
 import Notification from '../models/notificationModel.js';
-import notificationTypes from '../constants/notificationTypes.js';
+import NOTIFICATION_TYPES from '../constants/notificationTypes.js';
 import { io } from '../socket.js';
 import SendEmail from '../utils/SendEmail.js';
 
@@ -14,7 +14,6 @@ export const sendNotificationToUsers = async ({
   warehouse,
   transactionId,
 }) => {
-
   // 1. Save in DB
   const data = users.map((u) => ({
     userId: u._id,
@@ -42,7 +41,7 @@ export const sendNotificationToUsers = async ({
   // 3. Email sending
   console.log('Starting email sending...');
   for (let user of users) {
-    if (type === notificationTypes.LOW_STOCK) {
+    if (type === NOTIFICATION_TYPES.LOW_STOCK) {
       await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
     } else {
       await sendMail.sendPendingShipmentEmail(
