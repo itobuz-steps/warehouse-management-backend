@@ -14,6 +14,7 @@ export const sendNotificationToUsers = async ({
   warehouse,
   transactionId,
 }) => {
+
   // 1. Save in DB
   const data = users.map((u) => ({
     userId: u._id,
@@ -25,10 +26,12 @@ export const sendNotificationToUsers = async ({
     transactionId: transactionId,
   }));
 
-  await Notification.insertMany(data);
+  const savedNotifications = await Notification.insertMany(data);
+  console.log('Notifications saved to DB:', savedNotifications.length);
 
   // 2. Real-time socket push
   users.forEach((u) => {
+    console.log('Emitting socket notification to user:', u._id.toString());
     io().to(u._id.toString()).emit('notification', {
       title,
       message,
@@ -37,7 +40,7 @@ export const sendNotificationToUsers = async ({
   });
 
   // 3. Email sending
-
+  console.log('Starting email sending...');
   for (let user of users) {
     if (type === notificationTypes.LOW_STOCK) {
       await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
