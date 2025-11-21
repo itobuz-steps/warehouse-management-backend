@@ -11,7 +11,7 @@ import errorHandler from './error/errorHandler.js';
 import adminRoutes from './routes/adminRoutes.js';
 import warehouseRoutes from './routes/warehouseRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
-import dashboardRoutes from './routes/dashboardRoutes.js'
+import dashboardRoutes from './routes/dashboardRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
@@ -47,6 +47,6 @@ app.use('/notifications', verifyToken, notificationRoutes);
 
 app.use(errorHandler);
 
-app.listen(port, () => {
+server.listen(port, () => {
   console.log(`Server Listening on PORT : ${port}`);
 });
