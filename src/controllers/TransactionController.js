@@ -213,7 +213,11 @@ export default class TransactionController {
         const createdTransaction = await transaction.save({ session });
         transactions.push(createdTransaction);
 
-        await notifications.notifyPendingShipment(productId, sourceWarehouse);
+        await notifications.notifyPendingShipment(
+          productId,
+          sourceWarehouse,
+          createdTransaction._id
+        );
 
         if (
           quantityRecord.quantity <= quantityRecord.limit &&

@@ -1,5 +1,5 @@
 import Notification from '../models/notificationModel.js';
-import { NOTIFICATION_TYPES } from '../constants/notificationTypes.js';
+import notificationTypes from '../constants/notificationTypes.js';
 import { io } from '../socket.js';
 import SendEmail from '../utils/SendEmail.js';
 
@@ -12,6 +12,7 @@ export const sendNotificationToUsers = async ({
   message,
   product,
   warehouse,
+  transactionId,
 }) => {
 
   // 1. Save in DB
@@ -22,6 +23,7 @@ export const sendNotificationToUsers = async ({
     message,
     relatedProduct: product?._id,
     warehouse: warehouse?._id,
+    transactionId: transactionId,
   }));
 
   const savedNotifications = await Notification.insertMany(data);
@@ -40,26 +42,14 @@ export const sendNotificationToUsers = async ({
   // 3. Email sending
   console.log('Starting email sending...');
   for (let user of users) {
-    try {
-      if (type === NOTIFICATION_TYPES.LOW_STOCK) {
-        console.log('Sending low stock email to:', user.email);
-        await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
-      } else {
-        console.log('Sending pending shipment email to:', user.email);
-        await sendMail.sendPendingShipmentEmail(
-          user.email,
-          user,
-          product,
-          warehouse
-        );
-      }
-      console.log('Email sent successfully to:', user.email);
-    } catch (emailError) {
-      console.error(
-        'Error sending email to',
+    if (type === notificationTypes.LOW_STOCK) {
+      await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
+    } else {
+      await sendMail.sendPendingShipmentEmail(
         user.email,
-        ':',
-        emailError.message
+        user,
+        product,
+        warehouse
       );
     }
   }

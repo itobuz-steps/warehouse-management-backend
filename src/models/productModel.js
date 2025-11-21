@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { categoriesTypes } from '../config/constants.js';
+import categoryTypes from '../constants/categoryTypes.js';
 
 const productModel = new mongoose.Schema(
   {
@@ -11,7 +11,7 @@ const productModel = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: Object.values(categoriesTypes),
+      enum: Object.values(categoryTypes),
     },
     description: {
       type: String,

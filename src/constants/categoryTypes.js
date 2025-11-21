@@ -1,11 +1,4 @@
-export const transactionTypes = {
-  IN: 'IN',
-  OUT: 'OUT',
-  ADJUSTMENT: 'ADJUSTMENT',
-  TRANSFER: 'TRANSFER',
-};
-
-export const categoriesTypes = {
+const categoryTypes = {
   ELECTRONICS: 'Electronics',
   FURNITURE: 'Furniture',
   CLOTHING: 'Clothing',
@@ -18,7 +11,4 @@ export const categoriesTypes = {
   OTHERS: 'Others',
 };
 
-export const userTypes = {
-    MANAGER: 'manager', 
-    ADMIN: 'admin',
-}
+export default categoryTypes;
