@@ -19,6 +19,11 @@ router.get(
 );
 
 router.get(
+  '/all-products-quantity',
+  quantityController.getProductsHavingQuantity
+);
+
+router.get(
   '/warehouse-specific-products/:warehouseId',
   quantityController.getWarehouseSpecificProducts
 );
