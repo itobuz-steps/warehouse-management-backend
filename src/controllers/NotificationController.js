@@ -58,10 +58,25 @@ export default class NotificationsController {
         new mongoose.Types.ObjectId(`${req.params.id}`),
         {
           shipment: SHIPMENT_TYPES.SHIPPED,
-        }
+        },
+        { new: true }
       );
 
-      console.log(transaction);
+      console.log('Shipment status updated for transaction:', transaction?._id);
+
+      if (transaction) {
+        try {
+          await Notification.updateMany(
+            { transactionId: transaction._id },
+            { seen: true }
+          );
+        } catch (notifyErr) {
+          console.error(
+            'Error marking related notifications as seen:',
+            notifyErr
+          );
+        }
+      }
 
       res.status(201).json({
         message: 'Status Changed to Shipped Successfully',
