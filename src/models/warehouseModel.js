@@ -21,6 +21,11 @@ const warehouseModel = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    capacity: {
+      type: Number,
+      default: 10000,
+      required: true
+    },
   },
   {
     timestamps: true,
