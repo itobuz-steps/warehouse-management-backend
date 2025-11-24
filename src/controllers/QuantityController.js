@@ -142,4 +142,104 @@ export default class QuantityController {
       next(err);
     }
   };
+
+  getProductsHavingQuantity = async (req, res, next) => {
+    try {
+      const { search, category, sort, warehouseId } = req.query;
+
+      const pipeline = [];
+
+      if (warehouseId) {
+        pipeline.push({
+          $match: { warehouseId: new mongoose.Types.ObjectId(warehouseId) },
+        });
+      }
+
+      // Lookup products
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+
+        // Remove archived products
+        {
+          $match: { 'product.isArchived': false },
+        }
+      );
+
+      if (search) {
+        pipeline.push({
+          $match: {
+            'product.name': { $regex: search, $options: 'i' },
+          },
+        });
+      }
+
+      if (category) {
+        pipeline.push({
+          $match: {
+            'product.category': category,
+          },
+        });
+      }
+
+      if (sort === 'name_asc') {
+        pipeline.push({ $sort: { 'product.name': 1 } });
+      } else if (sort === 'name_desc') {
+        pipeline.push({ $sort: { 'product.name': -1 } });
+      } else if (sort === 'category_asc') {
+        pipeline.push({ $sort: { 'product.category': 1 } });
+      } else if (sort === 'quantity_asc' || sort === 'quantity_desc') {
+        const order = sort === 'quantity_asc' ? 1 : -1;
+
+        pipeline.push(
+          {
+            $group: {
+              _id: '$productId',
+              product: { $first: '$product' },
+              totalQuantity: { $sum: '$quantity' },
+            },
+          },
+          { $sort: { totalQuantity: order } },
+          {
+            $replaceRoot: {
+              newRoot: {
+                $mergeObjects: [
+                  '$product',
+                  { totalQuantity: '$totalQuantity' },
+                ],
+              },
+            },
+          }
+        );
+
+        const result = await Quantity.aggregate(pipeline);
+
+        return res.status(200).json({
+          success: true,
+          data: result,
+        });
+      }
+
+      pipeline.push({
+        $replaceRoot: { newRoot: '$product' },
+      });
+
+      const result = await Quantity.aggregate(pipeline);
+
+      res.status(200).json({
+        message: 'Products with quantity information',
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
