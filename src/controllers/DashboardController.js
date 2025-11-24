@@ -61,11 +61,25 @@ export default class DashboardController {
     try {
       const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
 
-      const productsCategory = await Product.aggregate([
+      const productsCategory = await Quantity.aggregate([
+        {
+          $match: { warehouseId: warehouseId },
+        },
+
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
         {
           $group: {
-            _id: '$category',
+            _id: '$product.category',
             totalProducts: { $sum: 1 },
+            products: { $push: '$product' },
           },
         },
       ]);
@@ -85,7 +99,7 @@ export default class DashboardController {
     try {
       const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
 
-      const transactionDetail = await this.getDaysTransaction();
+      const transactionDetail = await this.getDaysTransaction(warehouseId);
 
       res.status(200).json({
         message: 'Data fetched successfully',
@@ -98,7 +112,7 @@ export default class DashboardController {
     }
   };
 
-  getDaysTransaction = async () => {
+  getDaysTransaction = async (warehouseId) => {
     const start = subDays(new Date(), 6); //6 days before
     const end = new Date(); //today
 
@@ -113,8 +127,12 @@ export default class DashboardController {
       {
         $match: {
           createdAt: {
-            $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), //converting into milliseconds.
+            $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
           },
+          $or: [
+            { type: 'IN', destinationWarehouse: warehouseId },
+            { type: 'OUT', sourceWarehouse: warehouseId },
+          ],
         },
       },
       {
@@ -175,11 +193,12 @@ export default class DashboardController {
         {
           $group: {
             _id: null,
-            TotalSales: {
+            totalSales: {
               $sum: {
                 $multiply: ['$quantity', '$productData.price'],
               },
             },
+            saleQuantity: { $sum: '$quantity' },
           },
         },
 
@@ -187,6 +206,7 @@ export default class DashboardController {
           $project: {
             _id: 0,
             totalSales: 1,
+            saleQuantity: 1,
           },
         },
       ]);
@@ -244,13 +264,42 @@ export default class DashboardController {
             totalQuantity: { $sum: '$quantity' },
           },
         },
-        { $project: { _id: 0, totalQty: 1 } },
+        {
+          $project: {
+            _id: 0,
+            totalQuantity: 1,
+          },
+        },
       ]);
 
-      // const pendingInventoryOut = await Transaction.countDocuments({
-      //   type: 'OUT',
-      //   isUndone: true,
-      // });
+      const dayStarting = new Date();
+      dayStarting.setHours(0, 0, 0, 0);
+
+      const now = new Date();
+
+      const todayShipment = await Transaction.aggregate([
+        {
+          $match: {
+            sourceWarehouse: warehouseId,
+            type: 'OUT',
+            createdAt: { $gte: dayStarting, $lte: now },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            quantity: { $sum: 1 },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            quantity: 1,
+          },
+        },
+      ]);
+
+      console.log(todayShipment);
 
       res.status(200).json({
         message: 'Data fetched successfully',
@@ -259,9 +308,56 @@ export default class DashboardController {
           sales: sales[0],
           purchase: purchase[0],
           inventory: inventory[0],
+          todayShipment: todayShipment[0],
         },
       });
 
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  getLowStockProducts = async (req, res, next) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+
+      const lowStockProducts = await Quantity.aggregate([
+        {
+          $match: {
+            warehouseId: warehouseId,
+            quantity: { $lte: 5 },
+          },
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'productData',
+          },
+        },
+
+        {
+          $unwind: '$productData',
+        },
+
+        {
+          $project: {
+            _id: 0,
+            quantity: 1,
+            productName: '$productData.name',
+          },
+        },
+      ]);
+
+      res.status(200).json({
+        message: 'Data fetched successfully',
+        success: true,
+        data: {
+          lowStockProducts,
+        },
+      });
     } catch (err) {
       res.status(400);
       next(err);
