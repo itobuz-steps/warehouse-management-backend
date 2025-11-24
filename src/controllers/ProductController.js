@@ -1,11 +1,10 @@
 import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
-import Quantity from '../models/quantityModel.js';
 
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
-      const { search, category, sort, warehouseId } = req.query;
+      const { search, category, sort } = req.query;
 
       const filter = { isArchived: false };
 
@@ -15,19 +14,6 @@ export default class ProductController {
 
       if (search) {
         filter.name = { $regex: search, $options: 'i' };
-      }
-
-      if (warehouseId) {
-        const quantities = await Quantity.find({ warehouseId }).select(
-          'productId'
-        );
-        const productIds = quantities.map((q) => q.productId);
-
-        if (productIds.length === 0) {
-          return res.status(200).json({ success: true, data: [] });
-        }
-
-        filter._id = { $in: productIds };
       }
 
       let query = Product.find(filter).populate('createdBy');

@@ -19,7 +19,7 @@ router.get(
 );
 
 router.get(
-  '/all-products-quantity',
+  '/all-products-having-quantity',
   quantityController.getProductsHavingQuantity
 );
 

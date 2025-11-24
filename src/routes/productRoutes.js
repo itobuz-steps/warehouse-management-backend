@@ -4,6 +4,7 @@ import ProductValidation from '../validations/middlewares/ProductValidation.js';
 import multer from 'multer';
 import path from 'path';
 import config from '../config/config.js';
+import isAdmin from '../validations/middlewares/checkAdmin.js';
 
 const router = express.Router();
 const productController = new ProductController();
@@ -40,7 +41,7 @@ router.put(
 );
 
 router.delete(
-  '/:id',
+  '/:id', isAdmin,
   productValidation.deleteProductValidation,
   productController.deleteProduct
 );
