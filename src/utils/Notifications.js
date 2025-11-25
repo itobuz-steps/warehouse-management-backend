@@ -1,5 +1,5 @@
 import { sendNotificationToUsers } from '../services/notificationService.js';
-import { NOTIFICATION_TYPES } from '../constants/notificationTypes.js';
+import NOTIFICATION_TYPES from '../constants/notificationTypes.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
@@ -9,9 +9,39 @@ export default class Notifications {
     const product = await Product.findById(productId);
     const warehouse = await Warehouse.findById(warehouseId);
 
-    const users = await User.find({
-      $or: [{ wareHouseIds: warehouseId }, { role: 'admin' }],
+    console.log('Looking for warehouse:', warehouseId);
+
+    // Check warehouse document
+    const warehouseDoc = await Warehouse.findById(warehouseId);
+    console.log('Warehouse details:', {
+      id: warehouseDoc?._id,
+      name: warehouseDoc?.name,
+      managerIds: warehouseDoc?.managerIds,
+      managerCount: warehouseDoc?.managerIds?.length,
     });
+
+    // Find users: admins OR managers assigned to this warehouse (from warehouse.managerIds)
+    const users = await User.find({
+      $or: [
+        { role: 'admin' },
+        { _id: { $in: warehouseDoc?.managerIds || [] } },
+      ],
+    });
+
+    console.log(
+      'Low Stock Alert - Found users:',
+      users.length,
+      'for warehouse:',
+      warehouseId
+    );
+    console.log(
+      'Users to notify:',
+      users.map((u) => ({
+        id: u._id,
+        role: u.role,
+        email: u.email,
+      }))
+    );
 
     if (users.length > 0) {
       await sendNotificationToUsers({
@@ -25,22 +55,53 @@ export default class Notifications {
     }
   };
 
-  notifyPendingShipment = async (productId, warehouseId) => {
+  notifyPendingShipment = async (productId, warehouseId, transactionId) => {
     const product = await Product.findById(productId);
     const warehouse = await Warehouse.findById(warehouseId);
 
-    const users = await User.find({
-      $or: [{ wareHouseIds: warehouseId }, { role: 'admin' }],
+    console.log('Looking for warehouse:', warehouseId);
+
+    // Check warehouse document
+    const warehouseDoc = await Warehouse.findById(warehouseId);
+    console.log('Warehouse details:', {
+      id: warehouseDoc?._id,
+      name: warehouseDoc?.name,
+      managerIds: warehouseDoc?.managerIds,
+      managerCount: warehouseDoc?.managerIds?.length,
     });
+
+    // Find users: admins OR managers assigned to this warehouse (from warehouse.managerIds)
+    const users = await User.find({
+      $or: [
+        { role: 'admin' },
+        { _id: { $in: warehouseDoc?.managerIds || [] } },
+      ],
+    });
+
+    console.log(
+      'Pending Shipment Alert - Found users:',
+      users.length,
+      'for warehouse:',
+      warehouseId
+    );
+    console.log(
+      'Users to notify:',
+      users.map((u) => ({
+        id: u._id,
+        role: u.role,
+        email: u.email,
+      }))
+    );
 
     if (users.length > 0) {
       await sendNotificationToUsers({
         users,
         type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',
-        message: `A shipment for ${product.name} from ${warehouse.name} is pending.`,
+        message: `A shipment for ${product.name} from ${warehouse.name} is pending. TransactionId: ${transactionId}`,
         product,
         warehouse,
+        transactionId,
       });
     }
   };

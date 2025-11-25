@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import CATEGORY_TYPES from '../constants/categoryTypes.js';
 
 const productModel = new mongoose.Schema(
   {
@@ -10,18 +11,7 @@ const productModel = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: [
-        'Electronics',
-        'Furniture',
-        'Clothing',
-        'Food & Beverage',
-        'Medical Supplies',
-        'Industrial Tools',
-        'Automotive Parts',
-        'Office Supplies',
-        'Accessories',
-        'Others',
-      ],
+      enum: Object.values(CATEGORY_TYPES),
     },
     description: {
       type: String,

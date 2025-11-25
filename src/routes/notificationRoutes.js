@@ -7,5 +7,9 @@ const notificationsController = new NotificationController();
 router.get('/my-notifications', notificationsController.getUserNotifications);
 router.patch('/:notificationId/seen', notificationsController.markAsSeen);
 router.patch('/mark-all-seen', notificationsController.markAllAsSeen);
+router.patch(
+  '/change-shipment-status/:id',
+  notificationsController.changeShipmentStatus
+);
 
 export default router;

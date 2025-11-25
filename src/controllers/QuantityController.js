@@ -39,6 +39,16 @@ export default class QuantityController {
       const result = await Quantity.aggregate([
         { $match: { productId: new mongoose.Types.ObjectId(`${productId}`) } },
         {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        { $match: { 'product.isArchived': false } },
+        {
           $group: {
             _id: productId,
             quantity: { $sum: '$quantity' },
@@ -61,9 +71,12 @@ export default class QuantityController {
     try {
       const { productId, warehouseId } = req.query;
 
-      const result = await Quantity.find({ productId, warehouseId }).populate(
-        'productId warehouseId'
-      );
+      const result = await Quantity.find({ productId, warehouseId })
+        .populate({
+          path: 'productId',
+          match: { isArchived: false },
+        })
+        .populate('warehouseId');
 
       res.status(200).json({
         message: 'Warehouse Specific Product Quantity',
@@ -95,6 +108,7 @@ export default class QuantityController {
           },
         },
         { $unwind: '$product' }, // converts array → object
+        { $match: { 'product.isArchived': false } },
       ]);
 
       res.status(200).json({
@@ -112,7 +126,12 @@ export default class QuantityController {
     try {
       const productId = req.params.productId;
 
-      const result = await Quantity.find({ productId }).populate('warehouseId');
+      const result = await Quantity.find({ productId })
+        .populate({
+          path: 'productId',
+          match: { isArchived: false },
+        })
+        .populate('warehouseId');
 
       res.status(200).json({
         message: 'Warehouse where that specific Product is stored',
@@ -121,6 +140,106 @@ export default class QuantityController {
       });
     } catch (err) {
       next(err);
+    }
+  };
+
+  getProductsHavingQuantity = async (req, res, next) => {
+    try {
+      const { search, category, sort, warehouseId } = req.query;
+
+      const pipeline = [];
+
+      if (warehouseId) {
+        pipeline.push({
+          $match: { warehouseId: new mongoose.Types.ObjectId(warehouseId) },
+        });
+      }
+
+      // Lookup products
+      pipeline.push(
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+
+        // Remove archived products
+        {
+          $match: { 'product.isArchived': false },
+        }
+      );
+
+      if (search) {
+        pipeline.push({
+          $match: {
+            'product.name': { $regex: search, $options: 'i' },
+          },
+        });
+      }
+
+      if (category) {
+        pipeline.push({
+          $match: {
+            'product.category': category,
+          },
+        });
+      }
+
+      if (sort === 'name_asc') {
+        pipeline.push({ $sort: { 'product.name': 1 } });
+      } else if (sort === 'name_desc') {
+        pipeline.push({ $sort: { 'product.name': -1 } });
+      } else if (sort === 'category_asc') {
+        pipeline.push({ $sort: { 'product.category': 1 } });
+      } else if (sort === 'quantity_asc' || sort === 'quantity_desc') {
+        const order = sort === 'quantity_asc' ? 1 : -1;
+
+        pipeline.push(
+          {
+            $group: {
+              _id: '$productId',
+              product: { $first: '$product' },
+              totalQuantity: { $sum: '$quantity' },
+            },
+          },
+          { $sort: { totalQuantity: order } },
+          {
+            $replaceRoot: {
+              newRoot: {
+                $mergeObjects: [
+                  '$product',
+                  { totalQuantity: '$totalQuantity' },
+                ],
+              },
+            },
+          }
+        );
+
+        const result = await Quantity.aggregate(pipeline);
+
+        return res.status(200).json({
+          success: true,
+          data: result,
+        });
+      }
+
+      pipeline.push({
+        $replaceRoot: { newRoot: '$product' },
+      });
+
+      const result = await Quantity.aggregate(pipeline);
+
+      res.status(200).json({
+        message: 'Products with quantity information',
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      next(error);
     }
   };
 }

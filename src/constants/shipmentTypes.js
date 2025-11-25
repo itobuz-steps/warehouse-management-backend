@@ -1,0 +1,6 @@
+const SHIPMENT_TYPES = {
+  PENDING: 'PENDING',
+  SHIPPED: 'SHIPPED',
+};
+
+export default SHIPMENT_TYPES;

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import USER_TYPES from '../constants/userTypes.js';
 
 const userModel = new mongoose.Schema(
   {
@@ -16,7 +17,7 @@ const userModel = new mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['manager', 'admin'],
+      enum: Object.values(USER_TYPES),
     },
     isVerified: {
       type: Boolean,

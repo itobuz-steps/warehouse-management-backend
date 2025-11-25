@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
-import { NOTIFICATION_TYPES } from '../constants/notificationTypes.js';
+import NOTIFICATION_TYPES from '../constants/notificationTypes.js';
 
-const notificationSchema = new mongoose.Schema(
+const notificationModel = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -18,8 +18,9 @@ const notificationSchema = new mongoose.Schema(
     relatedProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
     seen: { type: Boolean, default: false },
+    transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
   },
   { timestamps: true }
 );
 
-export default mongoose.model('Notification', notificationSchema);
+export default mongoose.model('Notification', notificationModel);
