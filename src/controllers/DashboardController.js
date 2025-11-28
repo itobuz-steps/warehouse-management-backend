@@ -1,5 +1,4 @@
 import Quantity from '../models/quantityModel.js';
-import Product from '../models/productModel.js';
 import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
