@@ -1,6 +1,5 @@
 import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
-
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
@@ -39,13 +38,7 @@ export default class ProductController {
   updateProduct = async (req, res, next) => {
     try {
       const id = req.params.id;
-      // const { name, category, description, price } = req.body;
       const updates = {};
-
-      // if (name) updates.name = name;
-      // if (category) updates.category = category;
-      // if (description) updates.description = description;
-      // if (price) updates.price = price;
 
       for (const [key, value] of Object.entries(req.body)) {
         if (value) {

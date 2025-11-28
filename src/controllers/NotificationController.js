@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Notification from '../models/notificationModel.js';
 import Transaction from '../models/transactionModel.js';
-import SHIPMENT_TYPES from '../constants/shipmentTypes.js';
+import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 
 export default class NotificationsController {
   getUserNotifications = async (req, res, next) => {

@@ -3,6 +3,7 @@ import Quantity from '../models/quantityModel.js';
 import Notifications from '../utils/Notifications.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
+import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 
 const notifications = new Notifications();
 export default class TransactionController {
@@ -129,7 +130,7 @@ export default class TransactionController {
         await quantityRecord.save({ session });
 
         const transaction = new Transaction({
-          type: 'IN',
+          type: TRANSACTION_TYPES.IN,
           product: productId,
           quantity,
           supplier,
@@ -197,7 +198,7 @@ export default class TransactionController {
         await quantityRecord.save({ session });
 
         const transaction = new Transaction({
-          type: 'OUT',
+          type: TRANSACTION_TYPES.OUT,
           product: productId,
           quantity,
           customerName,
@@ -308,7 +309,7 @@ export default class TransactionController {
 
         // Create transaction
         const transaction = new Transaction({
-          type: 'TRANSFER',
+          type: TRANSACTION_TYPES.TRANSFER,
           product: productId,
           quantity,
           notes,
@@ -359,7 +360,7 @@ export default class TransactionController {
       await quantityRecord.save({ session });
 
       const transaction = new Transaction({
-        type: 'ADJUSTMENT',
+        type: TRANSACTION_TYPES.ADJUSTMENT,
         product: productId,
         quantity,
         reason,

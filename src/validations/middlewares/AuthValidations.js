@@ -1,16 +1,14 @@
-import {
-  signupSchema,
-} from '../schema/authSchema.js';
+import USER_TYPES from '../../constants/userConstants.js';
+import { signupSchema } from '../schema/authSchema.js';
 import { ValidationError } from 'yup';
 
 export default class AuthValidation {
   signupValidation = async (req, res, next) => {
     try {
-      
-      if (req.headers.role === 'admin') {
+      if (req.headers.role === USER_TYPES.ADMIN) {
         req.body.role = req.headers.role;
       } else {
-        req.body.role = 'manager';
+        req.body.role = USER_TYPES.MANAGER;
       }
 
       await signupSchema.validate(req.body, {
@@ -20,7 +18,6 @@ export default class AuthValidation {
 
       next();
     } catch (err) {
-      
       if (err instanceof ValidationError) {
         res.status(400);
         next(new Error(err.errors.join(', ')));
