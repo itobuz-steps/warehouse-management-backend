@@ -1,44 +1,58 @@
-import Subscription from "../models/subscriptionModel.js";
-import BrowserNotification from "../models/browserNotificationModel.js";
-import webpush from "web-push";
+import Subscription from '../models/subscriptionModel.js';
+import BrowserNotification from '../models/browserNotificationModel.js';
+import webpush from 'web-push';
 
-const sendBrowserNotification = async ({ userId, title, body }) => {
+const sendBrowserNotification = async ({ users, type, title, message }) => {
   try {
-    if (!userId) {
-      throw new Error("Missing userId");
+    if (!users || !users.length) {
+      throw new Error('No user found!');
     }
 
-    const subscription = await Subscription.find({ userId });
+    const results = [];
 
-    if (subscription.length === 0) {
-      throw new Error("User not subscribed!");
+    const payload = JSON.stringify({ title, body: message });
+
+    for (const user of users) {
+      const userId = user._id;
+      const subscriptions = await Subscription.find({ userId });
+
+      if (!subscriptions || subscriptions.length === 0) {
+        results.push({
+          userId,
+          success: false,
+          message: 'User not subscribed',
+        });
+        continue;
+      }
+
+      // Save notification in DB for this user
+      await BrowserNotification.save({
+        userId,
+        title,
+        message,
+      });
+
+      // Send notification to all subscriptions for that user
+      await Promise.all(
+        subscriptions.map((s) =>
+          webpush.sendNotification(s.subscription, payload)
+        )
+      );
+
+      results.push({
+        userId,
+        success: true,
+        delivered: subscriptions.length,
+      });
     }
 
-    // Save notification in DB
-    await BrowserNotification.create({
-      userId,
-      title,
-      message: body,
-    });
-
-    const payload = JSON.stringify({ title, body });
-
-    // Send push notifications to all devices
-    await Promise.all(
-      subscription.map((s) =>
-        webpush.sendNotification(s.subscription, payload)
-      )
-    );
-
-    // Return data (not an HTTP response)
     return {
       success: true,
-      message: "Notification sent!",
-      delivered: subscription.length,
+      message: 'Notifications processed',
+      results,
     };
 
   } catch (err) {
-    // Throw error so controller can catch it
     throw new Error(err.message);
   }
 };
