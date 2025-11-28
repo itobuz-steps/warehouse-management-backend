@@ -345,11 +345,13 @@ export default class TransactionController {
   };
 
   createAdjustment = async (req, res, next) => {
+    console.log('Adjust Stock');
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const { productId, warehouseId, quantity, reason, notes } = req.body;
+      const { products, warehouseId, reason, notes } = req.body;
+      const { productId, quantity } = products[0];
 
       let quantityRecord = await Quantity.findOne({ warehouseId, productId });
 

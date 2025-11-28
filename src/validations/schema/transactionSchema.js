@@ -61,12 +61,21 @@ export const stockOutSchema = yup.object({
 });
 
 export const adjustmentSchema = yup.object({
-  productId: yup.string().trim().required('Product is required'),
+  products: yup
+    .array()
+    .of(
+      yup.object({
+        productId: yup.string().required('Product is required'),
+        quantity: yup
+          .number()
+          .required('Quantity is required')
+          .positive('Quantity must be greater than 0'),
+        limit: yup.number().optional().min(0, 'Limit cannot be negative'),
+      })
+    )
+    .required('Products list is required')
+    .min(1, 'At least one product is required'),
   warehouseId: yup.string().trim().required('Warehouse is required'),
-  quantity: yup
-    .number()
-    .required('Quantity is required')
-    .positive('Quantity must be greater than 0'),
   reason: yup.string().trim().required('Reason is required'),
   notes: yup.string().trim().nullable(),
 });

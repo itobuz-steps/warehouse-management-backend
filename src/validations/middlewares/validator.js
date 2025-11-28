@@ -1,6 +1,7 @@
 import { ValidationError } from 'yup';
 
 export const validate = (schema) => async (req, res, next) => {
+  console.log(req.body);
   try {
     await schema.validate(req.body, {
       abortEarly: false, // return all validation errors
