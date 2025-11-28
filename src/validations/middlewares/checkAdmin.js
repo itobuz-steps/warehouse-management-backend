@@ -1,3 +1,4 @@
+import USER_TYPES from '../../constants/userConstants.js';
 import User from '../../models/userModel.js';
 
 export default async function isAdmin(req, res, next) {
@@ -8,7 +9,7 @@ export default async function isAdmin(req, res, next) {
       $and: [{ _id: userId }, { isDeleted: false }],
     });
 
-    if (user.role !== 'admin') {
+    if (user.role !== USER_TYPES.ADMIN) {
       res.status(403); // Forbidden
       throw new Error('User is not an admin');
     }

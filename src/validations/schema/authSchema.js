@@ -1,4 +1,5 @@
 import * as yup from 'yup';
+import USER_TYPES from '../../constants/userConstants.js';
 
 export const signupSchema = yup.object({
   name: yup.string().default('guest'),
@@ -6,7 +7,7 @@ export const signupSchema = yup.object({
   isVerified: yup.boolean().default(false),
   isActive: yup.boolean().default(false),
   password: yup.string().default(''),
-  role: yup.string().default('manager'),
+  role: yup.string().default(USER_TYPES.MANAGER),
 });
 
 export const loginSchema = yup.object({

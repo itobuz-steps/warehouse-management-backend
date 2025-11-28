@@ -1,8 +1,9 @@
 import { sendNotificationToUsers } from '../services/notificationService.js';
-import NOTIFICATION_TYPES from '../constants/notificationTypes.js';
+import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
+import USER_TYPES from '../constants/userConstants.js';
 
 export default class Notifications {
   notifyLowStock = async (productId, warehouseId) => {
@@ -23,7 +24,7 @@ export default class Notifications {
     // Find users: admins OR managers assigned to this warehouse (from warehouse.managerIds)
     const users = await User.find({
       $or: [
-        { role: 'admin' },
+        { role: USER_TYPES.ADMIN },
         { _id: { $in: warehouseDoc?.managerIds || [] } },
       ],
     });
@@ -73,7 +74,7 @@ export default class Notifications {
     // Find users: admins OR managers assigned to this warehouse (from warehouse.managerIds)
     const users = await User.find({
       $or: [
-        { role: 'admin' },
+        { role: USER_TYPES.ADMIN },
         { _id: { $in: warehouseDoc?.managerIds || [] } },
       ],
     });

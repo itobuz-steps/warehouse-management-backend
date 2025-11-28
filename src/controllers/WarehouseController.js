@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
 import Quantity from '../models/quantityModel.js';
+import USER_TYPES from '../constants/userConstants.js';
 
 export default class WarehouseController {
   getWarehouses = async (req, res, next) => {
@@ -16,7 +17,7 @@ export default class WarehouseController {
 
       let warehouses;
 
-      if (user.role === 'manager') {
+      if (user.role === USER_TYPES.MANAGER) {
         // Get only warehouses assigned to this manager
         warehouses = await Warehouse.find({
           managerIds: user._id,
@@ -40,7 +41,7 @@ export default class WarehouseController {
         });
       }
 
-      if (user.role === 'admin') {
+      if (user.role === USER_TYPES.ADMIN) {
         // Get all warehouses
         warehouses = await Warehouse.find({ active: true }).populate({
           path: 'managerIds',
@@ -70,7 +71,7 @@ export default class WarehouseController {
 
       let warehouse;
 
-      if (user.role === 'manager') {
+      if (user.role === USER_TYPES.MANAGER) {
         warehouse = await Warehouse.findOne({
           _id: warehouseId.trim(),
           managerIds: user._id,
@@ -99,7 +100,7 @@ export default class WarehouseController {
         });
       }
 
-      if (user.role === 'admin') {
+      if (user.role === USER_TYPES.ADMIN) {
         warehouse = await Warehouse.findById(warehouseId.trim()).populate({
           path: 'managerIds',
           select: 'name email role',
@@ -136,7 +137,7 @@ export default class WarehouseController {
 
       let warehouse;
 
-      if (user.role === 'manager') {
+      if (user.role === USER_TYPES.MANAGER) {
         warehouse = await Warehouse.findOne({
           _id: warehouseId.trim(),
           managerIds: user._id,
@@ -148,7 +149,7 @@ export default class WarehouseController {
             'Warehouse not found or not assigned to this manager'
           );
         }
-      } else if (user.role === 'admin') {
+      } else if (user.role === USER_TYPES.ADMIN) {
         warehouse = await Warehouse.findById(warehouseId.trim());
 
         if (!warehouse) {

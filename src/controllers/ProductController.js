@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import User from '../models/userModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import Quantity from '../models/quantityModel.js';
+import USER_TYPES from '../constants/userConstants.js';
 
 export default class ProductController {
   getProducts = async (req, res, next) => {
@@ -14,7 +15,7 @@ export default class ProductController {
 
       const filter = { isArchived: false };
 
-      if (user.role === 'manager') {
+      if (user.role === USER_TYPES.MANAGER) {
         const warehouses = await Warehouse.find({
           managerIds: userId,
           active: true,
@@ -78,13 +79,7 @@ export default class ProductController {
   updateProduct = async (req, res, next) => {
     try {
       const id = req.params.id;
-      // const { name, category, description, price } = req.body;
       const updates = {};
-
-      // if (name) updates.name = name;
-      // if (category) updates.category = category;
-      // if (description) updates.description = description;
-      // if (price) updates.price = price;
 
       for (const [key, value] of Object.entries(req.body)) {
         if (value) {

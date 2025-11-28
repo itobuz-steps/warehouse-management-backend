@@ -1,6 +1,7 @@
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
 import mongoose from 'mongoose';
+import USER_TYPES from '../constants/userConstants.js';
 
 export default class AdminController {
   addWarehouse = async (req, res, next) => {
@@ -105,7 +106,10 @@ export default class AdminController {
 
   getManagers = async (req, res, next) => {
     try {
-      const managers = await User.find({ role: 'manager', isVerified: true });
+      const managers = await User.find({
+        role: USER_TYPES.MANAGER,
+        isVerified: true,
+      });
       console.log(managers);
 
       res.status(200).json({

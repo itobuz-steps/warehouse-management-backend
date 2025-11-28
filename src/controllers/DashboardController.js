@@ -1,12 +1,16 @@
 import Quantity from '../models/quantityModel.js';
-import Product from '../models/productModel.js';
+// import Product from '../models/productModel.js';
 import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
+import TRANSACTION_TYPES from '../constants/transactionConstants.js';
+
 export default class DashboardController {
   getTopProducts = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+      const warehouseId = new mongoose.Types.ObjectId(
+        `${req.params.warehouseId}`
+      );
 
       const topProducts = await Quantity.aggregate([
         {
@@ -59,7 +63,9 @@ export default class DashboardController {
 
   getInventoryByCategory = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+      const warehouseId = new mongoose.Types.ObjectId(
+        `${req.params.warehouseId}`
+      );
 
       const productsCategory = await Quantity.aggregate([
         {
@@ -97,7 +103,9 @@ export default class DashboardController {
 
   getProductTransaction = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+      const warehouseId = new mongoose.Types.ObjectId(
+        `${req.params.warehouseId}`
+      );
 
       const transactionDetail = await this.getDaysTransaction(warehouseId);
 
@@ -130,8 +138,8 @@ export default class DashboardController {
             $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
           },
           $or: [
-            { type: 'IN', destinationWarehouse: warehouseId },
-            { type: 'OUT', sourceWarehouse: warehouseId },
+            { type: TRANSACTION_TYPES.IN, destinationWarehouse: warehouseId },
+            { type: TRANSACTION_TYPES.OUT, sourceWarehouse: warehouseId },
           ],
         },
       },
@@ -150,10 +158,22 @@ export default class DashboardController {
         $group: {
           _id: '$_id.day',
           IN: {
-            $sum: { $cond: [{ $eq: ['$_id.type', 'IN'] }, '$total', 0] },
+            $sum: {
+              $cond: [
+                { $eq: ['$_id.type', TRANSACTION_TYPES.IN] },
+                '$total',
+                0,
+              ],
+            },
           },
           OUT: {
-            $sum: { $cond: [{ $eq: ['$_id.type', 'OUT'] }, '$total', 0] },
+            $sum: {
+              $cond: [
+                { $eq: ['$_id.type', TRANSACTION_TYPES.OUT] },
+                '$total',
+                0,
+              ],
+            },
           },
         },
       },
@@ -173,11 +193,15 @@ export default class DashboardController {
 
   getTransactionStats = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+      const warehouseId = new mongoose.Types.ObjectId(
+        `${req.params.warehouseId}`
+      );
 
       //for sales overview.
       const sales = await Transaction.aggregate([
-        { $match: { type: 'OUT', sourceWarehouse: warehouseId } },
+        {
+          $match: { type: TRANSACTION_TYPES.OUT, sourceWarehouse: warehouseId },
+        },
 
         {
           $lookup: {
@@ -215,7 +239,7 @@ export default class DashboardController {
       const purchase = await Transaction.aggregate([
         {
           $match: {
-            type: 'IN',
+            type: TRANSACTION_TYPES.IN,
             destinationWarehouse: warehouseId,
           },
         },
@@ -281,7 +305,7 @@ export default class DashboardController {
         {
           $match: {
             sourceWarehouse: warehouseId,
-            type: 'OUT',
+            type: TRANSACTION_TYPES.OUT,
             createdAt: { $gte: dayStarting, $lte: now },
           },
         },
@@ -311,7 +335,6 @@ export default class DashboardController {
           todayShipment: todayShipment[0],
         },
       });
-
     } catch (err) {
       res.status(400);
       next(err);
@@ -320,7 +343,9 @@ export default class DashboardController {
 
   getLowStockProducts = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(req.params.warehouseId);
+      const warehouseId = new mongoose.Types.ObjectId(
+        `${req.params.warehouseId}`
+      );
 
       const lowStockProducts = await Quantity.aggregate([
         {
