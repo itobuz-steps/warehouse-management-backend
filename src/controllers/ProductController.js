@@ -1,51 +1,12 @@
 import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
-import User from '../models/userModel.js';
-import Warehouse from '../models/warehouseModel.js';
-import Quantity from '../models/quantityModel.js';
 
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
       const { search, category, sort } = req.query;
 
-      const userId = req.userId;
-      const user = await User.findById({ _id: userId });
-
       const filter = { isArchived: false };
-
-      if (user.role === 'manager') {
-        const warehouses = await Warehouse.find({
-          managerIds: userId,
-          active: true,
-        });
-
-        if (!warehouses) {
-          return res.json({ products: [], totalProducts: 0 });
-        }
-
-        // get warehouse IDs array
-        const warehouseIds = warehouses.map(function (w) {
-          return w._id;
-        });
-
-        // get all quantities for those warehouses
-        const quantities = await Quantity.find({
-          warehouseId: { $in: warehouseIds },
-        });
-
-        // collect productIds without duplicates
-        let uniqueProductIds = [];
-        for (let i = 0; i < quantities.length; i++) {
-          const productId = quantities[i].productId.toString();
-          if (!uniqueProductIds.includes(productId)) {
-            uniqueProductIds.push(productId);
-          }
-        }
-
-        // filter products by these IDs
-        filter._id = uniqueProductIds;
-      }
 
       if (category) {
         filter.category = category;
