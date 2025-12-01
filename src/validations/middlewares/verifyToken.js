@@ -8,9 +8,17 @@ export default function verifyToken(req, res, next) {
       throw new Error('No Token Provided');
     }
 
-    const access_token = req.headers.authorization.split(' ')[1];
+    let payload;
 
-    const payload = jwt.verify(access_token, config.ACCESS_SECRET_KEY);
+    if (req.path.includes('refresh')) {
+      const refresh_token = req.headers.authorization.split(' ')[1];
+
+      payload = jwt.verify(refresh_token, config.REFRESH_SECRET_KEY);
+    } else {
+      const access_token = req.headers.authorization.split(' ')[1];
+
+      payload = jwt.verify(access_token, config.ACCESS_SECRET_KEY);
+    }
 
     req.userId = payload.id;
 
@@ -19,7 +27,6 @@ export default function verifyToken(req, res, next) {
     }
 
     next();
-    
   } catch (error) {
     res.status(401);
     next(error);

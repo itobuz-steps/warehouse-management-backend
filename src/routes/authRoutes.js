@@ -2,6 +2,7 @@ import express from 'express';
 import AuthController from '../controllers/AuthController.js';
 import AuthValidation from '../validations/middlewares/AuthValidations.js';
 import { validate } from '../validations/middlewares/validator.js';
+import verifyToken from '../validations/middlewares/verifyToken.js';
 import {
   forgotPasswordSchema,
   loginSchema,
@@ -18,7 +19,7 @@ router.post('/signup/set-password/:token', authController.setPassword); // send 
 
 router.post('/login', validate(loginSchema), authController.login); // email and password
 
-router.post('/refresh', authController.refresh);
+router.post('/refresh', verifyToken, authController.refresh);
 
 router.post('/send-otp/', validate(sendOtpSchema), authController.sendOtp);
 

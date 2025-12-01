@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import CATEGORY_TYPES from '../constants/categoryTypes.js';
+import CATEGORY_TYPES from '../constants/categoryConstants.js';
 
 const productModel = new mongoose.Schema(
   {

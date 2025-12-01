@@ -4,6 +4,7 @@ import Notifications from '../utils/Notifications.js';
 import BrowserNotification from '../utils/browserNotification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
+import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 
 const notifications = new Notifications();
 const browserNotification = new BrowserNotification();
@@ -132,7 +133,7 @@ export default class TransactionController {
         await quantityRecord.save({ session });
 
         const transaction = new Transaction({
-          type: 'IN',
+          type: TRANSACTION_TYPES.IN,
           product: productId,
           quantity,
           supplier,
@@ -200,7 +201,7 @@ export default class TransactionController {
         await quantityRecord.save({ session });
 
         const transaction = new Transaction({
-          type: 'OUT',
+          type: TRANSACTION_TYPES.OUT,
           product: productId,
           quantity,
           customerName,
@@ -318,7 +319,7 @@ export default class TransactionController {
 
         // Create transaction
         const transaction = new Transaction({
-          type: 'TRANSFER',
+          type: TRANSACTION_TYPES.TRANSFER,
           product: productId,
           quantity,
           notes,
@@ -355,11 +356,13 @@ export default class TransactionController {
   };
 
   createAdjustment = async (req, res, next) => {
+    console.log('Adjust Stock');
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      const { productId, warehouseId, quantity, reason, notes } = req.body;
+      const { products, warehouseId, reason, notes } = req.body;
+      const { productId, quantity } = products[0];
 
       let quantityRecord = await Quantity.findOne({ warehouseId, productId });
 
@@ -370,7 +373,7 @@ export default class TransactionController {
       await quantityRecord.save({ session });
 
       const transaction = new Transaction({
-        type: 'ADJUSTMENT',
+        type: TRANSACTION_TYPES.ADJUSTMENT,
         product: productId,
         quantity,
         reason,

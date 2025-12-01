@@ -1,3 +1,4 @@
+import USER_TYPES from '../constants/userConstants.js';
 import User from '../models/userModel.js';
 
 export default class ProfileController {
@@ -28,7 +29,7 @@ export default class ProfileController {
   getCurrentUser = async (req, res, next) => {
     try {
       const user = await User.findById(req.userId).select('-password');
-      
+
       if (!user) {
         res.status(404);
         throw new Error('User not found.');
@@ -39,7 +40,6 @@ export default class ProfileController {
         success: true,
         data: { user },
       });
-
     } catch (err) {
       next(err);
     }
@@ -57,14 +57,14 @@ export default class ProfileController {
       let verifiedManagers = [];
       let unverifiedManagers = [];
 
-      if (user.role === 'admin') {
+      if (user.role === USER_TYPES.ADMIN) {
         verifiedManagers = await User.find({
-          role: 'manager',
+          role: USER_TYPES.MANAGER,
           isVerified: true,
           isDeleted: false,
         });
         unverifiedManagers = await User.find({
-          role: 'manager',
+          role: USER_TYPES.MANAGER,
           isVerified: false,
           isDeleted: false,
         });

@@ -236,12 +236,7 @@ export default class AuthController {
 
   refresh = async (req, res, next) => {
     try {
-      const refresh_token = req.headers.authorization.split(' ')[1];
-      const refresh_secret = config.REFRESH_SECRET_KEY;
-
-      const decoded = jwt.verify(refresh_token, refresh_secret);
-
-      const tokens = tokenGenerator.generateToken(decoded.id);
+      const tokens = tokenGenerator.generateToken(req.userId);
       const accessToken = tokens.access;
       const refreshToken = tokens.refresh;
 

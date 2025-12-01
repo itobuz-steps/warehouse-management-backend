@@ -1,5 +1,5 @@
 import Notification from '../models/notificationModel.js';
-import NOTIFICATION_TYPES from '../constants/notificationTypes.js';
+import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 import { io } from '../socket.js';
 import SendEmail from '../utils/SendEmail.js';
 
