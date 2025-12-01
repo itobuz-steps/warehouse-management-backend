@@ -229,12 +229,14 @@ export default class TransactionController {
           createdTransaction._id,
         );
 
+        
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
           await notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
+          console.log("Browser notification called!");
         }
       }
 

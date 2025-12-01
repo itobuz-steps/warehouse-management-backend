@@ -1,6 +1,6 @@
 import Subscription from '../models/subscriptionModel.js';
 import BrowserNotification from '../models/browserNotificationModel.js';
-import webpush from '../config/webpush.js'
+import webpush from '../config/webpush.js';
 
 const sendBrowserNotification = async ({ users, type, title, message }) => {
   try {
@@ -8,9 +8,8 @@ const sendBrowserNotification = async ({ users, type, title, message }) => {
       throw new Error('No user found!');
     }
 
-    const results = [];
-
     const payload = JSON.stringify({ title, body: message });
+    const results = [];
 
     for (const user of users) {
       const userId = user._id;
@@ -25,25 +24,33 @@ const sendBrowserNotification = async ({ users, type, title, message }) => {
         continue;
       }
 
-      // Save notification in DB for this user
-      await BrowserNotification.save({
+      // Save notification in DB.
+      await BrowserNotification.create({
         userId,
         title,
         message,
       });
 
-      // Send notification to all subscriptions for that user
+      //Send notification to all subscriptions of a particular user
       await Promise.all(
-        subscriptions.map((s) =>
-          webpush.sendNotification(s.subscription, payload)
-        )
-      );
+        subscriptions.map(async (s) => {
+          try {
+            await webpush.sendNotification(
+              { endpoint: s.endpoint, keys: s.keys },
+              payload
+            );
 
-      results.push({
-        userId,
-        success: true,
-        delivered: subscriptions.length,
-      });
+            results.push({ userId: s.userId, success: true });
+
+          } catch (err) {
+            if (err.statusCode === 410) {
+              await Subscription.deleteOne({ _id: s._id });
+            }
+
+            results.push({ userId: s.userId, success: false, error: err.message});
+          }
+        })
+      );
     }
 
     return {

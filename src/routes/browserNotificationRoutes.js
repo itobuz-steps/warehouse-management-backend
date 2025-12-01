@@ -5,7 +5,6 @@ const router = express.Router();
 
 const browserNotificationController = new BrowserNotificationsController();
 
-router.post("/", browserNotificationController.subscribe);
-router.post("/", browserNotificationController.trigger);
+router.post("/subscribe", browserNotificationController.subscribe);
 
 export default router;

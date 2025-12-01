@@ -1,16 +1,23 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const SubscriptionSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
+const SubscriptionSchema = new mongoose.Schema(
+  {
+    endpoint: String,
+    expirationTime: {
+      type: Date,
+      default: null,
+    },
+    keys: {
+      p256dh: String,
+      auth: String,
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
   },
-  endpoint: String,
-  keys: {
-    p256dh: String,
-    auth: String
-  }
-}, { timestamps: true });
+  { timestamps: true }
+);
 
-export default mongoose.model("Subscription", SubscriptionSchema);
+export default mongoose.model('Subscription', SubscriptionSchema);

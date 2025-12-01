@@ -1,4 +1,4 @@
-import NOTIFICATION_TYPES from '../constants/notificationTypes.js';
+import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
@@ -21,12 +21,15 @@ export default class BrowserNotification {
         return;
       }
 
-      await sendBrowserNotification({
+      const res = await sendBrowserNotification({
         users,
         type: NOTIFICATION_TYPES.LOW_STOCK,
         title: 'Low Stock Alert',
         message: `${product.name} is running low in ${warehouse.name}`,
       });
+
+      console.log(res);
+      
     } catch (err) {
       throw new Error(err);
     }
@@ -54,7 +57,6 @@ export default class BrowserNotification {
         title: 'Pending Shipment Alert',
         message: `A shipment for ${product.name} from ${warehouse.name} is pending. TransactionId: ${transactionId}`,
       });
-
     } catch (err) {
       throw new Error(err);
     }
