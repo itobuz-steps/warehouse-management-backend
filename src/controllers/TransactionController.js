@@ -1,11 +1,14 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 import Notifications from '../utils/Notifications.js';
+import BrowserNotification from '../utils/browserNotification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 
 const notifications = new Notifications();
+const browserNotification = new BrowserNotification();
+
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
@@ -220,11 +223,20 @@ export default class TransactionController {
           createdTransaction._id
         );
 
+        await browserNotification.notifyPendingShipment(
+          productId,
+          sourceWarehouse,
+          createdTransaction._id,
+        );
+
+        
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
           await notifications.notifyLowStock(productId, sourceWarehouse);
+          await browserNotification.notifyLowStock(productId, sourceWarehouse);
+          console.log("Browser notification called!");
         }
       }
 
@@ -326,6 +338,7 @@ export default class TransactionController {
           prevQty > sourceQuantity.limit
         ) {
           await Notifications.notifyLowStock(productId, sourceWarehouse);
+          await browserNotification.notifyLowStock(productId, sourceWarehouse);
         }
       }
 
@@ -381,6 +394,7 @@ export default class TransactionController {
         prevQty > quantityRecord.limit
       ) {
         await Notifications.notifyLowStock(productId, warehouseId);
+        await browserNotification.notifyLowStock(productId, warehouseId);
       }
 
       res.status(201).json({

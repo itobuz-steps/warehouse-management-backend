@@ -80,6 +80,7 @@ export default class SendEmail {
       next(error);
     }
   };
+
   sendPendingShipmentEmail = async (email, user, product, warehouse, next) => {
     try {
       const mailResponse = await this.mailSender(
@@ -97,4 +98,5 @@ export default class SendEmail {
       next(error);
     }
   };
+  
 }

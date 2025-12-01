@@ -53,6 +53,8 @@ export default class Notifications {
         product,
         warehouse,
       });
+
+      
     }
   };
 
