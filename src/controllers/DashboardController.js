@@ -4,13 +4,19 @@ import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
-import generateExcel from '../services/generateExcel.js';
+import {
+  generateTopFiveProductsExcelData,
+  generateInventoryByCategoryExcel,
+} from '../services/generateExcel.js';
 
 export default class DashboardController {
-  getTopProducts = async (req, res, next) => {
+  // Top 5 Product Data and Export - Bar Chart
+  getTopFiveProducts = async (req, res, next) => {
     console.log('Hello top 5');
     try {
-      const topProducts = await this.getTopProductsData(req.params.warehouseId);
+      const topProducts = await this.getTopFiveProductsData(
+        req.params.warehouseId
+      );
 
       res.status(200).json({
         message: 'Data fetched successfully',
@@ -23,11 +29,127 @@ export default class DashboardController {
     }
   };
 
+  generateTopFiveProductsExcel = async (req, res, next) => {
+    try {
+      const topProducts = await this.getTopFiveProductsData(
+        req.params.warehouseId
+      );
+
+      const result = await generateTopFiveProductsExcelData(topProducts);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=top-products.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  getTopFiveProductsData = async (id) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
+
+      const topProducts = await Quantity.aggregate([
+        {
+          $match: {
+            warehouseId: warehouseId,
+          },
+        },
+        {
+          $group: {
+            _id: '$productId',
+            totalQuantity: { $sum: '$quantity' },
+          },
+        },
+
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: 'products',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+
+        { $unwind: '$product' },
+
+        {
+          $project: {
+            _id: 0,
+            productId: '$_id',
+            totalQuantity: 1,
+            productName: '$product.name',
+            category: '$product.category',
+            price: '$product.price',
+          },
+        },
+      ]);
+
+      return topProducts;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Inventory by Category - Pie Chart
   getInventoryByCategory = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(
-        `${req.params.warehouseId}`
+      const productsCategory = await this.getInventoryByCategoryData(
+        req.params.warehouseId
       );
+
+      res.status(200).json({
+        message: 'Data fetched successfully',
+        success: true,
+        productsCategory,
+      });
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  getInventoryByCategoryExcel = async (req, res, next) => {
+    try {
+      const productsCategory = await this.getInventoryByCategoryData(
+        req.params.warehouseId
+      );
+
+      const result = await generateInventoryByCategoryExcel(productsCategory);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=inventory-category.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  getInventoryByCategoryData = async (id) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
       const productsCategory = await Quantity.aggregate([
         {
@@ -51,18 +173,15 @@ export default class DashboardController {
           },
         },
       ]);
+      console.log(productsCategory);
 
-      res.status(200).json({
-        message: 'Data fetched successfully',
-        success: true,
-        productsCategory,
-      });
+      return productsCategory;
     } catch (err) {
-      res.status(400);
-      next(err);
+      return err;
     }
   };
 
+  // Transaction Part - Line Chart
   getProductTransaction = async (req, res, next) => {
     try {
       const warehouseId = new mongoose.Types.ObjectId(
@@ -303,6 +422,7 @@ export default class DashboardController {
     }
   };
 
+  // Low Stock Product Table
   getLowStockProducts = async (req, res, next) => {
     try {
       const warehouseId = new mongoose.Types.ObjectId(
@@ -348,78 +468,6 @@ export default class DashboardController {
     } catch (err) {
       res.status(400);
       next(err);
-    }
-  };
-
-  generateTopFiveProductsExcel = async (req, res, next) => {
-    try {
-      const topProducts = await this.getTopProductsData(req.params.warehouseId);
-
-      const result = await generateExcel(topProducts);
-
-      res.setHeader(
-        'Content-Type',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      );
-
-      res.setHeader(
-        'Content-Disposition',
-        'attachment; filename=top-products.xlsx'
-      );
-
-      // Send the file buffer
-      res.status(200).send(result);
-    } catch (err) {
-      res.status(400);
-      next(err);
-    }
-  };
-
-  getTopProductsData = async (id) => {
-    try {
-      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
-
-      const topProducts = await Quantity.aggregate([
-        {
-          $match: {
-            warehouseId: warehouseId,
-          },
-        },
-        {
-          $group: {
-            _id: '$productId',
-            totalQuantity: { $sum: '$quantity' },
-          },
-        },
-
-        { $sort: { totalQuantity: -1 } },
-        { $limit: 5 },
-        {
-          $lookup: {
-            from: 'products',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'product',
-          },
-        },
-
-        { $unwind: '$product' },
-
-        {
-          $project: {
-            _id: 0,
-            productId: '$_id',
-            totalQuantity: 1,
-            productName: '$product.name',
-            category: '$product.category',
-            price: '$product.price',
-          },
-        },
-      ]);
-
-      return topProducts;
-    } catch (err) {
-      console.error(err);
     }
   };
 }

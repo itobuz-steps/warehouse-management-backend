@@ -6,9 +6,8 @@ const dashboardController = new DashboardController();
 
 router.get(
   '/get-top-products/:warehouseId',
-  dashboardController.getTopProducts
+  dashboardController.getTopFiveProducts
 );
-
 router.get(
   '/get-top-products-chart-data/:warehouseId',
   dashboardController.generateTopFiveProductsExcel
@@ -18,6 +17,11 @@ router.get(
   '/get-inventory-category/:warehouseId',
   dashboardController.getInventoryByCategory
 );
+router.get(
+  '/get-inventory-category-chart-data/:warehouseId',
+  dashboardController.getInventoryByCategoryExcel
+);
+
 router.get(
   '/get-product-transaction/:warehouseId',
   dashboardController.getProductTransaction
