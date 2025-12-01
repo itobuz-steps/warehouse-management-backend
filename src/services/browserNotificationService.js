@@ -1,6 +1,6 @@
 import Subscription from '../models/subscriptionModel.js';
 import BrowserNotification from '../models/browserNotificationModel.js';
-import webpush from 'web-push';
+import webpush from '../config/webpush.js'
 
 const sendBrowserNotification = async ({ users, type, title, message }) => {
   try {
