@@ -4,51 +4,13 @@ import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
+import generateExcel from '../services/generateExcel.js';
 
 export default class DashboardController {
   getTopProducts = async (req, res, next) => {
+    console.log('Hello top 5');
     try {
-      const warehouseId = new mongoose.Types.ObjectId(
-        `${req.params.warehouseId}`
-      );
-
-      const topProducts = await Quantity.aggregate([
-        {
-          $match: {
-            warehouseId: warehouseId,
-          },
-        },
-        {
-          $group: {
-            _id: '$productId',
-            totalQuantity: { $sum: '$quantity' },
-          },
-        },
-
-        { $sort: { totalQuantity: -1 } },
-        { $limit: 5 },
-        {
-          $lookup: {
-            from: 'products',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'product',
-          },
-        },
-
-        { $unwind: '$product' },
-
-        {
-          $project: {
-            _id: 0,
-            productId: '$_id',
-            totalQuantity: 1,
-            productName: '$product.name',
-            category: '$product.category',
-            price: '$product.price',
-          },
-        },
-      ]);
+      const topProducts = await this.getTopProductsData(req.params.warehouseId);
 
       res.status(200).json({
         message: 'Data fetched successfully',
@@ -386,6 +348,78 @@ export default class DashboardController {
     } catch (err) {
       res.status(400);
       next(err);
+    }
+  };
+
+  generateTopFiveProductsExcel = async (req, res, next) => {
+    try {
+      const topProducts = await this.getTopProductsData(req.params.warehouseId);
+
+      const result = await generateExcel(topProducts);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=top-products.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  getTopProductsData = async (id) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
+
+      const topProducts = await Quantity.aggregate([
+        {
+          $match: {
+            warehouseId: warehouseId,
+          },
+        },
+        {
+          $group: {
+            _id: '$productId',
+            totalQuantity: { $sum: '$quantity' },
+          },
+        },
+
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 5 },
+        {
+          $lookup: {
+            from: 'products',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+
+        { $unwind: '$product' },
+
+        {
+          $project: {
+            _id: 0,
+            productId: '$_id',
+            totalQuantity: 1,
+            productName: '$product.name',
+            category: '$product.category',
+            price: '$product.price',
+          },
+        },
+      ]);
+
+      return topProducts;
+    } catch (err) {
+      console.error(err);
     }
   };
 }

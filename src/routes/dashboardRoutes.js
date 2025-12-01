@@ -8,6 +8,12 @@ router.get(
   '/get-top-products/:warehouseId',
   dashboardController.getTopProducts
 );
+
+router.get(
+  '/get-top-products-chart-data/:warehouseId',
+  dashboardController.generateTopFiveProductsExcel
+);
+
 router.get(
   '/get-inventory-category/:warehouseId',
   dashboardController.getInventoryByCategory
