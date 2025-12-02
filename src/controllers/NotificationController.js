@@ -6,7 +6,7 @@ import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 export default class NotificationsController {
   getUserNotifications = async (req, res, next) => {
     try {
-      const notifications = await Notification.find({ userId: req.userId })
+      const notifications = await Notification.find({ userId: req.user.userId })
         .populate('relatedProduct warehouse transactionId')
         .sort({ createdAt: -1 });
 
@@ -41,7 +41,7 @@ export default class NotificationsController {
 
   markAllAsSeen = async (req, res, next) => {
     try {
-      await Notification.updateMany({ userId: req.userId }, { seen: true });
+      await Notification.updateMany({ userId: req.user.userId }, { seen: true });
 
       res.status(200).json({
         success: true,

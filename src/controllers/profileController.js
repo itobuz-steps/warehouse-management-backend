@@ -4,13 +4,7 @@ import User from '../models/userModel.js';
 export default class ProfileController {
   updateProfile = async (req, res, next) => {
     try {
-      const user = await User.findById({ _id: req.userId, isDeleted: false });
-
-      if (!user) {
-        res.status(401);
-        throw new Error(`User doesn't Exists`);
-      }
-
+      const user = req.user;
       const profile = req.file ? req.file.filename : '';
 
       user.name = req.body.name || '';
@@ -28,18 +22,14 @@ export default class ProfileController {
 
   getCurrentUser = async (req, res, next) => {
     try {
-      const user = await User.findById(req.userId).select('-password');
-
-      if (!user) {
-        res.status(404);
-        throw new Error('User not found.');
-      }
+      const user = req.user;
 
       res.status(200).json({
         message: 'Data fetched successfully.',
         success: true,
         data: { user },
       });
+      
     } catch (err) {
       next(err);
     }
@@ -47,12 +37,7 @@ export default class ProfileController {
 
   getUserDetails = async (req, res, next) => {
     try {
-      const user = await User.findOne({ _id: req.userId, isDeleted: false });
-
-      if (!user) {
-        res.status(401);
-        throw new Error(`User doesn't Exists`);
-      }
+      const user = req.user;
 
       let verifiedManagers = [];
       let unverifiedManagers = [];
@@ -82,26 +67,19 @@ export default class ProfileController {
 
   deleteUser = async (req, res, next) => {
     try {
-      const user = await User.findById({ _id: req.userId, isDeleted: false });
+      const user = req.user;
 
-      if (!user) {
-        res.status(404);
-        throw new Error(`User doesn't Exists`);
-      }
-      console.log(user);
-
-      const updatedUser = await User.findByIdAndUpdate(
+      await User.findByIdAndUpdate(
         user._id,
         { isDeleted: true },
         { new: true }
       );
 
-      console.log(updatedUser);
-
       res.status(200).json({
         message: 'User deleted Successfully!',
         success: true,
       });
+
     } catch (err) {
       next(err);
     }

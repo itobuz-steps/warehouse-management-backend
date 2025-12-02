@@ -1,20 +1,12 @@
 import mongoose from 'mongoose';
 import Warehouse from '../models/warehouseModel.js';
-import User from '../models/userModel.js';
 import Quantity from '../models/quantityModel.js';
 import USER_TYPES from '../constants/userConstants.js';
 
 export default class WarehouseController {
   getWarehouses = async (req, res, next) => {
     try {
-      const { userId } = req.params;
-      const user = await User.findById(userId.trim());
-
-      if (!user) {
-        res.status(404);
-        throw new Error('User not found');
-      }
-
+      const user  = req.user;
       let warehouses;
 
       if (user.role === USER_TYPES.MANAGER) {
@@ -61,13 +53,8 @@ export default class WarehouseController {
 
   getWarehouseById = async (req, res, next) => {
     try {
-      const { userId, warehouseId } = req.params;
-
-      const user = await User.findById(userId.trim());
-      if (!user) {
-        res.status(404);
-        throw new Error('User not found');
-      }
+      const {  warehouseId } = req.params;
+      const user = req.user;
 
       let warehouse;
 
@@ -127,13 +114,8 @@ export default class WarehouseController {
 
   getWarehouseCapacity = async (req, res, next) => {
     try {
-      const { userId, warehouseId } = req.params;
-
-      const user = await User.findById(userId.trim());
-      if (!user) {
-        res.status(404);
-        throw new Error('User not found');
-      }
+      const { warehouseId } = req.params;
+      const user = req.user;
 
       let warehouse;
 
@@ -162,7 +144,6 @@ export default class WarehouseController {
       }
 
       // Aggregate total quantity
-
       const totalAgg = await Quantity.aggregate([
         {
           $match: {
