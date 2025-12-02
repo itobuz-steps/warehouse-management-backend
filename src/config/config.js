@@ -22,6 +22,9 @@ const config = {
   REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY,
 
   UPLOAD_FILE_SIZE: process.env.UPLOAD_FILE_SIZE,
+  
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
 };
 
 export default config;

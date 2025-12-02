@@ -15,6 +15,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import BrowserNotificationRoutes from './routes/browserNotificationRoutes.js';
 import verifyToken from './validations/middlewares/verifyToken.js';
 
 const app = express();
@@ -45,6 +46,7 @@ app.use('/transaction', verifyToken, transactionRoutes);
 app.use('/profile', verifyToken, profileRoutes);
 app.use('/dashboard/', verifyToken, dashboardRoutes);
 app.use('/notifications', verifyToken, notificationRoutes);
+app.use('/browser-notifications', verifyToken, BrowserNotificationRoutes);
 
 app.use(errorHandler);
 
