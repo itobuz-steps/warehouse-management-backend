@@ -27,6 +27,11 @@ router.get(
   dashboardController.getProductTransaction
 );
 router.get(
+  '/get-product-transaction-chart-data/:warehouseId',
+  dashboardController.getProductTransactionExcel
+);
+
+router.get(
   '/get-transaction-stats/:warehouseId',
   dashboardController.getTransactionStats
 );

@@ -7,12 +7,12 @@ import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import {
   generateTopFiveProductsExcelData,
   generateInventoryByCategoryExcel,
+  generateWeeklyTransactionExcel,
 } from '../services/generateExcel.js';
 
 export default class DashboardController {
   // Top 5 Product Data and Export - Bar Chart
   getTopFiveProducts = async (req, res, next) => {
-    console.log('Hello top 5');
     try {
       const topProducts = await this.getTopFiveProductsData(
         req.params.warehouseId
@@ -197,6 +197,33 @@ export default class DashboardController {
       });
     } catch (err) {
       res.status(400);
+      next(err);
+    }
+  };
+
+  getProductTransactionExcel = async (req, res, next) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(
+        `${req.params.warehouseId}`
+      );
+
+      const transactionDetail = await this.getDaysTransaction(warehouseId);
+
+      const result = await generateWeeklyTransactionExcel(transactionDetail);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=inventory-category.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
+    } catch (err) {
       next(err);
     }
   };
