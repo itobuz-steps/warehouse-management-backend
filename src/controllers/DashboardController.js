@@ -4,13 +4,60 @@ import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
+import {
+  generateTopFiveProductsExcelData,
+  generateInventoryByCategoryExcel,
+  generateWeeklyTransactionExcel,
+} from '../services/generateExcel.js';
 
 export default class DashboardController {
-  getTopProducts = async (req, res, next) => {
+  // Top 5 Product Data and Export - Bar Chart
+  getTopFiveProducts = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(
-        `${req.params.warehouseId}`
+      const topProducts = await this.getTopFiveProductsData(
+        req.params.warehouseId
       );
+
+      res.status(200).json({
+        message: 'Data fetched successfully',
+        success: true,
+        data: topProducts,
+      });
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  generateTopFiveProductsExcel = async (req, res, next) => {
+    try {
+      const topProducts = await this.getTopFiveProductsData(
+        req.params.warehouseId
+      );
+
+      const result = await generateTopFiveProductsExcelData(topProducts);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=top-products.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  getTopFiveProductsData = async (id) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
       const topProducts = await Quantity.aggregate([
         {
@@ -50,10 +97,23 @@ export default class DashboardController {
         },
       ]);
 
+      return topProducts;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Inventory by Category - Pie Chart
+  getInventoryByCategory = async (req, res, next) => {
+    try {
+      const productsCategory = await this.getInventoryByCategoryData(
+        req.params.warehouseId
+      );
+
       res.status(200).json({
         message: 'Data fetched successfully',
         success: true,
-        topProducts,
+        data: productsCategory,
       });
     } catch (err) {
       res.status(400);
@@ -61,11 +121,35 @@ export default class DashboardController {
     }
   };
 
-  getInventoryByCategory = async (req, res, next) => {
+  getInventoryByCategoryExcel = async (req, res, next) => {
     try {
-      const warehouseId = new mongoose.Types.ObjectId(
-        `${req.params.warehouseId}`
+      const productsCategory = await this.getInventoryByCategoryData(
+        req.params.warehouseId
       );
+
+      const result = await generateInventoryByCategoryExcel(productsCategory);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=inventory-category.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
+    } catch (err) {
+      res.status(400);
+      next(err);
+    }
+  };
+
+  getInventoryByCategoryData = async (id) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
       const productsCategory = await Quantity.aggregate([
         {
@@ -89,11 +173,27 @@ export default class DashboardController {
           },
         },
       ]);
+      console.log(productsCategory);
+
+      return productsCategory;
+    } catch (err) {
+      return err;
+    }
+  };
+
+  // Transaction Part - Line Chart
+  getProductTransaction = async (req, res, next) => {
+    try {
+      const warehouseId = new mongoose.Types.ObjectId(
+        `${req.params.warehouseId}`
+      );
+
+      const transactionDetails = await this.getDaysTransaction(warehouseId);
 
       res.status(200).json({
         message: 'Data fetched successfully',
         success: true,
-        productsCategory,
+        data: transactionDetails,
       });
     } catch (err) {
       res.status(400);
@@ -101,21 +201,29 @@ export default class DashboardController {
     }
   };
 
-  getProductTransaction = async (req, res, next) => {
+  getProductTransactionExcel = async (req, res, next) => {
     try {
       const warehouseId = new mongoose.Types.ObjectId(
         `${req.params.warehouseId}`
       );
 
-      const transactionDetail = await this.getDaysTransaction(warehouseId);
+      const transactionDetails = await this.getDaysTransaction(warehouseId);
 
-      res.status(200).json({
-        message: 'Data fetched successfully',
-        success: true,
-        transactionDetail,
-      });
+      const result = await generateWeeklyTransactionExcel(transactionDetails);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=inventory-category.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -341,6 +449,7 @@ export default class DashboardController {
     }
   };
 
+  // Low Stock Product Table
   getLowStockProducts = async (req, res, next) => {
     try {
       const warehouseId = new mongoose.Types.ObjectId(

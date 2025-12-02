@@ -26,6 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(loggerMiddleware);
 app.use('/uploads', express.static('uploads'));
+app.use('/chart-data', express.static('chart-data'));
 
 const port = config.PORT;
 
