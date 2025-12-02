@@ -21,7 +21,7 @@ export default class DashboardController {
       res.status(200).json({
         message: 'Data fetched successfully',
         success: true,
-        topProducts,
+        data: topProducts,
       });
     } catch (err) {
       res.status(400);
@@ -113,7 +113,7 @@ export default class DashboardController {
       res.status(200).json({
         message: 'Data fetched successfully',
         success: true,
-        productsCategory,
+        data: productsCategory,
       });
     } catch (err) {
       res.status(400);
@@ -188,12 +188,12 @@ export default class DashboardController {
         `${req.params.warehouseId}`
       );
 
-      const transactionDetail = await this.getDaysTransaction(warehouseId);
+      const transactionDetails = await this.getDaysTransaction(warehouseId);
 
       res.status(200).json({
         message: 'Data fetched successfully',
         success: true,
-        transactionDetail,
+        data: transactionDetails,
       });
     } catch (err) {
       res.status(400);
@@ -207,9 +207,9 @@ export default class DashboardController {
         `${req.params.warehouseId}`
       );
 
-      const transactionDetail = await this.getDaysTransaction(warehouseId);
+      const transactionDetails = await this.getDaysTransaction(warehouseId);
 
-      const result = await generateWeeklyTransactionExcel(transactionDetail);
+      const result = await generateWeeklyTransactionExcel(transactionDetails);
 
       res.setHeader(
         'Content-Type',
