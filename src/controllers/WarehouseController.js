@@ -6,8 +6,8 @@ import USER_TYPES from '../constants/userConstants.js';
 export default class WarehouseController {
   getWarehouses = async (req, res, next) => {
     try {
-      const user  = req.user;
-      let warehouses;
+      const user = req.user;
+      let warehouses = [];
 
       if (user.role === USER_TYPES.MANAGER) {
         // Get only warehouses assigned to this manager
@@ -53,7 +53,7 @@ export default class WarehouseController {
 
   getWarehouseById = async (req, res, next) => {
     try {
-      const {  warehouseId } = req.params;
+      const { warehouseId } = req.params;
       const user = req.user;
 
       let warehouse;

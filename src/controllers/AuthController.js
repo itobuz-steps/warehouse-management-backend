@@ -23,7 +23,6 @@ export default class AuthController {
 
         throw new Error('User Already Exists');
       } else if (!isUser) {
-        console.log('user created');
         newUser = new User(req.body);
 
         await newUser.save();
@@ -38,7 +37,6 @@ export default class AuthController {
       res.status(200).json({
         message: 'Invitation Link Sent Successfully.',
         success: true,
-        user: newUser,
       });
     } catch (err) {
       next(err);
@@ -47,13 +45,12 @@ export default class AuthController {
 
   verify = async (req, res, next) => {
     try {
-      const verificationToken = req.params.token;
-      const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
+      const tokenData = jwt.verify(req.params.token, config.TOKEN_SECRET);
 
       res.status(200).json({
         message: 'token valid',
         success: true,
-        tokenData,
+        data: tokenData,
       });
     } catch (err) {
       if (err.message == 'jwt expired') {
@@ -68,30 +65,29 @@ export default class AuthController {
 
   setPassword = async (req, res, next) => {
     try {
-      const verificationToken = req.params.token;
-      const tokenData = jwt.verify(verificationToken, config.TOKEN_SECRET);
-      const email = tokenData.email;
-      const appUser = await User.findOne({ email });
-
-      if (appUser.isVerified) {
-        res.status(400);
-
-        throw new Error('User already verified');
-      }
+      const tokenData = jwt.verify(req.params.token, config.TOKEN_SECRET);
 
       const user = await User.findOneAndUpdate(
-        { email: email },
+        { email: tokenData.email, isVerified: false },
         {
           password: await bcrypt.hash(req.body.password, 10),
           name: req.body.name,
           isVerified: true,
+        },
+        {
+          new: true,
+          runValidators: true,
         }
       );
+
+      if (!user) {
+        res.status(400);
+        throw new Error('User already verified');
+      }
 
       res.status(200).json({
         message: 'Registration successful.',
         success: true,
-        user,
       });
     } catch (err) {
       if (err.message == 'jwt expired') {
@@ -106,17 +102,20 @@ export default class AuthController {
 
   login = async (req, res, next) => {
     try {
-      const email = req.body.email;
-      const password = req.body.password;
-
-      const user = await User.findOne({ email, isDeleted: false });
+      const user = await User.findOne({
+        email: req.body.email,
+        isDeleted: false,
+      });
 
       if (!user) {
         res.status(401);
         throw new Error(`User doesn't Exists`);
       }
 
-      const passwordMatch = await bcrypt.compare(password, user.password);
+      const passwordMatch = await bcrypt.compare(
+        req.body.password,
+        user.password
+      );
 
       if (!passwordMatch) {
         res.status(401);
@@ -124,15 +123,14 @@ export default class AuthController {
       }
 
       const tokens = tokenGenerator.generateToken(user._id);
-      const accessToken = tokens.access;
-      const refreshToken = tokens.refresh;
 
       res.status(200).json({
         message: 'User Login Successful',
         success: true,
-        accessToken,
-        refreshToken,
-        user,
+        data: {
+          accessToken: tokens.access,
+          refreshToken: tokens.refresh,
+        },
       });
     } catch (err) {
       next(err);
@@ -141,17 +139,7 @@ export default class AuthController {
 
   forgotPassword = async (req, res, next) => {
     try {
-      const prevEmail = req.params.email;
-
       const { email, otp, password } = req.body;
-
-      if (prevEmail !== email) {
-        res.status(404);
-        throw new Error(
-          'Email mismatch: please use the same email address that received the OTP.'
-        );
-      }
-
       const user = await User.findOne({ email });
 
       if (!user) {
@@ -165,7 +153,6 @@ export default class AuthController {
       }
 
       const otpDoc = await OTP.findOne({ email });
-
       const otpArrLength = otpDoc.otp.length;
 
       if (!otpDoc || otpArrLength === 0) {
@@ -210,7 +197,6 @@ export default class AuthController {
       }
 
       const userOtpDoc = await OTP.findOne({ email });
-      console.log(userOtpDoc);
 
       if (userOtpDoc) {
         const lastUpdated = new Date(userOtpDoc.updatedAt).getTime();
@@ -227,7 +213,6 @@ export default class AuthController {
       res.status(200).json({
         success: true,
         message: 'OTP sent successfully',
-        email,
       });
     } catch (err) {
       next(err);
@@ -237,14 +222,14 @@ export default class AuthController {
   refresh = async (req, res, next) => {
     try {
       const tokens = tokenGenerator.generateToken(req.userId);
-      const accessToken = tokens.access;
-      const refreshToken = tokens.refresh;
 
       res.status(200).json({
         message: 'Token Regenerated successfully',
         success: true,
-        accessToken,
-        refreshToken,
+        data: {
+          accessToken: tokens.access,
+          refreshToken: tokens.refresh,
+        },
       });
     } catch (err) {
       res.status(401);

@@ -5,17 +5,13 @@ export default class QuantityController {
   // adding a product in a specific warehouse
   addProductQuantity = async (req, res, next) => {
     try {
-      const productId = req.body.productId;
-      const warehouseId = req.body.warehouseId;
       const { quantity, limit } = req.body;
-      const quantityObj = {
-        productId,
-        warehouseId,
+      let result = await Quantity.create({
+        productId: req.body.productId,
+        warehouseId: req.body.warehouseId,
         quantity,
         limit,
-      };
-
-      let result = await Quantity.create(quantityObj);
+      });
 
       result = await Quantity.findById({ _id: result._id }).populate(
         'warehouseId productId'
@@ -91,12 +87,12 @@ export default class QuantityController {
   // Get all products in a specific warehouse -> for Managers
   getWarehouseSpecificProducts = async (req, res, next) => {
     try {
-      const warehouseId = req.params.warehouseId;
-
       const result = await Quantity.aggregate([
         {
           $match: {
-            warehouseId: new mongoose.Types.ObjectId(`${warehouseId}`),
+            warehouseId: new mongoose.Types.ObjectId(
+              `${req.params.warehouseId}`
+            ),
           },
         },
         {
@@ -124,9 +120,7 @@ export default class QuantityController {
   // get warehouses where a specific product is stored
   getProductSpecificWarehouses = async (req, res, next) => {
     try {
-      const productId = req.params.productId;
-
-      const result = await Quantity.find({ productId })
+      const result = await Quantity.findById(req.params.productId)
         .populate({
           path: 'productId',
           match: { isArchived: false },

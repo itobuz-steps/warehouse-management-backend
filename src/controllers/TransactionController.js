@@ -226,17 +226,16 @@ export default class TransactionController {
         await browserNotification.notifyPendingShipment(
           productId,
           sourceWarehouse,
-          createdTransaction._id,
+          createdTransaction._id
         );
 
-        
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
           await notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
-          console.log("Browser notification called!");
+          console.log('Browser notification called!');
         }
       }
 
@@ -414,9 +413,7 @@ export default class TransactionController {
 
   generateInvoice = async (req, res, next) => {
     try {
-      const transactionId = req.params.id;
-
-      const transaction = await Transaction.findById(transactionId).populate(
+      const transaction = await Transaction.findById(req.params.id).populate(
         'product performedBy sourceWarehouse'
       );
 

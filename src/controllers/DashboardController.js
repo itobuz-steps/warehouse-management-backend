@@ -14,6 +14,11 @@ export default class DashboardController {
   // Top 5 Product Data and Export - Bar Chart
   getTopFiveProducts = async (req, res, next) => {
     try {
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
+
       const topProducts = await this.getTopFiveProductsData(
         req.params.warehouseId
       );
@@ -24,17 +29,18 @@ export default class DashboardController {
         data: topProducts,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
 
   generateTopFiveProductsExcel = async (req, res, next) => {
     try {
-      const topProducts = await this.getTopFiveProductsData(
-        req.params.warehouseId
-      );
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
 
+      const topProducts = await this.getTopFiveProductsData();
       const result = await generateTopFiveProductsExcelData(topProducts);
 
       res.setHeader(
@@ -50,7 +56,6 @@ export default class DashboardController {
       // Send the file buffer
       res.status(200).send(result);
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -73,7 +78,6 @@ export default class DashboardController {
         },
 
         { $sort: { totalQuantity: -1 } },
-        { $limit: 5 },
         {
           $lookup: {
             from: 'products',
@@ -82,9 +86,14 @@ export default class DashboardController {
             as: 'product',
           },
         },
-
+        
         { $unwind: '$product' },
-
+        {
+          $match: {
+            'product.isArchived': false,
+          },
+        },
+        
         {
           $project: {
             _id: 0,
@@ -95,6 +104,7 @@ export default class DashboardController {
             price: '$product.price',
           },
         },
+        { $limit: 5 }
       ]);
 
       return topProducts;
@@ -106,6 +116,11 @@ export default class DashboardController {
   // Inventory by Category - Pie Chart
   getInventoryByCategory = async (req, res, next) => {
     try {
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
+
       const productsCategory = await this.getInventoryByCategoryData(
         req.params.warehouseId
       );
@@ -123,6 +138,11 @@ export default class DashboardController {
 
   getInventoryByCategoryExcel = async (req, res, next) => {
     try {
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
+
       const productsCategory = await this.getInventoryByCategoryData(
         req.params.warehouseId
       );
@@ -166,9 +186,14 @@ export default class DashboardController {
         },
         { $unwind: '$product' },
         {
+          $match: {
+            'product.isArchived': false,
+          },
+        },
+        {
           $group: {
             _id: '$product.category',
-            totalProducts: { $sum: 1 },
+            totalProducts: { $sum: '$quantity'},
             products: { $push: '$product' },
           },
         },
@@ -184,6 +209,11 @@ export default class DashboardController {
   // Transaction Part - Line Chart
   getProductTransaction = async (req, res, next) => {
     try {
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
+
       const warehouseId = new mongoose.Types.ObjectId(
         `${req.params.warehouseId}`
       );
@@ -203,6 +233,11 @@ export default class DashboardController {
 
   getProductTransactionExcel = async (req, res, next) => {
     try {
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
+
       const warehouseId = new mongoose.Types.ObjectId(
         `${req.params.warehouseId}`
       );
@@ -301,6 +336,11 @@ export default class DashboardController {
 
   getTransactionStats = async (req, res, next) => {
     try {
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
+
       const warehouseId = new mongoose.Types.ObjectId(
         `${req.params.warehouseId}`
       );
@@ -443,6 +483,7 @@ export default class DashboardController {
           todayShipment: todayShipment[0],
         },
       });
+      
     } catch (err) {
       res.status(400);
       next(err);
@@ -452,6 +493,11 @@ export default class DashboardController {
   // Low Stock Product Table
   getLowStockProducts = async (req, res, next) => {
     try {
+      if (!req.params?.warehouseId) {
+        res.status(404);
+        throw new Error('warehouse Id not found!');
+      }
+
       const warehouseId = new mongoose.Types.ObjectId(
         `${req.params.warehouseId}`
       );
@@ -460,7 +506,7 @@ export default class DashboardController {
         {
           $match: {
             warehouseId: warehouseId,
-            quantity: { $lte: 5 },
+            quantity: { $lte: 10 },
           },
         },
         {

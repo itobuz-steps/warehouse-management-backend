@@ -6,7 +6,6 @@ export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
       const { search, category, sort } = req.query;
-
       const filter = { isArchived: false };
 
       if (category) {
@@ -71,7 +70,6 @@ export default class ProductController {
         data: updatedProduct,
       });
     } catch (error) {
-      res.status(400);
       next(error);
     }
   };
@@ -79,7 +77,6 @@ export default class ProductController {
   createProduct = async (req, res, next) => {
     try {
       const { name, category, description, price } = req.body;
-
       const product = await Product.create({
         name,
         category,
@@ -97,7 +94,6 @@ export default class ProductController {
         data: product,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -105,7 +101,6 @@ export default class ProductController {
   deleteProduct = async (req, res, next) => {
     try {
       const id = req.params.id;
-
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
         { isArchived: true },
@@ -120,10 +115,8 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product archived successfully',
-        data: updatedProduct,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -131,7 +124,6 @@ export default class ProductController {
   restoreProduct = async (req, res, next) => {
     try {
       const id = req.params.id;
-
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
         { isArchived: false },
@@ -146,10 +138,8 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product restored successfully',
-        data: updatedProduct,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
