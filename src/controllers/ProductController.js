@@ -68,7 +68,6 @@ export default class ProductController {
         data: updatedProduct,
       });
     } catch (error) {
-      res.status(400);
       next(error);
     }
   };
@@ -93,7 +92,6 @@ export default class ProductController {
         data: product,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -117,7 +115,6 @@ export default class ProductController {
         message: 'Product archived successfully',
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -141,7 +138,6 @@ export default class ProductController {
         message: 'Product restored successfully',
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
