@@ -5,6 +5,7 @@
     "fontkit",
     "officedocument",
     "openxmlformats",
+    "qrcode",
     "removebg",
     "spreadsheetml"
   ]

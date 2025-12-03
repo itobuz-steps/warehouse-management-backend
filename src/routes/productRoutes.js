@@ -33,6 +33,8 @@ router.post(
 
 router.get('/', productController.getProducts);
 
+router.post('/qr/:id', productController.getProductById);
+
 router.put(
   '/:id',
   upload.array('productImage', 8),
@@ -41,7 +43,8 @@ router.put(
 );
 
 router.delete(
-  '/:id', isAdmin,
+  '/:id',
+  isAdmin,
   productValidation.deleteProductValidation,
   productController.deleteProduct
 );
@@ -51,5 +54,7 @@ router.patch(
   productValidation.restoreProductValidation,
   productController.restoreProduct
 );
+
+router.get('/qr/:id', productController.getProductQrCode);
 
 export default router;
