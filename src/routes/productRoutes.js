@@ -33,6 +33,8 @@ router.post(
 
 router.get('/', productController.getProducts);
 
+router.post('/qr/:id', productController.getProductById);
+
 router.put(
   '/:id',
   upload.array('productImage', 8),
@@ -53,6 +55,6 @@ router.patch(
   productController.restoreProduct
 );
 
-router.get('/qr', productController.getProductQrCode);
+router.get('/qr/:id', productController.getProductQrCode);
 
 export default router;

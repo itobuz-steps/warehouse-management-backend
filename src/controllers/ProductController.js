@@ -1,6 +1,7 @@
 import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
 import generateQrCode from '../services/generateQr.js';
+import config from '../config/config.js';
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
@@ -155,11 +156,29 @@ export default class ProductController {
 
   getProductQrCode = async (req, res, next) => {
     try {
-      const qr = await generateQrCode('Hello World');
+      const productId = req.params.id;
+
+      const qr = await generateQrCode(
+        `${req.protocol}://${config.FRONTEND_URL}/pages/product.html?id=${productId}`
+      );
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Content-Disposition', 'inline; filename="qrcode.png"');
 
-      res.send(qr);
+      res.status(200).send(qr);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getProductById = async (req, res, next) => {
+    try {
+      const product = await Product.findById(req.params.id);
+
+      res.status(201).json({
+        message: 'Product with specific id',
+        success: true,
+        data: product,
+      });
     } catch (err) {
       next(err);
     }
