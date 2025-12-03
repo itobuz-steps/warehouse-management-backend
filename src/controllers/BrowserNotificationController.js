@@ -5,7 +5,8 @@ export default class BrowserNotificationsController {
     console.log("Inside subscribe");
     try {
       const  subscription  = req.body ?? {};
-
+      subscription.userId = req.userId;
+      
       if (!subscription?.endpoint) {
         return res.status(400).json({
           success: false,

@@ -31,11 +31,6 @@ export default async function verifyToken(req, res, next) {
     req.userId = payload.id;
     req.user = user;
 
-    // if (req.body) {
-    //   req.body.userId = payload.id;
-    //   req.body.user = user;
-    // }
-
     next();
   } catch (error) {
     res.status(401);
