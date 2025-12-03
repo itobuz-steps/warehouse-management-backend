@@ -41,7 +41,8 @@ router.put(
 );
 
 router.delete(
-  '/:id', isAdmin,
+  '/:id',
+  isAdmin,
   productValidation.deleteProductValidation,
   productController.deleteProduct
 );
@@ -51,5 +52,7 @@ router.patch(
   productValidation.restoreProductValidation,
   productController.restoreProduct
 );
+
+router.get('/qr', productController.getProductQrCode);
 
 export default router;
