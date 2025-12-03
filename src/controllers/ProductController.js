@@ -115,7 +115,6 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product archived successfully',
-        data: updatedProduct,
       });
     } catch (err) {
       res.status(400);
@@ -140,7 +139,6 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product restored successfully',
-        data: updatedProduct,
       });
     } catch (err) {
       res.status(400);
