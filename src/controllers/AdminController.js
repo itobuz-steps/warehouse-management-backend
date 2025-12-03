@@ -32,14 +32,11 @@ export default class AdminController {
   updateWarehouse = async (req, res, next) => {
     try {
       let { name, address, description, managers: managerIds } = req.body;
-      const warehouseId = req.params.warehouseId;
-
-      console.log(warehouseId);
 
       managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(`${id}`));
 
       const updatedWarehouse = await Warehouse.findByIdAndUpdate(
-        warehouseId,
+        req.params.warehouseId,
         {
           name,
           address,
@@ -70,34 +67,20 @@ export default class AdminController {
 
   removeWarehouse = async (req, res, next) => {
     try {
-      const warehouseId = req.params.warehouseId;
-      const warehouse = await Warehouse.findOne({ _id: warehouseId });
-
-      if (!warehouse.active) {
-        res.status(400);
-        throw new Error('Warehouse Already Deleted');
-      }
-
-      const updatedWarehouse = await Warehouse.findByIdAndUpdate(
-        warehouseId,
-        {
-          active: false,
-        },
-        {
-          new: true,
-          runValidators: true,
-        }
+      const warehouse = await Warehouse.findOneAndUpdate(
+        { _id: req.params.warehouseId, active: true },
+        { active: false },
+        { new: true, runValidators: true }
       );
 
-      if (!updatedWarehouse) {
-        res.status(404);
-        throw new Error('No warehouse found');
+      if (!warehouse) {
+        res.status(400);
+        throw new Error('Warehouse Already Deleted or Not Found');
       }
 
       res.status(200).json({
         success: true,
-        message: 'Warehouse successfully Removed',
-        data: updatedWarehouse,
+        message: 'Warehouse successfully removed',
       });
     } catch (err) {
       next(err);
@@ -110,7 +93,6 @@ export default class AdminController {
         role: USER_TYPES.MANAGER,
         isVerified: true,
       });
-      console.log(managers);
 
       res.status(200).json({
         message: 'All Managers',
