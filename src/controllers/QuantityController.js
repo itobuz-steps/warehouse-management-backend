@@ -120,7 +120,7 @@ export default class QuantityController {
   // get warehouses where a specific product is stored
   getProductSpecificWarehouses = async (req, res, next) => {
     try {
-      const result = await Quantity.findById(req.params.productId)
+      const result = await Quantity.find({ productId: req.params.productId })
         .populate({
           path: 'productId',
           match: { isArchived: false },
@@ -145,7 +145,9 @@ export default class QuantityController {
 
       if (warehouseId) {
         pipeline.push({
-          $match: { warehouseId: new mongoose.Types.ObjectId(warehouseId) },
+          $match: {
+            warehouseId: new mongoose.Types.ObjectId(`${warehouseId}`),
+          },
         });
       }
 

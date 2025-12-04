@@ -86,14 +86,14 @@ export default class DashboardController {
             as: 'product',
           },
         },
-        
+
         { $unwind: '$product' },
         {
           $match: {
             'product.isArchived': false,
           },
         },
-        
+
         {
           $project: {
             _id: 0,
@@ -104,7 +104,7 @@ export default class DashboardController {
             price: '$product.price',
           },
         },
-        { $limit: 5 }
+        { $limit: 5 },
       ]);
 
       return topProducts;
@@ -193,7 +193,7 @@ export default class DashboardController {
         {
           $group: {
             _id: '$product.category',
-            totalProducts: { $sum: '$quantity'},
+            totalProducts: { $sum: '$quantity' },
             products: { $push: '$product' },
           },
         },
@@ -431,6 +431,23 @@ export default class DashboardController {
           },
         },
         {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $unwind: '$product',
+        },
+        {
+          $match: {
+            'product.isArchived': false,
+          },
+        },
+
+        {
           $group: {
             _id: null,
             totalQuantity: { $sum: '$quantity' },
@@ -483,7 +500,6 @@ export default class DashboardController {
           todayShipment: todayShipment[0],
         },
       });
-      
     } catch (err) {
       res.status(400);
       next(err);
