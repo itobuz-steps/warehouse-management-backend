@@ -41,7 +41,10 @@ export default class NotificationsController {
 
   markAllAsSeen = async (req, res, next) => {
     try {
-      await Notification.updateMany({ userId: req.user.userId }, { seen: true });
+      await Notification.updateMany(
+        { userId: req.user.userId },
+        { seen: true }
+      );
 
       res.status(200).json({
         success: true,
