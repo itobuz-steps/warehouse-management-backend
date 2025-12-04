@@ -102,10 +102,19 @@ export default class AuthController {
 
   login = async (req, res, next) => {
     try {
-      const user = await User.findOne({
-        email: req.body.email,
-        isDeleted: false,
-      });
+      const user = await User.findOneAndUpdate(
+        {
+          email: req.body.email,
+          isDeleted: false,
+        },
+        {
+          lastLogin: Date.now(),
+        },
+        {
+          new: true,
+          runValidators: true,
+        }
+      );
 
       if (!user) {
         res.status(401);
