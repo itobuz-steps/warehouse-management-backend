@@ -106,6 +106,7 @@ export default class AuthController {
         {
           email: req.body.email,
           isDeleted: false,
+          isActive: true,
         },
         {
           lastLogin: Date.now(),
