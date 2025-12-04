@@ -121,6 +121,11 @@ export default class AuthController {
         throw new Error(`User doesn't Exists`);
       }
 
+      if (!user.isActive) {
+        res.status(401);
+        throw new Error('User Blocked by Admin');
+      }
+
       const passwordMatch = await bcrypt.compare(
         req.body.password,
         user.password
