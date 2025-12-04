@@ -7,6 +7,7 @@ const sendBrowserNotification = async ({ users, type, title, message, relatedPro
     if (!users || !users.length) {
       throw new Error('No user found!');
     }
+    console.log(type)
 
     const payload = JSON.stringify({ title, body: message });
     const results = [];
