@@ -9,6 +9,10 @@ const browserNotificationSchema = new mongoose.Schema(
       required: true,
     },
 
+    profileImage: {
+      type: String,
+    },
+
     type: {
       type: String,
       enum: Object.values(NOTIFICATION_TYPES),
@@ -28,7 +32,14 @@ const browserNotificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    relatedProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+
+    warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
+
+    transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
   },
+
   { timestamps: true }
 );
 

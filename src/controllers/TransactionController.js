@@ -21,6 +21,7 @@ export default class TransactionController {
         success: true,
         data: transactions,
       });
+
     } catch (error) {
       next(error);
     }
@@ -234,7 +235,7 @@ export default class TransactionController {
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
-          await notifications.notifyLowStock(productId, sourceWarehouse);
+          // await notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
           console.log("Browser notification called!");
         }
@@ -337,7 +338,7 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          await Notifications.notifyLowStock(productId, sourceWarehouse);
+          // await Notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
         }
       }
@@ -393,7 +394,7 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        await Notifications.notifyLowStock(productId, warehouseId);
+        //await Notifications.notifyLowStock(productId, warehouseId);
         await browserNotification.notifyLowStock(productId, warehouseId);
       }
 

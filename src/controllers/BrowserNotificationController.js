@@ -18,6 +18,23 @@ export default class BrowserNotificationsController {
         });
       }
 
+      let existing = await Subscription.findOne({
+        where: { userId: req.userId, endpoint: subscription.endpoint },
+      });
+
+      if (existing) {
+        //updating if payload is different.
+        await existing.update(subscription);
+
+        return res.status(200).json({
+          success: true,
+          message: 'Subscription already exists – updated.',
+          timestamp: new Date().toISOString(),
+          data: existing,
+        });
+      }
+
+      //add a new entry in the database.
       const record = await Subscription.create(subscription);
 
       return res.status(201).json({
@@ -78,7 +95,6 @@ export default class BrowserNotificationsController {
 
   changeShipmentStatus = async (req, res, next) => {
     try {
-
       await Transaction.findByIdAndUpdate(
         new mongoose.Types.ObjectId(`${req.params.id}`),
         {

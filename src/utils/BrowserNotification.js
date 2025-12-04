@@ -26,6 +26,8 @@ export default class BrowserNotification {
         type: NOTIFICATION_TYPES.LOW_STOCK,
         title: 'Low Stock Alert',
         message: `${product.name} is running low in ${warehouse.name}`,
+        product,
+        warehouse,
       });
 
       console.log(res);
@@ -38,7 +40,6 @@ export default class BrowserNotification {
   notifyPendingShipment = async (productId, warehouseId, transactionId) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
-
       const product = await Product.findById(productId);
 
       //find users related to warehouse.
@@ -56,7 +57,11 @@ export default class BrowserNotification {
         type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',
         message: `A shipment for ${product.name} from ${warehouse.name} is pending. TransactionId: ${transactionId}`,
+        warehouse,
+        product,
+        transactionId,
       });
+      
     } catch (err) {
       throw new Error(err);
     }

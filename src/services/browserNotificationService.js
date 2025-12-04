@@ -2,7 +2,7 @@ import Subscription from '../models/subscriptionModel.js';
 import BrowserNotification from '../models/browserNotificationModel.js';
 import webpush from '../config/webpush.js';
 
-const sendBrowserNotification = async ({ users, type, title, message }) => {
+const sendBrowserNotification = async ({ users, type, title, message, relatedProduct, warehouse, transactionId = '' }) => {
   try {
     if (!users || !users.length) {
       throw new Error('No user found!');
@@ -25,11 +25,18 @@ const sendBrowserNotification = async ({ users, type, title, message }) => {
       }
 
       // Save notification in DB.
-      await BrowserNotification.create({
+      const data = await BrowserNotification.create({
         userId,
+        profileImage: user.profileImage,
+        type,
         title,
         message,
+        relatedProduct,
+        warehouse,
+        transactionId,
       });
+
+      console.log("This is the saved data", data);
 
       //Send notification to all subscriptions of a particular user
       await Promise.all(
