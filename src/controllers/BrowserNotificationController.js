@@ -51,7 +51,7 @@ export default class BrowserNotificationsController {
   getNotifications = async (req, res, next) => {
     try {
       const offset = parseInt(req.params.offset, 10) || 0;
-      const limit = 5;
+      const limit = 10;
 
       //getting top 10 recent notifications.
       const notifications = await BrowserNotification.find({
@@ -59,7 +59,8 @@ export default class BrowserNotificationsController {
       })
         .sort({ createdAt: -1 })
         .skip(offset)
-        .limit(limit);
+        .limit(limit)
+        .populate('warehouse');
 
       // Unseen notification count.
       const unseenCount = await BrowserNotification.countDocuments({
@@ -107,6 +108,26 @@ export default class BrowserNotificationsController {
         success: true,
         message: 'Status Changed to Shipped Successfully',
       });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  getSingleNotification = async (req, res, next) => {
+    try {
+      //getting most recent notification.
+      const notification = await BrowserNotification.find({
+        userId: req.userId,
+      })
+        .sort({ createdAt: -1 })
+        .limit(1);
+
+      res.status(200).json({
+        success: true,
+        message: "Data fetched successfully",
+        data: notification,
+      });
+
     } catch (error) {
       next(error);
     }

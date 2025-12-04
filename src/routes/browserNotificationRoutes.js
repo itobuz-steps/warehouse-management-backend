@@ -5,9 +5,10 @@ const router = express.Router();
 
 const browserNotificationController = new BrowserNotificationsController();
 
+router.get('/get-single-notification', browserNotificationController.getSingleNotification);
 router.get('/:offset', browserNotificationController.getNotifications);
 router.post('/subscribe', browserNotificationController.subscribe);
 router.put('/mark-all-seen', browserNotificationController.markAllAsSeen);
-router.put('/change-shipment/:id', browserNotificationController.changeShipmentStatus);
+router.patch('/change-shipment-status/:id', browserNotificationController.changeShipmentStatus);
 
 export default router;
