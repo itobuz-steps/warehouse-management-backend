@@ -12,28 +12,35 @@ const browserNotification = new BrowserNotification();
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
-      const { startDate, endDate } = req.query;
+      const { startDate, endDate, type } = req.query;
 
-      const dateFilter = {};
+      const matchStage = {};
 
-      if (startDate) {
-        dateFilter.$gte = new Date(startDate);
+      if (startDate || endDate) {
+        matchStage.createdAt = {};
+
+        if (startDate) {
+          matchStage.createdAt.$gte = new Date(startDate);
+        }
+
+        if (endDate) {
+          // Set $lte to the last millisecond of the given day (23:59:59.999)
+          matchStage.createdAt.$lte = new Date(
+            new Date(endDate).setHours(23, 59, 59, 999)
+          );
+        }
       }
 
-      if (endDate) {
-        dateFilter.$lt = new Date(endDate);
+      if (type && type !== 'ALL') {
+        matchStage.type = type;
       }
 
-      const matchStage = Object.keys(dateFilter).length
-        ? { createdAt: dateFilter }
-        : {};
-
-      const transactions = await Transaction.find(matchStage).populate(
-        'product performedBy sourceWarehouse destinationWarehouse'
-      );
+      const transactions = await Transaction.find(matchStage)
+        .populate('product performedBy sourceWarehouse destinationWarehouse')
+        .sort({ createdAt: -1 });
 
       res.status(201).json({
-        message: 'All Transactions',
+        message: 'All Transactions filtered',
         success: true,
         data: transactions,
       });
@@ -45,7 +52,7 @@ export default class TransactionController {
   getWarehouseSpecificTransactions = async (req, res, next) => {
     try {
       const { warehouseId } = req.params;
-      const { startDate, endDate } = req.query;
+      const { startDate, endDate, type } = req.query;
       const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
 
       const dateFilter = {};
@@ -55,21 +62,28 @@ export default class TransactionController {
       }
 
       if (endDate) {
-        dateFilter.$lt = new Date(endDate);
+        // Set $lte to the last millisecond of the given day (23:59:59.999)
+        dateFilter.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+      }
+
+      const matchStage = {
+        $match: {
+          $or: [
+            { sourceWarehouse: warehouseObjectId },
+            { destinationWarehouse: warehouseObjectId },
+          ],
+          ...(Object.keys(dateFilter).length > 0 && {
+            createdAt: dateFilter,
+          }),
+        },
+      };
+
+      if (type && type !== 'ALL') {
+        matchStage.$match.type = type;
       }
 
       const result = await Transaction.aggregate([
-        {
-          $match: {
-            $or: [
-              { sourceWarehouse: warehouseObjectId },
-              { destinationWarehouse: warehouseObjectId },
-            ],
-            ...(Object.keys(dateFilter).length > 0 && {
-              createdAt: dateFilter,
-            }),
-          },
-        },
+        matchStage,
         // Join with products collection
         {
           $lookup: {
