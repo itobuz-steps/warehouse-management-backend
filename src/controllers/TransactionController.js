@@ -12,7 +12,23 @@ const browserNotification = new BrowserNotification();
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
-      const transactions = await Transaction.find().populate(
+      const { startDate, endDate } = req.query;
+
+      const dateFilter = {};
+
+      if (startDate) {
+        dateFilter.$gte = new Date(startDate);
+      }
+
+      if (endDate) {
+        dateFilter.$lt = new Date(endDate);
+      }
+
+      const matchStage = Object.keys(dateFilter).length
+        ? { createdAt: dateFilter }
+        : {};
+
+      const transactions = await Transaction.find(matchStage).populate(
         'product performedBy sourceWarehouse destinationWarehouse'
       );
 
@@ -29,7 +45,18 @@ export default class TransactionController {
   getWarehouseSpecificTransactions = async (req, res, next) => {
     try {
       const { warehouseId } = req.params;
+      const { startDate, endDate } = req.query;
       const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
+
+      const dateFilter = {};
+
+      if (startDate) {
+        dateFilter.$gte = new Date(startDate);
+      }
+
+      if (endDate) {
+        dateFilter.$lt = new Date(endDate);
+      }
 
       const result = await Transaction.aggregate([
         {
@@ -38,6 +65,9 @@ export default class TransactionController {
               { sourceWarehouse: warehouseObjectId },
               { destinationWarehouse: warehouseObjectId },
             ],
+            ...(Object.keys(dateFilter).length > 0 && {
+              createdAt: dateFilter,
+            }),
           },
         },
         // Join with products collection
@@ -59,7 +89,12 @@ export default class TransactionController {
             as: 'performedBy',
           },
         },
-        { $unwind: { path: '$performedBy', preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: {
+            path: '$performedBy',
+            // preserveNullAndEmptyArrays: true
+          },
+        },
         // Join with warehouses
         {
           $lookup: {
