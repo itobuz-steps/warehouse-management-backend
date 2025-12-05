@@ -5,6 +5,7 @@ import config from '../config/config.js';
 import ProfileController from '../controllers/profileController.js';
 import { validate } from '../validations/middlewares/validator.js';
 import { updateProfileSchema } from '../validations/schema/profileSchema.js';
+import isAdmin from '../validations/middlewares/checkAdmin.js';
 
 const router = express.Router();
 const profileController = new ProfileController();
@@ -33,6 +34,12 @@ router.patch(
   upload.single('profile-img'),
   validate(updateProfileSchema),
   profileController.updateProfile
+);
+
+router.patch(
+  '/change-user-status/:managerId',
+  isAdmin,
+  profileController.changeStatus
 );
 
 export default router;
