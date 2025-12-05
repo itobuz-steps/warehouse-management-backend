@@ -106,6 +106,7 @@ export default class AuthController {
         {
           email: req.body.email,
           isDeleted: false,
+          isActive: true,
         },
         {
           lastLogin: Date.now(),
@@ -118,12 +119,7 @@ export default class AuthController {
 
       if (!user) {
         res.status(401);
-        throw new Error(`User doesn't Exists`);
-      }
-
-      if (!user.isActive) {
-        res.status(401);
-        throw new Error('User Blocked by Admin');
+        throw new Error(`User doesn't Exists or Blocked`);
       }
 
       const passwordMatch = await bcrypt.compare(
