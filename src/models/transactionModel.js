@@ -35,9 +35,6 @@ const transactionModel = new mongoose.Schema(
     customerAddress: {
       type: String,
     },
-    orderNumber: {
-      type: Number,
-    },
     shipment: {
       type: String,
       enum: Object.values(SHIPMENT_TYPES),
@@ -61,30 +58,11 @@ const transactionModel = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Warehouse',
     },
-    // For undo functionality
-    canUndo: {
-      type: Boolean,
-      default: true,
-    },
-    undoExpiry: {
-      type: Date,
-    },
-    isUndone: {
-      type: Boolean,
-      default: false,
-    },
   },
   {
     timestamps: true,
   }
 );
-
-transactionModel.pre('save', function (next) {
-  if (this.isNew) {
-    this.undoExpiry = new Date(Date.now() + 10000);
-  }
-  next();
-});
 
 const Transaction = mongoose.model('Transaction', transactionModel);
 export default Transaction;

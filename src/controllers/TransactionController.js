@@ -12,12 +12,35 @@ const browserNotification = new BrowserNotification();
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
-      const transactions = await Transaction.find().populate(
-        'product performedBy sourceWarehouse destinationWarehouse'
-      );
+      const { startDate, endDate, type } = req.query;
+
+      const matchStage = {};
+
+      if (startDate || endDate) {
+        matchStage.createdAt = {};
+
+        if (startDate) {
+          matchStage.createdAt.$gte = new Date(startDate);
+        }
+
+        if (endDate) {
+          // Set $lte to the last millisecond of the given day (23:59:59.999)
+          matchStage.createdAt.$lte = new Date(
+            new Date(endDate).setHours(23, 59, 59, 999)
+          );
+        }
+      }
+
+      if (type && type !== 'ALL') {
+        matchStage.type = type;
+      }
+
+      const transactions = await Transaction.find(matchStage)
+        .populate('product performedBy sourceWarehouse destinationWarehouse')
+        .sort({ createdAt: -1 });
 
       res.status(201).json({
-        message: 'All Transactions',
+        message: 'All Transactions filtered',
         success: true,
         data: transactions,
       });
@@ -29,17 +52,38 @@ export default class TransactionController {
   getWarehouseSpecificTransactions = async (req, res, next) => {
     try {
       const { warehouseId } = req.params;
+      const { startDate, endDate, type } = req.query;
       const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
 
-      const result = await Transaction.aggregate([
-        {
-          $match: {
-            $or: [
-              { sourceWarehouse: warehouseObjectId },
-              { destinationWarehouse: warehouseObjectId },
-            ],
-          },
+      const dateFilter = {};
+
+      if (startDate) {
+        dateFilter.$gte = new Date(startDate);
+      }
+
+      if (endDate) {
+        // Set $lte to the last millisecond of the given day (23:59:59.999)
+        dateFilter.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
+      }
+
+      const matchStage = {
+        $match: {
+          $or: [
+            { sourceWarehouse: warehouseObjectId },
+            { destinationWarehouse: warehouseObjectId },
+          ],
+          ...(Object.keys(dateFilter).length > 0 && {
+            createdAt: dateFilter,
+          }),
         },
+      };
+
+      if (type && type !== 'ALL') {
+        matchStage.$match.type = type;
+      }
+
+      const result = await Transaction.aggregate([
+        matchStage,
         // Join with products collection
         {
           $lookup: {
@@ -59,7 +103,12 @@ export default class TransactionController {
             as: 'performedBy',
           },
         },
-        { $unwind: { path: '$performedBy', preserveNullAndEmptyArrays: true } },
+        {
+          $unwind: {
+            path: '$performedBy',
+            // preserveNullAndEmptyArrays: true
+          },
+        },
         // Join with warehouses
         {
           $lookup: {
@@ -104,10 +153,12 @@ export default class TransactionController {
   };
 
   createStockIn = async (req, res, next) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const { products, supplier, notes, destinationWarehouse } = req.body;
       const transactions = [];
 
@@ -148,8 +199,6 @@ export default class TransactionController {
 
       await session.commitTransaction();
 
-      session.endSession();
-
       res.status(201).json({
         success: true,
         message: 'Stock-in transactions created successfully',
@@ -157,16 +206,19 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally {
+      session.endSession();
     }
   };
 
   createStockOut = async (req, res, next) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const {
         products,
         customerName,
@@ -240,7 +292,6 @@ export default class TransactionController {
       }
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         success: true,
@@ -249,16 +300,19 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally {
+      session.endSession();
     }
   };
 
   createTransfer = async (req, res, next) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const { products, notes, sourceWarehouse, destinationWarehouse } =
         req.body;
 
@@ -342,7 +396,6 @@ export default class TransactionController {
       }
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         success: true,
@@ -351,17 +404,19 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally{
+      session.endSession();
     }
   };
 
   createAdjustment = async (req, res, next) => {
-    console.log('Adjust Stock');
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const { products, warehouseId, reason, notes } = req.body;
       const { productId, quantity } = products[0];
 
@@ -386,7 +441,6 @@ export default class TransactionController {
       const createdTransaction = await transaction.save({ session });
 
       await session.commitTransaction();
-      session.endSession();
 
       if (
         quantityRecord.quantity <= quantityRecord.limit &&
@@ -406,8 +460,9 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally{
+      session.endSession();
     }
   };
 
