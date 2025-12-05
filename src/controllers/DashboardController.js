@@ -40,7 +40,9 @@ export default class DashboardController {
         throw new Error('warehouse Id not found!');
       }
 
-      const topProducts = await this.getTopFiveProductsData();
+      const topProducts = await this.getTopFiveProductsData(
+        req.params.warehouseId
+      );
       const result = await generateTopFiveProductsExcelData(topProducts);
 
       res.setHeader(
@@ -62,6 +64,7 @@ export default class DashboardController {
 
   getTopFiveProductsData = async (id) => {
     try {
+      console.log(id);
       const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
       const topProducts = await Quantity.aggregate([
