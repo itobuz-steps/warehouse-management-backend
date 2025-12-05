@@ -153,10 +153,12 @@ export default class TransactionController {
   };
 
   createStockIn = async (req, res, next) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const { products, supplier, notes, destinationWarehouse } = req.body;
       const transactions = [];
 
@@ -197,8 +199,6 @@ export default class TransactionController {
 
       await session.commitTransaction();
 
-      session.endSession();
-
       res.status(201).json({
         success: true,
         message: 'Stock-in transactions created successfully',
@@ -206,16 +206,19 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally {
+      session.endSession();
     }
   };
 
   createStockOut = async (req, res, next) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const {
         products,
         customerName,
@@ -289,7 +292,6 @@ export default class TransactionController {
       }
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         success: true,
@@ -298,16 +300,19 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally {
+      session.endSession();
     }
   };
 
   createTransfer = async (req, res, next) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const { products, notes, sourceWarehouse, destinationWarehouse } =
         req.body;
 
@@ -391,7 +396,6 @@ export default class TransactionController {
       }
 
       await session.commitTransaction();
-      session.endSession();
 
       res.status(201).json({
         success: true,
@@ -400,17 +404,19 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally{
+      session.endSession();
     }
   };
 
   createAdjustment = async (req, res, next) => {
-    console.log('Adjust Stock');
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    let session;
 
     try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
       const { products, warehouseId, reason, notes } = req.body;
       const { productId, quantity } = products[0];
 
@@ -435,7 +441,6 @@ export default class TransactionController {
       const createdTransaction = await transaction.save({ session });
 
       await session.commitTransaction();
-      session.endSession();
 
       if (
         quantityRecord.quantity <= quantityRecord.limit &&
@@ -455,8 +460,9 @@ export default class TransactionController {
       });
     } catch (error) {
       await session.abortTransaction();
-      session.endSession();
       next(error);
+    } finally{
+      session.endSession();
     }
   };
 
