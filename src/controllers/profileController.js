@@ -29,7 +29,6 @@ export default class ProfileController {
         success: true,
         data: { user },
       });
-      
     } catch (err) {
       next(err);
     }
@@ -79,7 +78,34 @@ export default class ProfileController {
         message: 'User deleted Successfully!',
         success: true,
       });
+    } catch (err) {
+      next(err);
+    }
+  };
 
+  changeStatus = async (req, res, next) => {
+    try {
+      const manager = await User.findOneAndUpdate(
+        {
+          _id: req.params.managerId,
+          isVerified: true,
+          isDeleted: false,
+          role: USER_TYPES.MANAGER,
+        },
+        [{ $set: { isActive: { $not: '$isActive' } } }],
+        { new: true }
+      );
+
+      if (!manager) {
+        throw new Error('Manager does not exist');
+      }
+
+      res.status(200).json({
+        message: manager.isActive
+          ? 'Manager Unblocked Successfully'
+          : 'Manager Blocked Successfully',
+        success: true,
+      });
     } catch (err) {
       next(err);
     }
