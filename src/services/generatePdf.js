@@ -238,15 +238,6 @@ const generatePdf = async (transaction) => {
   // Shipment Status
   cursorY -= lineGap;
   writeText(page, `Status: `, 60, cursorY, 12, boldFont);
-  // writeText(
-  //   page,
-  //   `${shipment || 'N/A'}`,
-  //   110,
-  //   cursorY,
-  //   12,
-  //   boldFont,
-  //   rgb(0.725, 0.478, 0.529)
-  // );
 
   drawBadge(
     page,
@@ -256,7 +247,7 @@ const generatePdf = async (transaction) => {
     boldFont,
     12,
     rgb(0.725, 0.478, 0.529),
-    rgb(1, 1, 1) // white text
+    rgb(1, 1, 1)
   );
 
   // Product supplied from
