@@ -61,6 +61,7 @@ const generatePdf = async (transaction) => {
     createdAt,
     sourceWarehouse,
     _id,
+    shipment,
   } = transaction;
 
   // Set line gap and Y axis length
@@ -234,6 +235,30 @@ const generatePdf = async (transaction) => {
 
   const formattedDate = new Date(createdAt).toLocaleString();
 
+  // Shipment Status
+  cursorY -= lineGap;
+  writeText(page, `Status: `, 60, cursorY, 12, boldFont);
+  // writeText(
+  //   page,
+  //   `${shipment || 'N/A'}`,
+  //   110,
+  //   cursorY,
+  //   12,
+  //   boldFont,
+  //   rgb(0.725, 0.478, 0.529)
+  // );
+
+  drawBadge(
+    page,
+    shipment || 'N/A',
+    110,
+    cursorY,
+    boldFont,
+    12,
+    rgb(0.725, 0.478, 0.529),
+    rgb(1, 1, 1) // white text
+  );
+
   // Product supplied from
   cursorY -= lineGap;
   writeText(page, `Supplied From: `, 60, cursorY, 12, boldFont);
@@ -350,6 +375,34 @@ function drawImage(page, image, x, y, width, height, opacity = 1) {
     width,
     height,
     opacity,
+  });
+}
+
+function drawBadge(page, text, x, y, font, fontSize, bgColor, textColor) {
+  const paddingX = 6;
+  const paddingY = 3;
+  const borderRadius = 10;
+
+  const textWidth = font.widthOfTextAtSize(text, fontSize);
+  const textHeight = fontSize;
+
+  // Draw rounded rectangle
+  page.drawRectangle({
+    x: x - paddingX,
+    y: y - paddingY,
+    width: textWidth + paddingX * 2,
+    height: textHeight + paddingY,
+    color: bgColor,
+    borderRadius,
+  });
+
+  // Draw text inside it
+  page.drawText(text, {
+    x,
+    y,
+    size: fontSize,
+    font,
+    color: textColor,
   });
 }
 
