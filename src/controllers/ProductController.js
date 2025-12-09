@@ -173,4 +173,19 @@ export default class ProductController {
       next(err);
     }
   };
+
+  getArchivedProducts = async (req, res, next) => {
+    try {
+      const products = await Product.find({ isArchived: true }).populate(
+        'createdBy'
+      );
+
+      res.status(200).json({
+        success: true,
+        data: products,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
