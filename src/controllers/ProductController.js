@@ -1,4 +1,5 @@
 import Product from '../models/productModel.js';
+import Quantity from '../models/quantityModel.js';
 import mongoose from 'mongoose';
 import generateQrCode from '../services/generateQr.js';
 import config from '../config/config.js';
@@ -112,9 +113,12 @@ export default class ProductController {
         throw new Error('Product not found');
       }
 
+      await Quantity.deleteMany({ productId: id });
+
       res.status(201).json({
         success: true,
-        message: 'Product archived successfully',
+        message:
+          'Product archived and removed from all warehouses successfully',
       });
     } catch (err) {
       next(err);
