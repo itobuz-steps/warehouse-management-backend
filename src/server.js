@@ -12,6 +12,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import warehouseRoutes from './routes/warehouseRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
@@ -45,6 +46,7 @@ app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', verifyToken, transactionRoutes);
 app.use('/profile', verifyToken, profileRoutes);
 app.use('/dashboard/', verifyToken, dashboardRoutes);
+app.use('/analytics', verifyToken, analyticsRoutes);
 app.use('/notifications', verifyToken, notificationRoutes);
 app.use('/browser-notifications', verifyToken, BrowserNotificationRoutes);
 
