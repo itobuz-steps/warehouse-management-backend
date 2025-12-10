@@ -525,7 +525,12 @@ export default class DashboardController {
         {
           $match: {
             warehouseId: warehouseId,
-            quantity: { $lte: 10 },
+          },
+        },
+        {
+          // Compare two fields: quantity <= limit
+          $match: {
+            $expr: { $lte: ['$quantity', '$limit'] },
           },
         },
         {
