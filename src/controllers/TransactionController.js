@@ -5,6 +5,7 @@ import BrowserNotification from '../utils/browserNotification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
+import Warehouse from '../models/warehouseModel.js';
 
 const notifications = new Notifications();
 const browserNotification = new BrowserNotification();
@@ -13,6 +14,7 @@ export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
       const { startDate, endDate, type } = req.query;
+      const user = req.user; // authenticated user
 
       const matchStage = {};
 
@@ -35,13 +37,26 @@ export default class TransactionController {
         matchStage.type = type;
       }
 
+      if (user.role === 'manager') {
+        // Find all warehouses managed by this manager
+        const warehouses = await Warehouse.find({
+          managerIds: user._id,
+        }).select('_id');
+        const warehouseIds = warehouses.map((warehouse) => warehouse._id);
+
+        matchStage.$or = [
+          { sourceWarehouse: { $in: warehouseIds } },
+          { destinationWarehouse: { $in: warehouseIds } },
+        ];
+      }
+
       const transactions = await Transaction.find(matchStage)
         .populate('product performedBy sourceWarehouse destinationWarehouse')
         .sort({ createdAt: -1 });
 
-      res.status(201).json({
-        message: 'All Transactions filtered',
+      res.status(200).json({
         success: true,
+        message: 'Transactions fetched successfully',
         data: transactions,
       });
     } catch (error) {
@@ -405,7 +420,7 @@ export default class TransactionController {
     } catch (error) {
       await session.abortTransaction();
       next(error);
-    } finally{
+    } finally {
       session.endSession();
     }
   };
@@ -461,7 +476,7 @@ export default class TransactionController {
     } catch (error) {
       await session.abortTransaction();
       next(error);
-    } finally{
+    } finally {
       session.endSession();
     }
   };
