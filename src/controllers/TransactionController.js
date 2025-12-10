@@ -262,6 +262,13 @@ export default class TransactionController {
           });
         }
 
+        if (quantity> quantityRecord.limit) {
+          await session.abortTransaction();
+          return res.status(400).json({
+            message: `Stock out Quantity exceeded Product Limit: ${quantityRecord.limit}`,
+          });
+        }
+
         const previousQty = quantityRecord.quantity;
 
         quantityRecord.quantity -= quantity;
