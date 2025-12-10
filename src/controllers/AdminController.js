@@ -6,7 +6,7 @@ import USER_TYPES from '../constants/userConstants.js';
 export default class AdminController {
   addWarehouse = async (req, res, next) => {
     try {
-      let { name, address, description, managers: managerIds } = req.body;
+      let { name, address, description, managers: managerIds, capacity } = req.body;
 
       managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(`${id}`));
 
@@ -16,6 +16,7 @@ export default class AdminController {
         address,
         description,
         managerIds,
+        capacity
       });
 
       newWarehouse.save();
