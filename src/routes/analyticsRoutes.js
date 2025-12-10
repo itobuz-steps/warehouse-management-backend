@@ -12,5 +12,9 @@ router.get(
   '/product-comparison-history',
   analyticsController.getTwoProductComparisonHistoryForWarehouse
 );
+router.get(
+  '/get-two-products-quantity-chart-data',
+  analyticsController.getTwoProductQuantitiesForWarehouseExcel
+);
 
 export default router;

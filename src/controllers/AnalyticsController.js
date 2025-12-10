@@ -2,54 +2,15 @@ import Quantity from '../models/quantityModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import Transaction from '../models/transactionModel.js';
 import Product from '../models/productModel.js';
+import { generateTwoProductQuantityExcel } from '../services/generateExcel.js';
 export default class AnalyticsController {
   //for bar chart
   getTwoProductQuantitiesForWarehouse = async (req, res, next) => {
     try {
-      const { warehouseId, productA, productB } = req.query;
-
-      if (!warehouseId || !productA || !productB) {
-        res.status(400);
-        throw new Error('warehouseId, productA, and productB are required.');
-      }
-
-      const warehouse = await Warehouse.findById(warehouseId);
-      if (!warehouse) {
-        res.status(404);
-        throw new Error('Warehouse not found.');
-      }
-
-      const productAData = await Product.findById(productA).lean();
-      const productBData = await Product.findById(productB).lean();
-
-      if (!productAData || !productBData) {
-        res.status(404);
-        throw new Error('One or both product(s) not found.');
-      }
-
-      const quantityA = await Quantity.findOne({
-        warehouseId,
-        productId: productA,
-      }).lean();
-
-      const quantityB = await Quantity.findOne({
-        warehouseId,
-        productId: productB,
-      }).lean();
-
-      const result = {
-        warehouse: warehouse.name,
-        productA: {
-          id: productA,
-          name: productAData.name,
-          quantity: quantityA ? quantityA.quantity : 0,
-        },
-        productB: {
-          id: productB,
-          name: productBData.name,
-          quantity: quantityB ? quantityB.quantity : 0,
-        },
-      };
+      const result = await this.getTwoProductQuantitiesForWarehouseData(
+        req.query
+      );
+      console.log(result);
 
       res.status(200).json({
         success: true,
@@ -59,6 +20,77 @@ export default class AnalyticsController {
     } catch (error) {
       next(error);
     }
+  };
+
+  getTwoProductQuantitiesForWarehouseExcel = async (req, res, next) => {
+    try {
+      const quantities = await this.getTwoProductQuantitiesForWarehouseData(
+        req.query
+      );
+
+      const result = await generateTwoProductQuantityExcel(quantities);
+
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      );
+
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename=top-products.xlsx'
+      );
+
+      // Send the file buffer
+      res.status(200).send(result);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getTwoProductQuantitiesForWarehouseData = async (ids) => {
+    console.log(ids);
+    const { warehouseId, productA, productB } = ids;
+
+    if (!warehouseId || !productA || !productB) {
+      throw new Error('warehouseId, productA, and productB are required.');
+    }
+
+    const warehouse = await Warehouse.findById(warehouseId);
+    if (!warehouse) {
+      throw new Error('Warehouse not found.');
+    }
+
+    const productAData = await Product.findById(productA).lean();
+    const productBData = await Product.findById(productB).lean();
+
+    if (!productAData || !productBData) {
+      throw new Error('One or both product(s) not found.');
+    }
+
+    const quantityA = await Quantity.findOne({
+      warehouseId,
+      productId: productA,
+    }).lean();
+
+    const quantityB = await Quantity.findOne({
+      warehouseId,
+      productId: productB,
+    }).lean();
+
+    const result = {
+      warehouse: warehouse.name,
+      productA: {
+        id: productA,
+        name: productAData.name,
+        quantity: quantityA ? quantityA.quantity : 0,
+      },
+      productB: {
+        id: productB,
+        name: productBData.name,
+        quantity: quantityB ? quantityB.quantity : 0,
+      },
+    };
+    return result;
   };
 
   getTwoProductComparisonHistoryForWarehouse = async (req, res, next) => {
