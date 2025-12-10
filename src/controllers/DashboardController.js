@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import {
-  generateTopFiveProductsExcelData,
+  generateTopFiveProductsExcel,
   generateInventoryByCategoryExcel,
   generateWeeklyTransactionExcel,
 } from '../services/generateExcel.js';
@@ -43,7 +43,7 @@ export default class DashboardController {
       const topProducts = await this.getTopFiveProductsData(
         req.params.warehouseId
       );
-      const result = await generateTopFiveProductsExcelData(topProducts);
+      const result = await generateTopFiveProductsExcel(topProducts);
 
       res.setHeader(
         'Content-Type',
