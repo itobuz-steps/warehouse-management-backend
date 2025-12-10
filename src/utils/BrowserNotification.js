@@ -3,9 +3,10 @@ import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
 import sendBrowserNotification from '../services/browserNotificationService.js';
+import USER_TYPES from '../constants/userConstants.js';
 
 export default class BrowserNotification {
-  notifyLowStock = async (productId, warehouseId) => {
+  notifyLowStock = async (productId, warehouseId, ) => {
     try {
       //extracting product and warehouse detail.
       const product = await Product.findById(productId);
@@ -44,7 +45,7 @@ export default class BrowserNotification {
 
       //find users related to warehouse.
       const users = await User.find({
-        $or: [{ role: 'admin' }, { _id: { $in: warehouse?.managerIds || [] } }],
+        $or: [{ role: USER_TYPES.ADMIN }, { _id: { $in: warehouse?.managerIds || [] } }],
       });
 
       if (!users.length) {

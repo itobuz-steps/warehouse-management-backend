@@ -11,4 +11,5 @@ router.post('/subscribe', browserNotificationController.subscribe);
 router.put('/mark-all-seen', browserNotificationController.markAllAsSeen);
 router.patch('/change-shipment-status/:id', browserNotificationController.changeShipmentStatus);
 
+
 export default router;

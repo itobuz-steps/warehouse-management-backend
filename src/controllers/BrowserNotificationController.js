@@ -1,7 +1,6 @@
 import Subscription from '../models/subscriptionModel.js';
 import BrowserNotification from '../models/browserNotificationModel.js';
 import Transaction from '../models/transactionModel.js';
-import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import mongoose from 'mongoose';
 
 export default class BrowserNotificationsController {
@@ -96,10 +95,13 @@ export default class BrowserNotificationsController {
 
   changeShipmentStatus = async (req, res, next) => {
     try {
+      console.log("Change shipment status is called");
+
       await Transaction.findByIdAndUpdate(
         new mongoose.Types.ObjectId(`${req.params.id}`),
         {
-          shipment: SHIPMENT_TYPES.SHIPPED,
+          isShipped: true,
+          shippedBy: new mongoose.Types.ObjectId(`${req.userId}`),
         },
         { new: true }
       );
@@ -108,6 +110,7 @@ export default class BrowserNotificationsController {
         success: true,
         message: 'Status Changed to Shipped Successfully',
       });
+
     } catch (error) {
       next(error);
     }
@@ -124,10 +127,9 @@ export default class BrowserNotificationsController {
 
       res.status(200).json({
         success: true,
-        message: "Data fetched successfully",
+        message: 'Data fetched successfully',
         data: notification,
       });
-
     } catch (error) {
       next(error);
     }
