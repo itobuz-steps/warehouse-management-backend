@@ -17,4 +17,9 @@ router.get(
   analyticsController.getTwoProductQuantitiesForWarehouseExcel
 );
 
+router.get(
+  '/get-two-products-transaction-chart-data',
+  analyticsController.getTwoProductComparisonHistoryForWarehouseExcel
+);
+
 export default router;
