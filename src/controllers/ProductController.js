@@ -198,10 +198,6 @@ export default class ProductController {
           query = query.sort({ name: 1 });
         } else if (sort === 'name_desc') {
           query = query.sort({ name: -1 });
-        } else if (sort === 'quantity_asc') {
-          query = query.sort({ quantity: 1 });
-        } else if (sort === 'quantity_desc') {
-          query = query.sort({ quantity: -1 });
         } else if (sort === 'category_asc') {
           query = query.sort({ category: 1 });
         }
