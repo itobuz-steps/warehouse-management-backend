@@ -64,17 +64,17 @@ const sendBrowserNotification = async ({
       console.log('This is the saved data', data);
 
       //Sending email.
-      console.log("sending email");
-      if (type === NOTIFICATION_TYPES.LOW_STOCK) {
-        await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
-      } else {
-        await sendMail.sendPendingShipmentEmail(
-          user.email,
-          user,
-          product,
-          warehouse
-        );
-      }
+      // console.log("sending email");
+      // if (type === NOTIFICATION_TYPES.LOW_STOCK) {
+      //   await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
+      // } else {
+      //   await sendMail.sendPendingShipmentEmail(
+      //     user.email,
+      //     user,
+      //     product,
+      //     warehouse
+      //   );
+      // }
 
       //Send notification to all subscriptions of a particular user
       console.log("sending web-push notification");

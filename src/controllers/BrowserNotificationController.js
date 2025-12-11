@@ -2,6 +2,7 @@ import Subscription from '../models/subscriptionModel.js';
 import BrowserNotification from '../models/browserNotificationModel.js';
 import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
+import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 
 export default class BrowserNotificationsController {
   subscribe = async (req, res, next) => {
@@ -72,6 +73,7 @@ export default class BrowserNotificationsController {
         data: notifications,
         unseenCount,
       });
+
     } catch (error) {
       next(error);
     }
@@ -95,14 +97,19 @@ export default class BrowserNotificationsController {
 
   changeShipmentStatus = async (req, res, next) => {
     try {
-      console.log("Change shipment status is called");
+      const transactionId = new mongoose.Types.ObjectId(req.params.id);
 
       await Transaction.findByIdAndUpdate(
-        new mongoose.Types.ObjectId(`${req.params.id}`),
+        `${transactionId}`,
         {
-          isShipped: true,
-          shippedBy: new mongoose.Types.ObjectId(`${req.userId}`),
+          shipment: SHIPMENT_TYPES.SHIPPED,
         },
+        { new: true }
+      );
+
+      await BrowserNotification.updateMany(
+        { transactionId: transactionId },
+        { isShipped: true, shippedBy: req.userId },
         { new: true }
       );
 
@@ -110,28 +117,27 @@ export default class BrowserNotificationsController {
         success: true,
         message: 'Status Changed to Shipped Successfully',
       });
-
     } catch (error) {
       next(error);
     }
   };
 
-  getSingleNotification = async (req, res, next) => {
-    try {
-      //getting most recent notification.
-      const notification = await BrowserNotification.find({
-        userId: req.userId,
-      })
-        .sort({ createdAt: -1 })
-        .limit(1);
+  // getSingleNotification = async (req, res, next) => {
+  //   try {
+  //     //getting most recent notification.
+  //     const notification = await BrowserNotification.find({
+  //       userId: req.userId,
+  //     })
+  //       .sort({ createdAt: -1 })
+  //       .limit(1);
 
-      res.status(200).json({
-        success: true,
-        message: 'Data fetched successfully',
-        data: notification,
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+  //     res.status(200).json({
+  //       success: true,
+  //       message: 'Data fetched successfully',
+  //       data: notification,
+  //     });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // };
 }

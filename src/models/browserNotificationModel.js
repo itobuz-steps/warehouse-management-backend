@@ -49,4 +49,5 @@ const browserNotificationSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model('BrowserNotification', browserNotificationSchema);
+export default mongoose.model('BNotification', browserNotificationSchema);
+// export default mongoose.model('BrowserNotification', browserNotificationSchema);

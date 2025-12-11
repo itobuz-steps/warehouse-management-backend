@@ -6,8 +6,10 @@ import sendBrowserNotification from '../services/browserNotificationService.js';
 import USER_TYPES from '../constants/userConstants.js';
 
 export default class BrowserNotification {
-  notifyLowStock = async (productId, warehouseId, ) => {
+  notifyLowStock = async (productId, warehouseId) => {
     try {
+      console.log("notify low stock has been called");
+
       //extracting product and warehouse detail.
       const product = await Product.findById(productId);
       const warehouse = await Warehouse.findById(warehouseId);
@@ -57,7 +59,7 @@ export default class BrowserNotification {
         users,
         type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',
-        message: `A shipment for ${product.name} from ${warehouse.name} is pending. TransactionId: ${transactionId}`,
+        message: `A shipment for ${product.name} from ${warehouse.name} is pending.`,
         warehouse,
         product,
         transactionId,
