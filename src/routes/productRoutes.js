@@ -56,5 +56,6 @@ router.patch(
 );
 
 router.get('/qr/:id', productController.getProductQrCode);
+router.get('/archived/all', isAdmin, productController.getArchivedProducts);
 
 export default router;
