@@ -3,7 +3,6 @@ import cors from 'cors';
 import http from 'http';
 import config from './config/config.js';
 import connectDatabase from './config/dbConfig.js';
-import { initSocket } from './socket.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import quantityRoutes from './routes/quantityRoutes.js';
@@ -14,7 +13,6 @@ import profileRoutes from './routes/profileRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 // import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
-import notificationRoutes from './routes/notificationRoutes.js';
 import BrowserNotificationRoutes from './routes/browserNotificationRoutes.js';
 import verifyToken from './validations/middlewares/verifyToken.js';
 
@@ -34,9 +32,6 @@ connectDatabase();
 
 const server = http.createServer(app);
 
-// Init WebSocket
-initSocket(server);
-
 app.use('/user/auth', authRoutes);
 app.use('/user/admin/', verifyToken, adminRoutes);
 app.use('/warehouse', verifyToken, warehouseRoutes);
@@ -45,7 +40,6 @@ app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', verifyToken, transactionRoutes);
 app.use('/profile', verifyToken, profileRoutes);
 app.use('/dashboard/', verifyToken, dashboardRoutes);
-app.use('/notifications', verifyToken, notificationRoutes);
 app.use('/browser-notifications', verifyToken, BrowserNotificationRoutes);
 
 app.use(errorHandler);
