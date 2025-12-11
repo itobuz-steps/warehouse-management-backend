@@ -19,15 +19,12 @@ export default class BrowserNotificationsController {
       }
 
       let existing = await Subscription.findOne({
-        userId: req.userId,
-        endpoint: subscription.endpoint,
+        where: { userId: req.userId, endpoint: subscription.endpoint },
       });
 
       if (existing) {
         //updating if payload is different.
-        await Subscription.findByIdAndUpdate(existing._id, subscription, {
-          new: true,
-        });
+        await existing.update(subscription);
 
         return res.status(200).json({
           success: true,
@@ -76,6 +73,7 @@ export default class BrowserNotificationsController {
         data: notifications,
         unseenCount,
       });
+
     } catch (error) {
       next(error);
     }
