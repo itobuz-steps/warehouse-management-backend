@@ -20,7 +20,7 @@ const quantityModel = new mongoose.Schema(
     limit: {
       type: Number,
       required: true,
-      default: 100,
+      default: 10,
     },
   },
   {

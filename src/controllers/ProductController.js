@@ -1,10 +1,11 @@
 import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
+import generateQrCode from '../services/generateQr.js';
+import config from '../config/config.js';
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
       const { search, category, sort } = req.query;
-
       const filter = { isArchived: false };
 
       if (category) {
@@ -69,7 +70,6 @@ export default class ProductController {
         data: updatedProduct,
       });
     } catch (error) {
-      res.status(400);
       next(error);
     }
   };
@@ -77,7 +77,6 @@ export default class ProductController {
   createProduct = async (req, res, next) => {
     try {
       const { name, category, description, price } = req.body;
-
       const product = await Product.create({
         name,
         category,
@@ -95,7 +94,6 @@ export default class ProductController {
         data: product,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -103,7 +101,6 @@ export default class ProductController {
   deleteProduct = async (req, res, next) => {
     try {
       const id = req.params.id;
-
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
         { isArchived: true },
@@ -118,10 +115,8 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product archived successfully',
-        data: updatedProduct,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -129,7 +124,6 @@ export default class ProductController {
   restoreProduct = async (req, res, next) => {
     try {
       const id = req.params.id;
-
       const updatedProduct = await Product.findOneAndUpdate(
         { _id: id },
         { isArchived: false },
@@ -144,10 +138,77 @@ export default class ProductController {
       res.status(201).json({
         success: true,
         message: 'Product restored successfully',
-        data: updatedProduct,
       });
     } catch (err) {
-      res.status(400);
+      next(err);
+    }
+  };
+
+  getProductQrCode = async (req, res, next) => {
+    try {
+      const productId = req.params.id;
+
+      const qr = await generateQrCode(
+        `${req.protocol}://${config.FRONTEND_URL}/pages/product.html?id=${productId}`
+      );
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', 'inline; filename="qrcode.png"');
+
+      res.status(200).send(qr);
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getProductById = async (req, res, next) => {
+    try {
+      const product = await Product.findById(req.params.id);
+
+      res.status(201).json({
+        message: 'Product with specific id',
+        success: true,
+        data: product,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  getArchivedProducts = async (req, res, next) => {
+    try {
+      const { search, category, sort } = req.query;
+
+      const filter = { isArchived: true };
+
+      // Category Filter
+      if (category) {
+        filter.category = category;
+      }
+
+      // Search Filter
+      if (search) {
+        filter.name = { $regex: search, $options: 'i' };
+      }
+
+      let query = Product.find(filter).populate('createdBy');
+
+      // Sorting
+      if (sort) {
+        if (sort === 'name_asc') {
+          query = query.sort({ name: 1 });
+        } else if (sort === 'name_desc') {
+          query = query.sort({ name: -1 });
+        } else if (sort === 'category_asc') {
+          query = query.sort({ category: 1 });
+        }
+      }
+
+      const products = await query;
+      res.status(200).json({
+        success: true,
+        data: products,
+      });
+    } catch (err) {
       next(err);
     }
   };

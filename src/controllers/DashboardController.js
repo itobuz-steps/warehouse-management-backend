@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import {
-  generateTopFiveProductsExcelData,
+  generateTopFiveProductsExcel,
   generateInventoryByCategoryExcel,
   generateWeeklyTransactionExcel,
 } from '../services/generateExcel.js';
@@ -40,8 +40,10 @@ export default class DashboardController {
         throw new Error('warehouse Id not found!');
       }
 
-      const topProducts = await this.getTopFiveProductsData();
-      const result = await generateTopFiveProductsExcelData(topProducts);
+      const topProducts = await this.getTopFiveProductsData(
+        req.params.warehouseId
+      );
+      const result = await generateTopFiveProductsExcel(topProducts);
 
       res.setHeader(
         'Content-Type',
@@ -62,6 +64,7 @@ export default class DashboardController {
 
   getTopFiveProductsData = async (id) => {
     try {
+      console.log(id);
       const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
       const topProducts = await Quantity.aggregate([
@@ -86,14 +89,14 @@ export default class DashboardController {
             as: 'product',
           },
         },
-        
+
         { $unwind: '$product' },
         {
           $match: {
             'product.isArchived': false,
           },
         },
-        
+
         {
           $project: {
             _id: 0,
@@ -104,7 +107,7 @@ export default class DashboardController {
             price: '$product.price',
           },
         },
-        { $limit: 5 }
+        { $limit: 5 },
       ]);
 
       return topProducts;
@@ -191,7 +194,7 @@ export default class DashboardController {
         {
           $group: {
             _id: '$product.category',
-            totalProducts: { $sum: '$quantity'},
+            totalProducts: { $sum: '$quantity' },
             products: { $push: '$product' },
           },
         },
@@ -428,6 +431,23 @@ export default class DashboardController {
           },
         },
         {
+          $lookup: {
+            from: 'products',
+            localField: 'productId',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        {
+          $unwind: '$product',
+        },
+        {
+          $match: {
+            'product.isArchived': false,
+          },
+        },
+
+        {
           $group: {
             _id: null,
             totalQuantity: { $sum: '$quantity' },
@@ -480,7 +500,6 @@ export default class DashboardController {
           todayShipment: todayShipment[0],
         },
       });
-      
     } catch (err) {
       next(err);
     }
@@ -502,7 +521,12 @@ export default class DashboardController {
         {
           $match: {
             warehouseId: warehouseId,
-            quantity: { $lte: 10 },
+          },
+        },
+        {
+          // Compare two fields: quantity <= limit
+          $match: {
+            $expr: { $lte: ['$quantity', '$limit'] },
           },
         },
         {

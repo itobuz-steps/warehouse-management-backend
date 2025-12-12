@@ -31,15 +31,11 @@ const userModel = new mongoose.Schema(
     },
     isActive: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     isDeleted: {
       type: Boolean,
       default: false,
-    },
-    wareHouseIds: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: 'Warehouse',
     },
   },
   {
