@@ -3,7 +3,6 @@ import cors from 'cors';
 import http from 'http';
 import config from './config/config.js';
 import connectDatabase from './config/dbConfig.js';
-import { initSocket } from './socket.js';
 import authRoutes from './routes/authRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import quantityRoutes from './routes/quantityRoutes.js';
@@ -12,10 +11,10 @@ import adminRoutes from './routes/adminRoutes.js';
 import warehouseRoutes from './routes/warehouseRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
+// import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
-import notificationRoutes from './routes/notificationRoutes.js';
 import BrowserNotificationRoutes from './routes/browserNotificationRoutes.js';
 import verifyToken from './validations/middlewares/verifyToken.js';
 
@@ -25,7 +24,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(loggerMiddleware);
+// app.use(loggerMiddleware);
 app.use('/uploads', express.static('uploads'));
 app.use('/chart-data', express.static('chart-data'));
 
@@ -34,9 +33,6 @@ const port = config.PORT;
 connectDatabase();
 
 const server = http.createServer(app);
-
-// Init WebSocket
-initSocket(server);
 
 app.use('/user/auth', authRoutes);
 app.use('/user/admin/', verifyToken, adminRoutes);

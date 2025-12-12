@@ -134,7 +134,6 @@ export default class DashboardController {
         data: productsCategory,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -165,7 +164,6 @@ export default class DashboardController {
       // Send the file buffer
       res.status(200).send(result);
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -229,7 +227,6 @@ export default class DashboardController {
         data: transactionDetails,
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -504,7 +501,6 @@ export default class DashboardController {
         },
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };
@@ -563,7 +559,6 @@ export default class DashboardController {
         },
       });
     } catch (err) {
-      res.status(400);
       next(err);
     }
   };

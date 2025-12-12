@@ -1,11 +1,17 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 
 const browserNotificationSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: 'User',
       required: true,
+    },
+
+    type: {
+      type: String,
+      enum: Object.values(NOTIFICATION_TYPES),
     },
 
     title: {
@@ -21,9 +27,27 @@ const browserNotificationSchema = new mongoose.Schema(
     seen: {
       type: Boolean,
       default: false,
+    },
+
+    relatedProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+
+    warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
+
+    transactionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Transaction' },
+
+    isShipped: {
+      type: Boolean,
+      default: false,
+    },
+
+    shippedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
     }
   },
+
   { timestamps: true }
 );
 
-export default mongoose.model("BrowserNotification", browserNotificationSchema);
+export default mongoose.model('BNotification', browserNotificationSchema);
+// export default mongoose.model('BrowserNotification', browserNotificationSchema);

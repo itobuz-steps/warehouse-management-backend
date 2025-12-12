@@ -3,10 +3,13 @@ import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
 import sendBrowserNotification from '../services/browserNotificationService.js';
+import USER_TYPES from '../constants/userConstants.js';
 
 export default class BrowserNotification {
   notifyLowStock = async (productId, warehouseId) => {
     try {
+      console.log("notify low stock has been called");
+
       //extracting product and warehouse detail.
       const product = await Product.findById(productId);
       const warehouse = await Warehouse.findById(warehouseId);
@@ -26,6 +29,8 @@ export default class BrowserNotification {
         type: NOTIFICATION_TYPES.LOW_STOCK,
         title: 'Low Stock Alert',
         message: `${product.name} is running low in ${warehouse.name}`,
+        product,
+        warehouse,
       });
 
       console.log(res);
@@ -38,12 +43,11 @@ export default class BrowserNotification {
   notifyPendingShipment = async (productId, warehouseId, transactionId) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
-
       const product = await Product.findById(productId);
 
       //find users related to warehouse.
       const users = await User.find({
-        $or: [{ role: 'admin' }, { _id: { $in: warehouse?.managerIds || [] } }],
+        $or: [{ role: USER_TYPES.ADMIN }, { _id: { $in: warehouse?.managerIds || [] } }],
       });
 
       if (!users.length) {
@@ -55,8 +59,12 @@ export default class BrowserNotification {
         users,
         type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',
-        message: `A shipment for ${product.name} from ${warehouse.name} is pending. TransactionId: ${transactionId}`,
+        message: `A shipment for ${product.name} from ${warehouse.name} is pending.`,
+        warehouse,
+        product,
+        transactionId,
       });
+      
     } catch (err) {
       throw new Error(err);
     }

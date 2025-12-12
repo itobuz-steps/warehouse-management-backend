@@ -1,13 +1,13 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
-import Notifications from '../utils/Notifications.js';
+// import Notifications from '../utils/Notifications.js';
 import BrowserNotification from '../utils/browserNotification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import Warehouse from '../models/warehouseModel.js';
 
-const notifications = new Notifications();
+// const notifications = new Notifications();
 const browserNotification = new BrowserNotification();
 
 export default class TransactionController {
@@ -59,6 +59,7 @@ export default class TransactionController {
         message: 'Transactions fetched successfully',
         data: transactions,
       });
+
     } catch (error) {
       next(error);
     }
@@ -291,23 +292,25 @@ export default class TransactionController {
         const createdTransaction = await transaction.save({ session });
         transactions.push(createdTransaction);
 
-        await notifications.notifyPendingShipment(
-          productId,
-          sourceWarehouse,
-          createdTransaction._id
-        );
+        // await notifications.notifyPendingShipment(
+        //   productId,
+        //   sourceWarehouse,
+        //   createdTransaction._id
+        // );
 
         await browserNotification.notifyPendingShipment(
           productId,
           sourceWarehouse,
           createdTransaction._id
         );
+        
 
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
-          await notifications.notifyLowStock(productId, sourceWarehouse);
+
+          // await notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
           console.log('Browser notification called!');
         }
@@ -412,7 +415,8 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          await Notifications.notifyLowStock(productId, sourceWarehouse);
+          console.log("notify low stock should be called");
+          // await Notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
         }
       }
@@ -424,6 +428,7 @@ export default class TransactionController {
         message: 'Stock transfer completed successfully',
         data: { transactions, updatedQuantities },
       });
+
     } catch (error) {
       await session.abortTransaction();
       next(error);
@@ -468,7 +473,7 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        await Notifications.notifyLowStock(productId, warehouseId);
+        //await Notifications.notifyLowStock(productId, warehouseId);
         await browserNotification.notifyLowStock(productId, warehouseId);
       }
 

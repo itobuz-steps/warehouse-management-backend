@@ -1,10 +1,13 @@
-import express from "express";
-import BrowserNotificationsController from "../controllers/BrowserNotificationController.js";
+import express from 'express';
+import BrowserNotificationsController from '../controllers/BrowserNotificationController.js';
 
 const router = express.Router();
 
 const browserNotificationController = new BrowserNotificationsController();
 
-router.post("/subscribe", browserNotificationController.subscribe);
+router.get('/:offset', browserNotificationController.getNotifications);
+router.post('/subscribe', browserNotificationController.subscribe);
+router.put('/mark-all-seen', browserNotificationController.markAllAsSeen);
+router.patch('/change-shipment-status/:id', browserNotificationController.changeShipmentStatus);
 
 export default router;

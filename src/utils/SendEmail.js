@@ -62,7 +62,7 @@ export default class SendEmail {
     }
   };
 
-  sendLowStockEmail = async (email, user, product, warehouse, next) => {
+  sendLowStockEmail = async (email, user, product, warehouse) => {
     try {
       const mailResponse = await this.mailSender(
         email,
@@ -76,12 +76,12 @@ export default class SendEmail {
       );
 
       console.log('Low stock email sent:', mailResponse);
-    } catch (error) {
-      next(error);
+    } catch (err) {
+      throw new Error(err)
     }
   };
 
-  sendPendingShipmentEmail = async (email, user, product, warehouse, next) => {
+  sendPendingShipmentEmail = async (email, user, product, warehouse) => {
     try {
       const mailResponse = await this.mailSender(
         email,
@@ -94,9 +94,8 @@ export default class SendEmail {
       );
 
       console.log('Pending shipment email sent:', mailResponse);
-    } catch (error) {
-      next(error);
+    } catch (err) {
+      throw new Error(err)
     }
   };
-  
 }
