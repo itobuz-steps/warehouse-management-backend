@@ -143,6 +143,7 @@ export default class QuantityController {
 
       const pipeline = [];
 
+      // Filter by warehouse if provided
       if (warehouseId) {
         pipeline.push({
           $match: {
@@ -151,7 +152,7 @@ export default class QuantityController {
         });
       }
 
-      // Lookup products
+      // Join products
       pipeline.push(
         {
           $lookup: {
@@ -163,12 +164,11 @@ export default class QuantityController {
         },
         { $unwind: '$product' },
 
-        // Remove archived products
-        {
-          $match: { 'product.isArchived': false },
-        }
+        // Exclude archived products
+        { $match: { 'product.isArchived': false } }
       );
 
+      // Search
       if (search) {
         pipeline.push({
           $match: {
@@ -177,6 +177,7 @@ export default class QuantityController {
         });
       }
 
+      // Category filter
       if (category) {
         pipeline.push({
           $match: {
@@ -185,46 +186,35 @@ export default class QuantityController {
         });
       }
 
+      // group
+      pipeline.push({
+        $group: {
+          _id: '$productId',
+          product: { $first: '$product' },
+          totalQuantity: { $sum: '$quantity' },
+        },
+      });
+
+      // Sorting
       if (sort === 'name_asc') {
         pipeline.push({ $sort: { 'product.name': 1 } });
       } else if (sort === 'name_desc') {
         pipeline.push({ $sort: { 'product.name': -1 } });
       } else if (sort === 'category_asc') {
         pipeline.push({ $sort: { 'product.category': 1 } });
-      } else if (sort === 'quantity_asc' || sort === 'quantity_desc') {
-        const order = sort === 'quantity_asc' ? 1 : -1;
-
-        pipeline.push(
-          {
-            $group: {
-              _id: '$productId',
-              product: { $first: '$product' },
-              totalQuantity: { $sum: '$quantity' },
-            },
-          },
-          { $sort: { totalQuantity: order } },
-          {
-            $replaceRoot: {
-              newRoot: {
-                $mergeObjects: [
-                  '$product',
-                  { totalQuantity: '$totalQuantity' },
-                ],
-              },
-            },
-          }
-        );
-
-        const result = await Quantity.aggregate(pipeline);
-
-        return res.status(200).json({
-          success: true,
-          data: result,
-        });
+      } else if (sort === 'quantity_asc') {
+        pipeline.push({ $sort: { totalQuantity: 1 } });
+      } else if (sort === 'quantity_desc') {
+        pipeline.push({ $sort: { totalQuantity: -1 } });
       }
 
+      // Merge product and quantity
       pipeline.push({
-        $replaceRoot: { newRoot: '$product' },
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: ['$product', { totalQuantity: '$totalQuantity' }],
+          },
+        },
       });
 
       const result = await Quantity.aggregate(pipeline);
