@@ -40,13 +40,19 @@ const browserNotificationSchema = new mongoose.Schema(
       default: false,
     },
 
-    shippedBy: {
+    isCancelled: {
+      type: Boolean,
+      default: false,
+    },
+    
+    reportedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-    }
+    },
   },
-
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
 export default mongoose.model('BNotification', browserNotificationSchema);

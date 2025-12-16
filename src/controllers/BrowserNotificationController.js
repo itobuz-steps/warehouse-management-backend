@@ -73,7 +73,6 @@ export default class BrowserNotificationsController {
         data: notifications,
         unseenCount,
       });
-
     } catch (error) {
       next(error);
     }
@@ -109,7 +108,7 @@ export default class BrowserNotificationsController {
 
       await BrowserNotification.updateMany(
         { transactionId: transactionId },
-        { isShipped: true, shippedBy: req.userId },
+        { isShipped: true, reportedBy: req.userId },
         { new: true }
       );
 
