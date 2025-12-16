@@ -26,7 +26,10 @@ const sendBrowserNotification = async ({
 
     for (const user of users) {
       const userId = user._id;
-      const subscriptions = await Subscription.find({ userId });
+      // const subscriptions = await Subscription.find({ userId });
+      const subscriptions = await Subscription.find({ userId }).sort({
+        updatedAt: -1,
+      });
 
       if (!subscriptions || subscriptions.length === 0) {
         results.push({
@@ -64,20 +67,20 @@ const sendBrowserNotification = async ({
       console.log('This is the saved data', data);
 
       //Sending email.
-      // console.log("sending email");
-      // if (type === NOTIFICATION_TYPES.LOW_STOCK) {
-      //   await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
-      // } else {
-      //   await sendMail.sendPendingShipmentEmail(
-      //     user.email,
-      //     user,
-      //     product,
-      //     warehouse
-      //   );
-      // }
+      console.log('sending email');
+      if (type === NOTIFICATION_TYPES.LOW_STOCK) {
+        await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
+      } else {
+        await sendMail.sendPendingShipmentEmail(
+          user.email,
+          user,
+          product,
+          warehouse
+        );
+      }
 
       //Send notification to all subscriptions of a particular user
-      console.log("sending web-push notification");
+      console.log('sending web-push notification');
       await Promise.all(
         subscriptions.map(async (s) => {
           try {
@@ -107,7 +110,6 @@ const sendBrowserNotification = async ({
       message: 'Notifications processed',
       results,
     };
-
   } catch (err) {
     throw new Error(err.message);
   }

@@ -13,7 +13,7 @@ const browserNotification = new BrowserNotification();
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
-      const { startDate, endDate, type } = req.query;
+      const { startDate, endDate, type, status } = req.query;
       const user = req.user; // authenticated user
 
       const matchStage = {};
@@ -36,7 +36,12 @@ export default class TransactionController {
       if (type && type !== 'ALL') {
         matchStage.type = type;
       }
+      
+      if (status && status !== 'ALL') {
+        matchStage.shipment = status;
+      }
 
+      // Manager warehouse restriction
       if (user.role === 'manager') {
         // Find all warehouses managed by this manager
         const warehouses = await Warehouse.find({
@@ -263,7 +268,7 @@ export default class TransactionController {
           });
         }
 
-        if (quantity> quantityRecord.limit) {
+        if (quantity > quantityRecord.limit) {
           await session.abortTransaction();
           return res.status(400).json({
             message: `Stock out Quantity exceeded Product Limit: ${quantityRecord.limit}`,
@@ -303,13 +308,11 @@ export default class TransactionController {
           sourceWarehouse,
           createdTransaction._id
         );
-        
 
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
-
           // await notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
           console.log('Browser notification called!');
@@ -415,7 +418,7 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          console.log("notify low stock should be called");
+          console.log('notify low stock should be called');
           // await Notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
         }
@@ -428,7 +431,6 @@ export default class TransactionController {
         message: 'Stock transfer completed successfully',
         data: { transactions, updatedQuantities },
       });
-
     } catch (error) {
       await session.abortTransaction();
       next(error);

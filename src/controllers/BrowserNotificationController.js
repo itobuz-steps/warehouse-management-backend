@@ -3,6 +3,9 @@ import BrowserNotification from '../models/browserNotificationModel.js';
 import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
+import Quantity from '../models/quantityModel.js';
+import Product from '../models/productModel.js';
+import Warehouse from '../models/warehouseModel.js';
 
 export default class BrowserNotificationsController {
   subscribe = async (req, res, next) => {
@@ -19,7 +22,8 @@ export default class BrowserNotificationsController {
       }
 
       let existing = await Subscription.findOne({
-        where: { userId: req.userId, endpoint: subscription.endpoint },
+        userId: req.userId,
+        endpoint: subscription.endpoint,
       });
 
       if (existing) {
@@ -73,7 +77,6 @@ export default class BrowserNotificationsController {
         data: notifications,
         unseenCount,
       });
-
     } catch (error) {
       next(error);
     }
@@ -97,19 +100,20 @@ export default class BrowserNotificationsController {
 
   changeShipmentStatus = async (req, res, next) => {
     try {
-      const transactionId = new mongoose.Types.ObjectId(req.params.id);
+      const transaction = await Transaction.findById(req.params.id);
+      const product = await Product.findById(transaction.product);
+      const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
 
-      await Transaction.findByIdAndUpdate(
-        `${transactionId}`,
-        {
-          shipment: SHIPMENT_TYPES.SHIPPED,
-        },
-        { new: true }
-      );
+      transaction.shipment = SHIPMENT_TYPES.SHIPPED;
 
       await BrowserNotification.updateMany(
-        { transactionId: transactionId },
-        { isShipped: true, shippedBy: req.userId },
+        { transactionId: transaction._id },
+        {
+          title: 'Pending Shipment Alert: Shipped',
+          isShipped: true,
+          reportedBy: req.userId,
+          message: `Shipment done for ${product.name} from ${warehouse.name} of Quantity:${transaction.quantity}.`,
+        },
         { new: true }
       );
 
@@ -119,6 +123,67 @@ export default class BrowserNotificationsController {
       });
     } catch (error) {
       next(error);
+    }
+  };
+
+  cancelShipment = async (req, res, next) => {
+    let session;
+
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
+      const transaction = await Transaction.findById(req.params.id).session(
+        session
+      );
+
+      const product = await Product.findById(transaction.product);
+      const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
+
+      if (!transaction) {
+        await session.abortTransaction();
+        return res.status(404).json({
+          success: false,
+          message: 'Transaction not found',
+        });
+      }
+
+      // Restore stock quantity
+      const quantityRecord = await Quantity.findOne({
+        warehouseId: transaction.sourceWarehouse,
+        productId: transaction.product,
+      }).session(session);
+
+      quantityRecord.quantity += transaction.quantity;
+      await quantityRecord.save({ session });
+
+      // Update transaction shipment status
+      transaction.shipment = SHIPMENT_TYPES.CANCELLED;
+      await transaction.save({ session });
+
+      // Update browser notifications
+      await BrowserNotification.updateMany(
+        { transactionId: transaction._id },
+        {
+          title: 'Pending Shipment Alert: Cancelled',
+          isCancelled: true,
+          reportedBy: req.userId,
+          message: `Shipment Cancelled for ${product.name} from ${warehouse.name} of Quantity:${transaction.quantity}.`,
+        },
+        { session }
+      );
+
+      await session.commitTransaction();
+
+      res.status(200).json({
+        success: true,
+        message: 'Shipment cancelled and stock reverted successfully',
+      });
+    } catch (error) {
+      await session.abortTransaction();
+      next(error);
+    } finally {
+      session.endSession();
     }
   };
 
