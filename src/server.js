@@ -13,7 +13,6 @@ import profileRoutes from './routes/profileRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 // import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
-import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import BrowserNotificationRoutes from './routes/browserNotificationRoutes.js';
 import verifyToken from './validations/middlewares/verifyToken.js';
@@ -43,7 +42,7 @@ app.use('/transaction', verifyToken, transactionRoutes);
 app.use('/profile', verifyToken, profileRoutes);
 app.use('/dashboard/', verifyToken, dashboardRoutes);
 app.use('/analytics', verifyToken, analyticsRoutes);
-app.use('/notifications', verifyToken, notificationRoutes);
+// app.use('/notifications', verifyToken, notificationRoutes);
 app.use('/browser-notifications', verifyToken, BrowserNotificationRoutes);
 
 app.use(errorHandler);
