@@ -28,7 +28,8 @@ export default class BrowserNotificationsController {
 
       if (existing) {
         //updating if payload is different.
-        await existing.update(subscription);
+        Object.assign(existing, subscription);
+        await existing.save();
 
         return res.status(200).json({
           success: true,
@@ -105,6 +106,7 @@ export default class BrowserNotificationsController {
       const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
 
       transaction.shipment = SHIPMENT_TYPES.SHIPPED;
+      await transaction.save();
 
       await BrowserNotification.updateMany(
         { transactionId: transaction._id },

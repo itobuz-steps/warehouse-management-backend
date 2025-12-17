@@ -1,11 +1,12 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 // import Notifications from '../utils/Notifications.js';
-import BrowserNotification from '../utils/browserNotification.js';
+import BrowserNotification from '../utils/BrowserNotification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import Warehouse from '../models/warehouseModel.js';
+import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 
 // const notifications = new Notifications();
 const browserNotification = new BrowserNotification();
@@ -13,7 +14,14 @@ const browserNotification = new BrowserNotification();
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
-      const { startDate, endDate, type, status } = req.query;
+      const {
+        startDate,
+        endDate,
+        type,
+        status,
+        page = 1,
+        limit = 10,
+      } = req.query;
       const user = req.user; // authenticated user
 
       const matchStage = {};
@@ -36,7 +44,7 @@ export default class TransactionController {
       if (type && type !== 'ALL') {
         matchStage.type = type;
       }
-      
+
       if (status && status !== 'ALL') {
         matchStage.shipment = status;
       }
@@ -55,16 +63,42 @@ export default class TransactionController {
         ];
       }
 
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
       const transactions = await Transaction.find(matchStage)
         .populate('product performedBy sourceWarehouse destinationWarehouse')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const totalCount = await Transaction.countDocuments(matchStage);
+
+      const typeCounts = await Transaction.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$type', count: { $sum: 1 } } },
+      ]);
+
+      const statusCounts = await Transaction.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$shipment', count: { $sum: 1 } } },
+      ]);
 
       res.status(200).json({
         success: true,
         message: 'Transactions fetched successfully',
-        data: transactions,
+        data: {
+          transactions,
+          counts: {
+            types: typeCounts,
+            status: statusCounts,
+          },
+          pagination: {
+            total: totalCount,
+            page: parseInt(page),
+            limit: parseInt(limit),
+          },
+        },
       });
-
     } catch (error) {
       next(error);
     }
@@ -73,9 +107,16 @@ export default class TransactionController {
   getWarehouseSpecificTransactions = async (req, res, next) => {
     try {
       const { warehouseId } = req.params;
-      const { startDate, endDate, type } = req.query;
+      const {
+        startDate,
+        endDate,
+        type,
+        status,
+        page = 1,
+        limit = 10,
+      } = req.query;
       const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
-
+      const skip = (parseInt(page) - 1) * parseInt(limit);
       const dateFilter = {};
 
       if (startDate) {
@@ -87,24 +128,24 @@ export default class TransactionController {
         dateFilter.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
       }
 
-      const matchStage = {
-        $match: {
-          $or: [
-            { sourceWarehouse: warehouseObjectId },
-            { destinationWarehouse: warehouseObjectId },
-          ],
-          ...(Object.keys(dateFilter).length > 0 && {
-            createdAt: dateFilter,
-          }),
-        },
+      const filter = {
+        $or: [
+          { sourceWarehouse: warehouseObjectId },
+          { destinationWarehouse: warehouseObjectId },
+        ],
+        ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
       };
 
       if (type && type !== 'ALL') {
-        matchStage.$match.type = type;
+        filter.type = type;
       }
 
-      const result = await Transaction.aggregate([
-        matchStage,
+      if (status && status !== 'ALL') {
+        filter.shipment = status;
+      }
+
+      const transactions = await Transaction.aggregate([
+        { $match: filter },
         // Join with products collection
         {
           $lookup: {
@@ -159,14 +200,37 @@ export default class TransactionController {
             preserveNullAndEmptyArrays: true,
           },
         },
-        // Sort newest first
+        { $skip: skip },
+        { $limit: parseInt(limit) },
         { $sort: { createdAt: -1 } },
       ]);
 
+      const totalCount = await Transaction.countDocuments(filter);
+
+      const typeCounts = await Transaction.aggregate([
+        { $match: filter },
+        { $group: { _id: '$type', count: { $sum: 1 } } },
+      ]);
+
+      const statusCounts = await Transaction.aggregate([
+        { $match: filter },
+        { $group: { _id: '$shipment', count: { $sum: 1 } } },
+      ]);
       res.status(200).json({
         success: true,
         message: 'Warehouse-specific transactions fetched successfully',
-        data: result,
+        data: {
+          transactions,
+          counts: {
+            types: typeCounts,
+            status: statusCounts,
+          },
+          pagination: {
+            total: totalCount,
+            page: parseInt(page),
+            limit: parseInt(limit),
+          },
+        },
       });
     } catch (error) {
       next(error);
@@ -252,6 +316,7 @@ export default class TransactionController {
       } = req.body;
 
       const transactions = [];
+      const lowStockNotifications = [];
 
       for (const item of products) {
         const { productId, quantity } = item;
@@ -288,6 +353,7 @@ export default class TransactionController {
           customerEmail,
           customerPhone,
           customerAddress,
+          shipment: SHIPMENT_TYPES.PENDING,
           sourceWarehouse,
           orderNumber,
           notes,
@@ -303,23 +369,48 @@ export default class TransactionController {
         //   createdTransaction._id
         // );
 
-        await browserNotification.notifyPendingShipment(
-          productId,
-          sourceWarehouse,
-          createdTransaction._id
-        );
+        // await browserNotification.notifyPendingShipment(
+        //   productId,
+        //   sourceWarehouse,
+        //   createdTransaction._id
+        // );
 
+        // if (
+        //   quantityRecord.quantity <= quantityRecord.limit &&
+        //   previousQty > quantityRecord.limit
+        // ) {
+        //   // await notifications.notifyLowStock(productId, sourceWarehouse);
+        //   await browserNotification.notifyLowStock(productId, sourceWarehouse);
+        //   console.log('Browser notification called!');
+        // }
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
-          // await notifications.notifyLowStock(productId, sourceWarehouse);
-          await browserNotification.notifyLowStock(productId, sourceWarehouse);
-          console.log('Browser notification called!');
+          lowStockNotifications.push({
+            productId,
+            warehouseId: sourceWarehouse,
+          });
         }
       }
 
       await session.commitTransaction();
+
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await browserNotification.notifyPendingShipment(
+          createdTransaction.product,
+          createdTransaction.sourceWarehouse,
+          createdTransaction._id
+        );
+      }
+
+      for (const notification of lowStockNotifications) {
+        await browserNotification.notifyLowStock(
+          notification.productId,
+          notification.warehouseId
+        );
+      }
 
       res.status(201).json({
         success: true,
