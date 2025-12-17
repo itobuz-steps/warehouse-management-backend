@@ -38,7 +38,7 @@ const transactionModel = new mongoose.Schema(
     shipment: {
       type: String,
       enum: Object.values(SHIPMENT_TYPES),
-      default: SHIPMENT_TYPES.PENDING,
+      // default: SHIPMENT_TYPES.PENDING,
     },
     // For Adjustments
     reason: {

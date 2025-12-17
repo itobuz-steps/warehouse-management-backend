@@ -1,11 +1,12 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 // import Notifications from '../utils/Notifications.js';
-import BrowserNotification from '../utils/browserNotification.js';
+import BrowserNotification from '../utils/BrowserNotification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import Warehouse from '../models/warehouseModel.js';
+import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 
 // const notifications = new Notifications();
 const browserNotification = new BrowserNotification();
@@ -73,7 +74,7 @@ export default class TransactionController {
   getWarehouseSpecificTransactions = async (req, res, next) => {
     try {
       const { warehouseId } = req.params;
-      const { startDate, endDate, type } = req.query;
+      const { startDate, endDate, type, status } = req.query;
       const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
 
       const dateFilter = {};
@@ -101,6 +102,10 @@ export default class TransactionController {
 
       if (type && type !== 'ALL') {
         matchStage.$match.type = type;
+      }
+
+      if (status && status !== 'ALL') {
+        matchStage.$match.shipment = status;
       }
 
       const result = await Transaction.aggregate([
@@ -252,6 +257,7 @@ export default class TransactionController {
       } = req.body;
 
       const transactions = [];
+      const lowStockNotifications = [];
 
       for (const item of products) {
         const { productId, quantity } = item;
@@ -288,6 +294,7 @@ export default class TransactionController {
           customerEmail,
           customerPhone,
           customerAddress,
+          shipment: SHIPMENT_TYPES.PENDING,
           sourceWarehouse,
           orderNumber,
           notes,
@@ -303,23 +310,48 @@ export default class TransactionController {
         //   createdTransaction._id
         // );
 
-        await browserNotification.notifyPendingShipment(
-          productId,
-          sourceWarehouse,
-          createdTransaction._id
-        );
+        // await browserNotification.notifyPendingShipment(
+        //   productId,
+        //   sourceWarehouse,
+        //   createdTransaction._id
+        // );
 
+        // if (
+        //   quantityRecord.quantity <= quantityRecord.limit &&
+        //   previousQty > quantityRecord.limit
+        // ) {
+        //   // await notifications.notifyLowStock(productId, sourceWarehouse);
+        //   await browserNotification.notifyLowStock(productId, sourceWarehouse);
+        //   console.log('Browser notification called!');
+        // }
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
         ) {
-          // await notifications.notifyLowStock(productId, sourceWarehouse);
-          await browserNotification.notifyLowStock(productId, sourceWarehouse);
-          console.log('Browser notification called!');
+          lowStockNotifications.push({
+            productId,
+            warehouseId: sourceWarehouse,
+          });
         }
       }
 
       await session.commitTransaction();
+
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await browserNotification.notifyPendingShipment(
+          createdTransaction.product,
+          createdTransaction.sourceWarehouse,
+          createdTransaction._id
+        );
+      }
+
+      for (const notification of lowStockNotifications) {
+        await browserNotification.notifyLowStock(
+          notification.productId,
+          notification.warehouseId
+        );
+      }
 
       res.status(201).json({
         success: true,
