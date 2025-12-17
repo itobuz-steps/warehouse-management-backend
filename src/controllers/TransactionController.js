@@ -14,7 +14,14 @@ const browserNotification = new BrowserNotification();
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
     try {
-      const { startDate, endDate, type, status } = req.query;
+      const {
+        startDate,
+        endDate,
+        type,
+        status,
+        page = 1,
+        limit = 10,
+      } = req.query;
       const user = req.user; // authenticated user
 
       const matchStage = {};
@@ -56,9 +63,15 @@ export default class TransactionController {
         ];
       }
 
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+
       const transactions = await Transaction.find(matchStage)
         .populate('product performedBy sourceWarehouse destinationWarehouse')
-        .sort({ createdAt: -1 });
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+      const totalCount = await Transaction.countDocuments(matchStage);
 
       const typeCounts = await Transaction.aggregate([
         { $match: matchStage },
@@ -79,6 +92,11 @@ export default class TransactionController {
             types: typeCounts,
             status: statusCounts,
           },
+          pagination: {
+            total: totalCount,
+            page: parseInt(page),
+            limit: parseInt(limit),
+          },
         },
       });
     } catch (error) {
@@ -89,9 +107,16 @@ export default class TransactionController {
   getWarehouseSpecificTransactions = async (req, res, next) => {
     try {
       const { warehouseId } = req.params;
-      const { startDate, endDate, type, status } = req.query;
+      const {
+        startDate,
+        endDate,
+        type,
+        status,
+        page = 1,
+        limit = 10,
+      } = req.query;
       const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
-
+      const skip = (parseInt(page) - 1) * parseInt(limit);
       const dateFilter = {};
 
       if (startDate) {
@@ -175,15 +200,18 @@ export default class TransactionController {
             preserveNullAndEmptyArrays: true,
           },
         },
-        // Sort newest first
+        { $skip: skip },
+        { $limit: parseInt(limit) },
         { $sort: { createdAt: -1 } },
       ]);
+
+      const totalCount = await Transaction.countDocuments(filter);
 
       const typeCounts = await Transaction.aggregate([
         { $match: filter },
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]);
-      
+
       const statusCounts = await Transaction.aggregate([
         { $match: filter },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
@@ -196,6 +224,11 @@ export default class TransactionController {
           counts: {
             types: typeCounts,
             status: statusCounts,
+          },
+          pagination: {
+            total: totalCount,
+            page: parseInt(page),
+            limit: parseInt(limit),
           },
         },
       });
