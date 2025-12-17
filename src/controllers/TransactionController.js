@@ -37,7 +37,7 @@ export default class TransactionController {
       if (type && type !== 'ALL') {
         matchStage.type = type;
       }
-      
+
       if (status && status !== 'ALL') {
         matchStage.shipment = status;
       }
@@ -60,12 +60,27 @@ export default class TransactionController {
         .populate('product performedBy sourceWarehouse destinationWarehouse')
         .sort({ createdAt: -1 });
 
+      const typeCounts = await Transaction.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$type', count: { $sum: 1 } } },
+      ]);
+
+      const statusCounts = await Transaction.aggregate([
+        { $match: matchStage },
+        { $group: { _id: '$shipment', count: { $sum: 1 } } },
+      ]);
+
       res.status(200).json({
         success: true,
         message: 'Transactions fetched successfully',
-        data: transactions,
+        data: {
+          transactions,
+          counts: {
+            types: typeCounts,
+            status: statusCounts,
+          },
+        },
       });
-
     } catch (error) {
       next(error);
     }
@@ -88,28 +103,24 @@ export default class TransactionController {
         dateFilter.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
       }
 
-      const matchStage = {
-        $match: {
-          $or: [
-            { sourceWarehouse: warehouseObjectId },
-            { destinationWarehouse: warehouseObjectId },
-          ],
-          ...(Object.keys(dateFilter).length > 0 && {
-            createdAt: dateFilter,
-          }),
-        },
+      const filter = {
+        $or: [
+          { sourceWarehouse: warehouseObjectId },
+          { destinationWarehouse: warehouseObjectId },
+        ],
+        ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
       };
 
       if (type && type !== 'ALL') {
-        matchStage.$match.type = type;
+        filter.type = type;
       }
 
       if (status && status !== 'ALL') {
-        matchStage.$match.shipment = status;
+        filter.shipment = status;
       }
 
-      const result = await Transaction.aggregate([
-        matchStage,
+      const transactions = await Transaction.aggregate([
+        { $match: filter },
         // Join with products collection
         {
           $lookup: {
@@ -168,10 +179,25 @@ export default class TransactionController {
         { $sort: { createdAt: -1 } },
       ]);
 
+      const typeCounts = await Transaction.aggregate([
+        { $match: filter },
+        { $group: { _id: '$type', count: { $sum: 1 } } },
+      ]);
+      
+      const statusCounts = await Transaction.aggregate([
+        { $match: filter },
+        { $group: { _id: '$shipment', count: { $sum: 1 } } },
+      ]);
       res.status(200).json({
         success: true,
         message: 'Warehouse-specific transactions fetched successfully',
-        data: result,
+        data: {
+          transactions,
+          counts: {
+            types: typeCounts,
+            status: statusCounts,
+          },
+        },
       });
     } catch (error) {
       next(error);
