@@ -67,19 +67,19 @@ export default class TransactionController {
 
       const transactions = await Transaction.find(matchStage)
         .populate('product performedBy sourceWarehouse destinationWarehouse')
-        .sort({ createdAt: -1 })
+        .sort({ updatedAt: -1 })
         .skip(skip)
-        .limit(limit);
+        .limit(parseInt(limit));
 
       const totalCount = await Transaction.countDocuments(matchStage);
 
       const typeCounts = await Transaction.aggregate([
-        { $match: matchStage },
+        // { $match: matchStage },
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]);
 
       const statusCounts = await Transaction.aggregate([
-        { $match: matchStage },
+        // { $match: matchStage },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
       ]);
 
@@ -96,6 +96,7 @@ export default class TransactionController {
             total: totalCount,
             page: parseInt(page),
             limit: parseInt(limit),
+            totalPages: Math.ceil(totalCount / parseInt(limit)),
           },
         },
       });
@@ -202,20 +203,35 @@ export default class TransactionController {
         },
         { $skip: skip },
         { $limit: parseInt(limit) },
-        { $sort: { createdAt: -1 } },
+        { $sort: { updatedAt: -1 } },
       ]);
 
       const totalCount = await Transaction.countDocuments(filter);
 
       const typeCounts = await Transaction.aggregate([
-        { $match: filter },
+        {
+          $match: {
+            $or: [
+              { sourceWarehouse: warehouseObjectId },
+              { destinationWarehouse: warehouseObjectId },
+            ],
+          },
+        },
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]);
 
       const statusCounts = await Transaction.aggregate([
-        { $match: filter },
+        {
+          $match: {
+            $or: [
+              { sourceWarehouse: warehouseObjectId },
+              { destinationWarehouse: warehouseObjectId },
+            ],
+          },
+        },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
       ]);
+
       res.status(200).json({
         success: true,
         message: 'Warehouse-specific transactions fetched successfully',
@@ -229,6 +245,7 @@ export default class TransactionController {
             total: totalCount,
             page: parseInt(page),
             limit: parseInt(limit),
+            totalPages: Math.ceil(totalCount / parseInt(limit)),
           },
         },
       });
