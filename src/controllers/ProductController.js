@@ -25,6 +25,8 @@ export default class ProductController {
           query = query.sort({ name: -1 });
         } else if (sort === 'category_asc') {
           query = query.sort({ category: 1 });
+        } else {
+          query = query.sort({ createdAt: -1 }); // default sort newest first
         }
       }
       // Calculate skip and limit for pagination
