@@ -5,7 +5,7 @@ import config from '../config/config.js';
 export default class ProductController {
   getProducts = async (req, res, next) => {
     try {
-      const { search, category, sort } = req.query;
+      const { search, category, sort, page, limit } = req.query;
       const filter = { isArchived: false };
 
       if (category) {
@@ -27,10 +27,25 @@ export default class ProductController {
           query = query.sort({ category: 1 });
         }
       }
+      // Calculate skip and limit for pagination
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const products = await query.skip(skip).limit(parseInt(limit));
 
-      // If no specific sort is requested, fetch products normally
-      const products = await query;
-      res.status(200).json({ success: true, data: products });
+      // Get the total count of products for pagination info
+      const totalCount = await Product.countDocuments(filter);
+
+      const totalPages = Math.ceil(totalCount / parseInt(limit));
+
+      res.status(200).json({
+        success: true,
+        data: {
+          products,
+          totalCount,
+          totalPages,
+          currentPage: parseInt(page),
+          productsPerPage: parseInt(limit),
+        },
+      });
     } catch (error) {
       next(error);
     }
