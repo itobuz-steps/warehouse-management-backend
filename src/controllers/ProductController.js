@@ -193,23 +193,20 @@ export default class ProductController {
 
   getArchivedProducts = async (req, res, next) => {
     try {
-      const { search, category, sort } = req.query;
+      const { search, category, sort, page, limit } = req.query;
 
       const filter = { isArchived: true };
 
-      // Category Filter
       if (category) {
         filter.category = category;
       }
 
-      // Search Filter
       if (search) {
         filter.name = { $regex: search, $options: 'i' };
       }
 
       let query = Product.find(filter).populate('createdBy');
 
-      // Sorting
       if (sort) {
         if (sort === 'name_asc') {
           query = query.sort({ name: 1 });
@@ -217,16 +214,32 @@ export default class ProductController {
           query = query.sort({ name: -1 });
         } else if (sort === 'category_asc') {
           query = query.sort({ category: 1 });
+        } else {
+          query = query.sort({ createdAt: -1 }); // default sort newest first
         }
       }
 
-      const products = await query;
+      // Calculate skip and limit for pagination
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const products = await query.skip(skip).limit(parseInt(limit));
+
+      // Get the total count of products for pagination info
+      const totalCount = await Product.countDocuments(filter);
+
+      const totalPages = Math.ceil(totalCount / parseInt(limit));
+
       res.status(200).json({
         success: true,
-        data: products,
+        data: {
+          products,
+          totalCount,
+          totalPages,
+          currentPage: parseInt(page),
+          productsPerPage: parseInt(limit),
+        },
       });
-    } catch (err) {
-      next(err);
+    } catch (error) {
+      next(error);
     }
   };
 }
