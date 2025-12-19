@@ -139,7 +139,7 @@ export default class QuantityController {
 
   getProductsHavingQuantity = async (req, res, next) => {
     try {
-      const { search, category, sort, warehouseId } = req.query;
+      const { search, category, sort, warehouseId, page, limit } = req.query;
 
       const pipeline = [];
 
@@ -206,9 +206,16 @@ export default class QuantityController {
         pipeline.push({ $sort: { totalQuantity: 1 } });
       } else if (sort === 'quantity_desc') {
         pipeline.push({ $sort: { totalQuantity: -1 } });
+      } else {
+        pipeline.push({ $sort: { 'product.createdAt': -1 } });
       }
 
-      // Merge product and quantity
+      // const totalCount = (await Quantity.aggregate(pipeline)).length;
+
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      pipeline.push({ $skip: skip }, { $limit: parseInt(limit) });
+
+      // Replace root to merge product info
       pipeline.push({
         $replaceRoot: {
           newRoot: {
@@ -217,12 +224,24 @@ export default class QuantityController {
         },
       });
 
-      const result = await Quantity.aggregate(pipeline);
+      const products = await Quantity.aggregate(pipeline);
+
+      const countPipeline = pipeline.slice(0, -3); // remove $skip, $limit, $replaceRoot
+      countPipeline.push({ $count: 'count' });
+      const countResult = await Quantity.aggregate(countPipeline);
+      const totalCount = countResult[0]?.count || 0;
+      const totalPages = Math.ceil(totalCount / parseInt(limit));
 
       res.status(200).json({
         message: 'Products with quantity information',
         success: true,
-        data: result,
+        data: {
+          products,
+          totalCount,
+          totalPages,
+          currentPage: parseInt(page),
+          productsPerPage: parseInt(limit),
+        },
       });
     } catch (error) {
       next(error);
