@@ -201,9 +201,9 @@ export default class TransactionController {
             preserveNullAndEmptyArrays: true,
           },
         },
+        { $sort: { updatedAt: -1 } },
         { $skip: skip },
         { $limit: parseInt(limit) },
-        { $sort: { updatedAt: -1 } },
       ]);
 
       const totalCount = await Transaction.countDocuments(filter);

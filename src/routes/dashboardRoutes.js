@@ -39,5 +39,9 @@ router.get(
   '/get-low-stock-products/:warehouseId',
   dashboardController.getLowStockProducts
 );
+router.get(
+  '/get-top-selling-products/:warehouseId',
+  dashboardController.getTopSellingProducts
+);
 
 export default router;

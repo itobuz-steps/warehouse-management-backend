@@ -562,4 +562,77 @@ export default class DashboardController {
       next(err);
     }
   };
+
+  // Top Selling Products by Warehouse (Stock Out)
+  getTopSellingProducts = async (req, res, next) => {
+    try {
+      const { warehouseId } = req.params;
+      const { limit = 5 } = req.query;
+
+      if (!warehouseId) {
+        res.status(404);
+        throw new Error('Warehouse Id not found!');
+      }
+
+      const warehouseObjectId = new mongoose.Types.ObjectId(warehouseId);
+
+      const topSellingProducts = await Transaction.aggregate([
+        {
+          $match: {
+            type: TRANSACTION_TYPES.OUT,
+            sourceWarehouse: warehouseObjectId,
+          },
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        {
+          $match: {
+            'product.isArchived': false,
+          },
+        },
+        {
+          $group: {
+            _id: '$product._id',
+            productName: { $first: '$product.name' },
+            category: { $first: '$product.category' },
+            price: { $first: '$product.price' },
+            totalSoldQuantity: { $sum: '$quantity' },
+            totalSalesAmount: {
+              $sum: { $multiply: ['$quantity', '$product.price'] },
+            },
+            productImage: { $first: '$product.productImage' },
+          },
+        },
+        { $sort: { totalSoldQuantity: -1 } },
+        { $limit: parseInt(limit) },
+        {
+          $project: {
+            _id: 0,
+            productId: '$_id',
+            productName: 1,
+            category: 1,
+            price: 1,
+            totalSoldQuantity: 1,
+            totalSalesAmount: 1,
+            productImage: { $arrayElemAt: ['$productImage', 0] },
+          },
+        },
+      ]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Top selling products fetched successfully',
+        data: topSellingProducts,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
