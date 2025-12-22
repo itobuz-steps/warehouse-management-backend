@@ -607,6 +607,7 @@ export default class DashboardController {
             totalSalesAmount: {
               $sum: { $multiply: ['$quantity', '$product.price'] },
             },
+            productImage: { $first: '$product.productImage' },
           },
         },
         { $sort: { totalSoldQuantity: -1 } },
@@ -620,6 +621,7 @@ export default class DashboardController {
             price: 1,
             totalSoldQuantity: 1,
             totalSalesAmount: 1,
+            productImage: { $arrayElemAt: ['$productImage', 0] },
           },
         },
       ]);
