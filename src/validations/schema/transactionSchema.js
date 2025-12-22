@@ -10,7 +10,7 @@ export const stockInSchema = yup.object({
           .number()
           .required('Quantity is required')
           .positive('Quantity must be greater than 0'),
-        limit: yup.number().optional().min(0, 'Limit cannot be negative'),
+        limit: yup.number().optional().min(1, 'Limit cannot be negative'),
       })
     )
     .required('Products list is required')
