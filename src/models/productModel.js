@@ -24,6 +24,13 @@ const productModel = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    markup: {
+      type: Number,
+      required: false,
+      min: 0,
+      max: 100,
+      default: 10,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

@@ -93,12 +93,13 @@ export default class ProductController {
 
   createProduct = async (req, res, next) => {
     try {
-      const { name, category, description, price } = req.body;
+      const { name, category, description, price, markup } = req.body;
       const product = await Product.create({
         name,
         category,
         description,
         price,
+        markup,
         productImage: req.files.map(
           (file) => `${req.protocol}://${req.get('host')}/${file.path}`
         ),
