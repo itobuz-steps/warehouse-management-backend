@@ -57,3 +57,7 @@ export const deleteProductSchema = yup.object({
 export const restoreProductSchema = yup.object({
   id: yup.string().required('Product ID is required'),
 });
+
+export const updateLimitSchema = yup.object({
+  limit: yup.number().min(1, 'Limit must be greater than zero'),
+});

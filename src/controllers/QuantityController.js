@@ -27,6 +27,34 @@ export default class QuantityController {
     }
   };
 
+  updateProductLimit = async (req, res, next) => {
+    try {
+      const { id } = req.params; 
+      const { limit } = req.body;
+
+      const result = await Quantity.findByIdAndUpdate(
+        id,
+        { limit },
+        { new: true }
+      ).populate('warehouseId productId');
+
+      if (!result) {
+        return res.status(404).json({
+          success: false,
+          message: 'Quantity record not found',
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Product limit updated successfully',
+        data: result,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
   // getting total quantity of a product across all warehouse
   getTotalProductQuantity = async (req, res, next) => {
     try {
