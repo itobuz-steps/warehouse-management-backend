@@ -185,7 +185,11 @@ const generatePdf = async (transaction) => {
   );
 
   const unitPrice = product.price;
-  const totalPrice = unitPrice * quantity;
+  const markupPercent = product.markup || 10;
+
+  const unitPriceWithMarkup = unitPrice + (unitPrice * markupPercent) / 100;
+
+  const totalPriceWithMarkup = unitPriceWithMarkup * quantity;
 
   // Product Name
   cursorY -= lineGap;
@@ -198,9 +202,21 @@ const generatePdf = async (transaction) => {
   writeText(page, product.category, 450, cursorY, 12, boldFont);
 
   // Product Unit Price
+  // cursorY -= lineGap;
+  // writeText(page, `Unit Price: `, 80, cursorY, 12, font);
+  // writeText(page, `₹${unitPrice.toFixed(2)}`, 450, cursorY, 12, boldFont);
+
+  //Unit Price with Markup
   cursorY -= lineGap;
   writeText(page, `Unit Price: `, 80, cursorY, 12, font);
-  writeText(page, `₹${unitPrice.toFixed(2)}`, 450, cursorY, 12, boldFont);
+  writeText(
+    page,
+    `₹${unitPriceWithMarkup.toFixed(2)}`,
+    450,
+    cursorY,
+    12,
+    boldFont
+  );
 
   // Total Quantity
   cursorY -= lineGap;
@@ -223,7 +239,7 @@ const generatePdf = async (transaction) => {
   );
   writeText(
     page,
-    `₹${totalPrice.toFixed(2)}`,
+    `₹${totalPriceWithMarkup.toFixed(2)}`,
     450,
     cursorY,
     12,

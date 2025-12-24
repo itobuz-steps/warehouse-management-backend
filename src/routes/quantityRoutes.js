@@ -1,10 +1,18 @@
 import express from 'express';
 import QuantityController from '../controllers/QuantityController.js';
+import { validate } from '../validations/middlewares/validator.js';
+import { updateLimitSchema } from '../validations/schema/productSchema.js';
 
 const router = express.Router();
 const quantityController = new QuantityController();
 
 router.post('/product-quantity', quantityController.addProductQuantity);
+
+router.put(
+  '/:id/limit',
+  validate(updateLimitSchema),
+  quantityController.updateProductLimit
+);
 
 // getting total quantity of a product across all warehouse
 router.get(

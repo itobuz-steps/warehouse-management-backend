@@ -17,6 +17,12 @@ export const createProductSchema = yup.object({
     .required('Cost price is required')
     .min(0, 'Price must be greater than or equal to 0'),
 
+  markup: yup
+    .number()
+    .min(0, 'Markup cannot be less than 0%')
+    .max(100, 'Markup cannot be more than 100%')
+    .default(10),
+
   isArchived: yup.boolean().default(false),
 
   createdBy: yup.string().required('Created by is required'),
@@ -50,4 +56,8 @@ export const deleteProductSchema = yup.object({
 
 export const restoreProductSchema = yup.object({
   id: yup.string().required('Product ID is required'),
+});
+
+export const updateLimitSchema = yup.object({
+  limit: yup.number().min(1, 'Limit must be greater than zero'),
 });
