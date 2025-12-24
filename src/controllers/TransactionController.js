@@ -407,6 +407,7 @@ export default class TransactionController {
           lowStockNotifications.push({
             productId,
             warehouseId: sourceWarehouse,
+            transactionPerformedBy: req.userId,
           });
         }
       }
@@ -418,14 +419,14 @@ export default class TransactionController {
         await notification.notifyPendingShipment(
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
-          createdTransaction._id
+          createdTransaction._id,
         );
       }
 
       for (const notification of lowStockNotifications) {
         await notification.notifyLowStock(
           notification.productId,
-          notification.warehouseId
+          notification.warehouseId,
         );
       }
 
@@ -434,6 +435,7 @@ export default class TransactionController {
         message: 'Stock-out transactions created successfully',
         data: transactions,
       });
+
     } catch (error) {
       await session.abortTransaction();
       next(error);
@@ -527,8 +529,7 @@ export default class TransactionController {
           prevQty > sourceQuantity.limit
         ) {
           console.log('notify low stock should be called');
-          // await Notifications.notifyLowStock(productId, sourceWarehouse);
-          await notification.notifyLowStock(productId, sourceWarehouse);
+          await notification.notifyLowStock(productId, sourceWarehouse, req.userId);
         }
       }
 
@@ -583,7 +584,6 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        //await Notifications.notifyLowStock(productId, warehouseId);
         await notification.notifyLowStock(productId, warehouseId);
       }
 

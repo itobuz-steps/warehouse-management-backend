@@ -6,10 +6,8 @@ import sendNotification from '../services/notificationService.js';
 import USER_TYPES from '../constants/userConstants.js';
 
 export default class Notification {
-  notifyLowStock = async (productId, warehouseId) => {
+  notifyLowStock = async (productId, warehouseId, transactionPerformedBy) => {
     try {
-      console.log("notify low stock has been called");
-
       //extracting product and warehouse detail.
       const product = await Product.findById(productId);
       const warehouse = await Warehouse.findById(warehouseId);
@@ -31,23 +29,31 @@ export default class Notification {
         message: `${product.name} is running low in ${warehouse.name}`,
         product,
         warehouse,
+        transactionPerformedBy,
       });
 
       console.log(res);
-      
     } catch (err) {
       throw new Error(err);
     }
   };
 
-  notifyPendingShipment = async (productId, warehouseId, transactionId) => {
+  notifyPendingShipment = async (
+    productId,
+    warehouseId,
+    transactionId,
+    transactionPerformedBy
+  ) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
       const product = await Product.findById(productId);
 
       //find users related to warehouse.
       const users = await User.find({
-        $or: [{ role: USER_TYPES.ADMIN }, { _id: { $in: warehouse?.managerIds || [] } }],
+        $or: [
+          { role: USER_TYPES.ADMIN },
+          { _id: { $in: warehouse?.managerIds || [] } },
+        ],
       });
 
       if (!users.length) {
@@ -63,8 +69,104 @@ export default class Notification {
         warehouse,
         product,
         transactionId,
+        transactionPerformedBy,
       });
-      
+    } catch (err) {
+      throw new Error(err);
+    }
+  };
+
+  notifyStockIn = async (productId, warehouseId, transactionPerformedBy) => {
+    try {
+      const warehouse = await Warehouse.findById(warehouseId);
+      const product = await Product.findById(productId);
+
+      //find users related to warehouse.
+      const users = await User.find({
+        $or: [
+          { role: USER_TYPES.ADMIN },
+          { _id: { $in: warehouse?.managerIds || [] } },
+        ],
+      });
+
+      if (!users.length) {
+        console.log('No user linked with the warehouse!');
+        return;
+      }
+
+      await sendNotification({
+        users,
+        type: NOTIFICATION_TYPES.STOCK_IN,
+        title: 'Stock In Alert',
+        message: `A stock in ${warehouse.name} of ${product.name} is made.`,
+        warehouse,
+        product,
+        transactionPerformedBy,
+      });
+    } catch (err) {
+      throw new Error(err);
+    }
+  };
+
+  notifyStockTransfer = async (productId, sourceWarehouseId, destinationWarehouseId, transactionPerformedBy) => {
+    try {
+      const warehouse = await Warehouse.findById(warehouseId);
+      const product = await Product.findById(productId);
+
+      //find users related to warehouse.
+      const users = await User.find({
+        $or: [
+          { role: USER_TYPES.ADMIN },
+          { _id: { $in: warehouse?.managerIds || [] } },
+        ],
+      });
+
+      if (!users.length) {
+        console.log('No user linked with the warehouse!');
+        return;
+      }
+
+      await sendNotification({
+        users,
+        type: NOTIFICATION_TYPES.STOCK_IN,
+        title: 'Stock In Alert',
+        message: `A stock of ${product.name} has moved from ${sourceWarehouseId} to ${destinationWarehouseId}.`,
+        warehouse,
+        product,
+        transactionPerformedBy,
+      });
+    } catch (err) {
+      throw new Error(err);
+    }
+  };
+
+  notifyStockAdjustment = async () => {
+    try {
+      const warehouse = await Warehouse.findById(warehouseId);
+      const product = await Product.findById(productId);
+
+      //find users related to warehouse.
+      const users = await User.find({
+        $or: [
+          { role: USER_TYPES.ADMIN },
+          { _id: { $in: warehouse?.managerIds || [] } },
+        ],
+      });
+
+      if (!users.length) {
+        console.log('No user linked with the warehouse!');
+        return;
+      }
+
+      await sendNotification({
+        users,
+        type: NOTIFICATION_TYPES.STOCK_IN,
+        title: 'Stock In Alert',
+        message: `A stock in ${warehouse.name} of ${product.name} is made.`,
+        warehouse,
+        product,
+        transactionPerformedBy,
+      });
     } catch (err) {
       throw new Error(err);
     }

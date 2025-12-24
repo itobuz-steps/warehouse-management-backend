@@ -15,6 +15,7 @@ const sendNotification = async ({
   product,
   warehouse,
   transactionId,
+  transactionPerformedBy
 }) => {
   try {
     if (!users || !users.length) {
@@ -46,6 +47,7 @@ const sendNotification = async ({
       if (!transactionId) {
         data = await Notification.create({
           userId,
+          transactionPerformedBy,
           type,
           title,
           message,
@@ -55,6 +57,7 @@ const sendNotification = async ({
       } else {
         data = await Notification.create({
           userId,
+          transactionPerformedBy,
           type,
           title,
           message,
@@ -104,6 +107,8 @@ const sendNotification = async ({
         })
       );
     }
+
+    
 
     return {
       success: true,
