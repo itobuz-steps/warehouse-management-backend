@@ -144,7 +144,7 @@ export default class AnalyticsController {
       throw new Error('warehouseId, productA, and productB are required.');
     }
 
-    const warehouse = await Warehouse.findById(warehouseId);
+    const warehouse = await Warehouse.findById(warehouseId).lean();
 
     if (!warehouse) {
       throw new Error('Warehouse not found.');
@@ -157,36 +157,51 @@ export default class AnalyticsController {
       throw new Error('One or both product(s) not found.');
     }
 
+    // last 7 days
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - 6);
+    startDate.setHours(0, 0, 0, 0);
+
+    // Fetch transactions only for last 7 days
     const transactions = await Transaction.find({
       product: { $in: [productA, productB] },
+      createdAt: { $gte: startDate, $lte: endDate },
       $or: [
         { sourceWarehouse: warehouseId },
         { destinationWarehouse: warehouseId },
       ],
     }).lean();
 
-    if (transactions.length === 0) {
-      throw new Error('No transaction history found.');
+    const counts = { productA: {}, productB: {} };
+    const dateList = [];
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+
+      const dateKey = d.toLocaleDateString('en-CA');
+      dateList.push(dateKey);
+
+      counts.productA[dateKey] = 0;
+      counts.productB[dateKey] = 0;
     }
 
-    const counts = { productA: {}, productB: {} };
-    let minDate = null;
-    let maxDate = null;
+    // 🔹 Count transactions (LOCAL DATE)
+    for (const transaction of transactions) {
+      const dateKey = new Date(transaction.createdAt).toLocaleDateString(
+        'en-CA'
+      );
 
-    for (const t of transactions) {
-      let key = null;
+      if (String(transaction.product) === String(productA)) {
+        counts.productA[dateKey]++;
+      }
 
-      if (String(t.product) === String(productA)) key = 'productA';
-      if (String(t.product) === String(productB)) key = 'productB';
-
-      if (!key) continue;
-
-      const date = new Date(t.createdAt).toISOString().split('T')[0];
-
-      counts[key][date] = (counts[key][date] || 0) + 1;
-
-      if (!minDate || date < minDate) minDate = date;
-      if (!maxDate || date > maxDate) maxDate = date;
+      if (String(transaction.product) === String(productB)) {
+        counts.productB[dateKey]++;
+      }
     }
 
     const result = {
@@ -203,24 +218,18 @@ export default class AnalyticsController {
       },
     };
 
-    let current = new Date(minDate);
-    const end = new Date(maxDate);
-
-    while (current <= end) {
-      const date = current.toISOString().split('T')[0];
-
+    for (const date of dateList) {
       result.productA.history.push({
         date,
-        transactions: counts.productA[date] || 0,
+        transactions: counts.productA[date],
       });
 
       result.productB.history.push({
         date,
-        transactions: counts.productB[date] || 0,
+        transactions: counts.productB[date],
       });
-
-      current.setDate(current.getDate() + 1);
     }
+
     return result;
   };
 }
