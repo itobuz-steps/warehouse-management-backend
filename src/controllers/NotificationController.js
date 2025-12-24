@@ -58,14 +58,50 @@ export default class NotificationController {
       const offset = parseInt(req.params.offset, 10) || 0;
       const limit = 10;
 
-      //getting top 10 recent notifications.
-      const notifications = await Notification.find({
-        userId: req.userId,
-      })
-        .sort({ createdAt: -1 })
-        .skip(offset)
-        .limit(limit)
-        .populate('warehouse');
+      const notifications = await Notification.aggregate([
+        {
+          $match: {
+            userId: new mongoose.Types.ObjectId(req.userId),
+          },
+        },
+        {
+          $sort: { createdAt: -1 },
+        },
+        {
+          $skip: Number(offset),
+        },
+
+        {
+          $limit: Number(limit),
+        },
+
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'userId',
+            foreignField: '_id',
+            pipeline: [
+              {
+                $project: {
+                  profileImage: 1, // Only include the profileImage field
+                },
+              },
+            ],
+            as: 'user', // alias for the result
+          },
+        },
+        {
+          $unwind: {
+            path: '$user', // Unwind the 'user' array to directly get the user object
+          },
+        },
+
+        {
+          $project: {
+            notification: '$$ROOT',
+          },
+        },
+      ]);
 
       // Unseen notification count.
       const unseenCount = await Notification.countDocuments({
@@ -78,6 +114,7 @@ export default class NotificationController {
         data: notifications,
         unseenCount,
       });
+
     } catch (error) {
       next(error);
     }
@@ -85,10 +122,7 @@ export default class NotificationController {
 
   markAllAsSeen = async (req, res, next) => {
     try {
-      await Notification.updateMany(
-        { userId: req.userId },
-        { seen: true }
-      );
+      await Notification.updateMany({ userId: req.userId }, { seen: true });
 
       res.status(200).json({
         success: true,

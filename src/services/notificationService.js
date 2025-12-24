@@ -51,7 +51,6 @@ const sendNotification = async ({
           message,
           product,
           warehouse,
-          
         });
       } else {
         data = await Notification.create({

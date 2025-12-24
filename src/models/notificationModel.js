@@ -9,9 +9,10 @@ const notificationSchema = new mongoose.Schema(
       required: true,
     },
 
-    profileImage: {
-      type: String,
-      required: true
+    transactionPerformedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
 
     type: {
