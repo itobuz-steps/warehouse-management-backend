@@ -1,5 +1,5 @@
 import Subscription from '../models/subscriptionModel.js';
-import BrowserNotification from '../models/notificationModel.js';
+import Notification from '../models/notificationModel.js';
 import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
@@ -59,7 +59,7 @@ export default class NotificationController {
       const limit = 10;
 
       //getting top 10 recent notifications.
-      const notifications = await BrowserNotification.find({
+      const notifications = await Notification.find({
         userId: req.userId,
       })
         .sort({ createdAt: -1 })
@@ -68,7 +68,7 @@ export default class NotificationController {
         .populate('warehouse');
 
       // Unseen notification count.
-      const unseenCount = await BrowserNotification.countDocuments({
+      const unseenCount = await Notification.countDocuments({
         userId: req.userId,
         seen: false,
       });
@@ -85,7 +85,7 @@ export default class NotificationController {
 
   markAllAsSeen = async (req, res, next) => {
     try {
-      await BrowserNotification.updateMany(
+      await Notification.updateMany(
         { userId: req.userId },
         { seen: true }
       );
@@ -108,7 +108,7 @@ export default class NotificationController {
       transaction.shipment = SHIPMENT_TYPES.SHIPPED;
       await transaction.save();
 
-      await BrowserNotification.updateMany(
+      await Notification.updateMany(
         { transactionId: transaction._id },
         {
           title: 'Pending Shipment Alert: Shipped',
@@ -164,7 +164,7 @@ export default class NotificationController {
       await transaction.save({ session });
 
       // Update browser notifications
-      await BrowserNotification.updateMany(
+      await Notification.updateMany(
         { transactionId: transaction._id },
         {
           title: 'Pending Shipment Alert: Cancelled',
