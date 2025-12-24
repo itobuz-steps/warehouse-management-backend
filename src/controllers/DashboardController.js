@@ -709,4 +709,69 @@ export default class DashboardController {
       next(error);
     }
   };
+
+  // Most Adjusted Products by Warehouse 
+  getMostAdjustedProducts = async (req, res, next) => {
+    try {
+      const { warehouseId } = req.params;
+      const { limit = 5 } = req.query;
+
+      if (!warehouseId) {
+        res.status(404);
+        throw new Error('Warehouse Id not found!');
+      }
+
+      const warehouseObjectId = new mongoose.Types.ObjectId(warehouseId);
+
+      const mostAdjustedProducts = await Transaction.aggregate([
+        {
+          $match: {
+            type: TRANSACTION_TYPES.ADJUSTMENT,
+            destinationWarehouse: warehouseObjectId,
+          },
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        {
+          $match: {
+            'product.isArchived': false,
+          },
+        },
+        {
+          $group: {
+            _id: '$product._id',
+            productName: { $first: '$product.name' },
+            category: { $first: '$product.category' },
+            totalAdjustedQuantity: { $sum: '$quantity' },
+          },
+        },
+        { $sort: { totalAdjustedQuantity: -1 } },
+        { $limit: parseInt(limit) },
+        {
+          $project: {
+            _id: 0,
+            productId: '$_id',
+            productName: 1,
+            category: 1,
+            totalAdjustedQuantity: 1,
+          },
+        },
+      ]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Most adjusted products fetched successfully',
+        data: mostAdjustedProducts,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

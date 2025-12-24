@@ -47,5 +47,9 @@ router.get(
   '/get-cancelled-orders/:warehouseId',
   dashboardController.getMostCancelledProducts
 );
+router.get(
+  '/get-most-adjusted-products/:warehouseId',
+  dashboardController.getMostAdjustedProducts
+);
 
 export default router;
