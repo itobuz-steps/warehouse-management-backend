@@ -1,7 +1,7 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 // import Notifications from '../utils/Notifications.js';
-import BrowserNotification from '../utils/Notification.js';
+import Notification from '../utils/Notification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
@@ -9,7 +9,7 @@ import Warehouse from '../models/warehouseModel.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 
 // const notifications = new Notifications();
-const browserNotification = new BrowserNotification();
+const notification = new Notification();
 
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
@@ -415,7 +415,7 @@ export default class TransactionController {
 
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
-        await browserNotification.notifyPendingShipment(
+        await notification.notifyPendingShipment(
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
           createdTransaction._id
@@ -423,7 +423,7 @@ export default class TransactionController {
       }
 
       for (const notification of lowStockNotifications) {
-        await browserNotification.notifyLowStock(
+        await notification.notifyLowStock(
           notification.productId,
           notification.warehouseId
         );
@@ -528,7 +528,7 @@ export default class TransactionController {
         ) {
           console.log('notify low stock should be called');
           // await Notifications.notifyLowStock(productId, sourceWarehouse);
-          await browserNotification.notifyLowStock(productId, sourceWarehouse);
+          await notification.notifyLowStock(productId, sourceWarehouse);
         }
       }
 
@@ -584,7 +584,7 @@ export default class TransactionController {
         prevQty > quantityRecord.limit
       ) {
         //await Notifications.notifyLowStock(productId, warehouseId);
-        await browserNotification.notifyLowStock(productId, warehouseId);
+        await notification.notifyLowStock(productId, warehouseId);
       }
 
       res.status(201).json({

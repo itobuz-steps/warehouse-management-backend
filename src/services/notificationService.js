@@ -1,5 +1,5 @@
 import Subscription from '../models/subscriptionModel.js';
-import BrowserNotification from '../models/notificationModel.js';
+import Notification from '../models/notificationModel.js';
 import webpush from '../config/webpush.js';
 import SendEmail from '../utils/SendEmail.js';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
@@ -44,16 +44,17 @@ const sendNotification = async ({
 
       // Save notification in DB.
       if (!transactionId) {
-        data = await BrowserNotification.create({
+        data = await Notification.create({
           userId,
           type,
           title,
           message,
           product,
           warehouse,
+          
         });
       } else {
-        data = await BrowserNotification.create({
+        data = await Notification.create({
           userId,
           type,
           title,

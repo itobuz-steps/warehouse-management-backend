@@ -9,6 +9,11 @@ const notificationSchema = new mongoose.Schema(
       required: true,
     },
 
+    profileImage: {
+      type: String,
+      required: true
+    },
+
     type: {
       type: String,
       enum: Object.values(NOTIFICATION_TYPES),
@@ -56,4 +61,3 @@ const notificationSchema = new mongoose.Schema(
 );
 
 export default mongoose.model('BNotification', notificationSchema);
-// export default mongoose.model('BrowserNotification', browserNotificationSchema);
