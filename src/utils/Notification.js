@@ -2,10 +2,10 @@ import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
-import sendBrowserNotification from '../services/browserNotificationService.js';
+import sendNotification from '../services/notificationService.js';
 import USER_TYPES from '../constants/userConstants.js';
 
-export default class BrowserNotification {
+export default class Notification {
   notifyLowStock = async (productId, warehouseId) => {
     try {
       console.log("notify low stock has been called");
@@ -24,7 +24,7 @@ export default class BrowserNotification {
         return;
       }
 
-      const res = await sendBrowserNotification({
+      const res = await sendNotification({
         users,
         type: NOTIFICATION_TYPES.LOW_STOCK,
         title: 'Low Stock Alert',
@@ -55,7 +55,7 @@ export default class BrowserNotification {
         return;
       }
 
-      await sendBrowserNotification({
+      await sendNotification({
         users,
         type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',

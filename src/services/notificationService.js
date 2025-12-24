@@ -1,5 +1,5 @@
 import Subscription from '../models/subscriptionModel.js';
-import BrowserNotification from '../models/browserNotificationModel.js';
+import BrowserNotification from '../models/notificationModel.js';
 import webpush from '../config/webpush.js';
 import SendEmail from '../utils/SendEmail.js';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
@@ -7,7 +7,7 @@ import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 const sendMail = new SendEmail();
 
 //webpush and email has been sent here.
-const sendBrowserNotification = async ({
+const sendNotification = async ({
   users,
   type,
   title,
@@ -115,4 +115,4 @@ const sendBrowserNotification = async ({
   }
 };
 
-export default sendBrowserNotification;
+export default sendNotification;

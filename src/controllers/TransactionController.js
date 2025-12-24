@@ -1,7 +1,7 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 // import Notifications from '../utils/Notifications.js';
-import BrowserNotification from '../utils/BrowserNotification.js';
+import BrowserNotification from '../utils/Notification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';

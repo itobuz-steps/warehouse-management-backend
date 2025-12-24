@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 
-const browserNotificationSchema = new mongoose.Schema(
+const notificationSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -55,5 +55,5 @@ const browserNotificationSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('BNotification', browserNotificationSchema);
+export default mongoose.model('BNotification', notificationSchema);
 // export default mongoose.model('BrowserNotification', browserNotificationSchema);
