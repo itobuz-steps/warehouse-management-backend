@@ -4,6 +4,7 @@ import Transaction from '../models/transactionModel.js';
 import mongoose from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
+import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import {
   generateTopFiveProductsExcel,
   generateInventoryByCategoryExcel,
@@ -630,6 +631,79 @@ export default class DashboardController {
         success: true,
         message: 'Top selling products fetched successfully',
         data: topSellingProducts,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Most Cancelled Products by Warehouse
+  getMostCancelledProducts = async (req, res, next) => {
+    try {
+      const { warehouseId } = req.params;
+      const { limit = 5, startDate, endDate } = req.query;
+
+      if (!warehouseId) {
+        res.status(404);
+        throw new Error('Warehouse Id not found!');
+      }
+
+      const warehouseObjectId = new mongoose.Types.ObjectId(warehouseId);
+
+      const match = {
+        shipment: SHIPMENT_TYPES.CANCELLED,
+        sourceWarehouse: warehouseObjectId,
+      };
+
+      if (startDate || endDate) {
+        match.createdAt = {};
+        if (startDate) {
+          match.createdAt.$gte = new Date(startDate);
+        }
+        if (endDate) {
+          const d = new Date(endDate);
+          d.setHours(23, 59, 59, 999);
+          match.createdAt.$lte = d;
+        }
+      }
+
+      const mostCancelledProducts = await Transaction.aggregate([
+        { $match: match },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+        { $match: { 'product.isArchived': false } },
+        {
+          $group: {
+            _id: '$product._id',
+            productName: { $first: '$product.name' },
+            category: { $first: '$product.category' },
+            totalCancelledQuantity: { $sum: '$quantity' },
+          },
+        },
+        { $sort: { totalCancelledQuantity: -1 } },
+        { $limit: parseInt(limit) },
+        {
+          $project: {
+            _id: 0,
+            productId: '$_id',
+            productName: 1,
+            category: 1,
+            totalCancelledQuantity: 1,
+          },
+        },
+      ]);
+
+      res.status(200).json({
+        success: true,
+        message: 'Most cancelled products fetched successfully',
+        data: mostCancelledProducts,
       });
     } catch (error) {
       next(error);
