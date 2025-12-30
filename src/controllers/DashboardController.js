@@ -65,7 +65,6 @@ export default class DashboardController {
 
   getTopFiveProductsData = async (id) => {
     try {
-      console.log(id);
       const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
       const topProducts = await Quantity.aggregate([
@@ -113,7 +112,7 @@ export default class DashboardController {
 
       return topProducts;
     } catch (err) {
-      console.error(err);
+      return err;
     }
   };
 
@@ -200,7 +199,6 @@ export default class DashboardController {
           },
         },
       ]);
-      console.log(productsCategory);
 
       return productsCategory;
     } catch (err) {
@@ -489,8 +487,6 @@ export default class DashboardController {
         },
       ]);
 
-      console.log(todayShipment);
-
       res.status(200).json({
         message: 'Data fetched successfully',
         success: true,
@@ -541,6 +537,12 @@ export default class DashboardController {
 
         {
           $unwind: '$productData',
+        },
+
+        {
+          $match: {
+            'productData.isArchived': false,
+          },
         },
 
         {
@@ -710,7 +712,7 @@ export default class DashboardController {
     }
   };
 
-  // Most Adjusted Products by Warehouse 
+  // Most Adjusted Products by Warehouse
   getMostAdjustedProducts = async (req, res, next) => {
     try {
       const { warehouseId } = req.params;

@@ -380,26 +380,6 @@ export default class TransactionController {
         const createdTransaction = await transaction.save({ session });
         transactions.push(createdTransaction);
 
-        // await notifications.notifyPendingShipment(
-        //   productId,
-        //   sourceWarehouse,
-        //   createdTransaction._id
-        // );
-
-        // await browserNotification.notifyPendingShipment(
-        //   productId,
-        //   sourceWarehouse,
-        //   createdTransaction._id
-        // );
-
-        // if (
-        //   quantityRecord.quantity <= quantityRecord.limit &&
-        //   previousQty > quantityRecord.limit
-        // ) {
-        //   // await notifications.notifyLowStock(productId, sourceWarehouse);
-        //   await browserNotification.notifyLowStock(productId, sourceWarehouse);
-        //   console.log('Browser notification called!');
-        // }
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
@@ -526,8 +506,6 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          console.log('notify low stock should be called');
-          // await Notifications.notifyLowStock(productId, sourceWarehouse);
           await browserNotification.notifyLowStock(productId, sourceWarehouse);
         }
       }
