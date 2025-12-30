@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import http from 'http';
 import config from './config/config.js';
 import connectDatabase from './config/dbConfig.js';
 import authRoutes from './routes/authRoutes.js';
@@ -31,8 +30,6 @@ const port = config.PORT;
 
 connectDatabase();
 
-const server = http.createServer(app);
-
 app.use('/user/auth', authRoutes);
 app.use('/user/admin/', verifyToken, adminRoutes);
 app.use('/warehouse', verifyToken, warehouseRoutes);
@@ -47,6 +44,6 @@ app.use('/browser-notifications', verifyToken, BrowserNotificationRoutes);
 
 app.use(errorHandler);
 
-server.listen(port, () => {
+app.listen(port, () => {
   console.log(`Server Listening on PORT : ${port}`);
 });
