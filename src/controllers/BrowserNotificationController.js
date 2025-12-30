@@ -6,6 +6,7 @@ import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import Quantity from '../models/quantityModel.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
+import SendEmail from '../utils/SendEmail.js';
 
 export default class BrowserNotificationsController {
   subscribe = async (req, res, next) => {
@@ -101,12 +102,16 @@ export default class BrowserNotificationsController {
 
   changeShipmentStatus = async (req, res, next) => {
     try {
-      const transaction = await Transaction.findById(req.params.id);
+      const transaction = await Transaction.findByIdAndUpdate(
+        new mongoose.Types.ObjectId(`${req.params.id}`),
+        {
+          shipment: SHIPMENT_TYPES.SHIPPED,
+        },
+        { new: true }
+      ).populate('product performedBy sourceWarehouse');
+
       const product = await Product.findById(transaction.product);
       const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
-
-      transaction.shipment = SHIPMENT_TYPES.SHIPPED;
-      await transaction.save();
 
       await BrowserNotification.updateMany(
         { transactionId: transaction._id },
@@ -118,6 +123,10 @@ export default class BrowserNotificationsController {
         },
         { new: true }
       );
+
+      await new SendEmail().sendProductShippedEmailToCustomer(transaction);
+
+      console.log('Status Changed');
 
       res.status(201).json({
         success: true,
