@@ -100,7 +100,7 @@ export default class BrowserNotificationsController {
     }
   };
 
-  changeShipmentStatus = async (req, res, next) => {
+  shipShipmentStatus = async (req, res, next) => {
     try {
       const transaction = await Transaction.findByIdAndUpdate(
         new mongoose.Types.ObjectId(`${req.params.id}`),
@@ -126,8 +126,6 @@ export default class BrowserNotificationsController {
 
       await new SendEmail().sendProductShippedEmailToCustomer(transaction);
 
-      console.log('Status Changed');
-
       res.status(201).json({
         success: true,
         message: 'Status Changed to Shipped Successfully',
@@ -137,16 +135,16 @@ export default class BrowserNotificationsController {
     }
   };
 
-  cancelShipment = async (req, res, next) => {
+  cancelShipmentStatus = async (req, res, next) => {
     let session;
 
     try {
       session = await mongoose.startSession();
       session.startTransaction();
 
-      const transaction = await Transaction.findById(req.params.id).session(
-        session
-      );
+      const transaction = await Transaction.findById(req.params.id)
+        .session(session)
+        .populate('product performedBy sourceWarehouse');
 
       const product = await Product.findById(transaction.product);
       const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
@@ -183,6 +181,10 @@ export default class BrowserNotificationsController {
         },
         { session }
       );
+
+      console.log('Transaction:', transaction);
+
+      await new SendEmail().sendProductCancelEmailToCustomer(transaction);
 
       await session.commitTransaction();
 

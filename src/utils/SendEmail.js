@@ -113,7 +113,6 @@ export default class SendEmail {
   };
 
   sendProductShippedEmailToCustomer = async (transaction) => {
-    console.log('Transaction', transaction);
     try {
       const invoice = await generatePdf(transaction);
 
@@ -129,6 +128,32 @@ export default class SendEmail {
        <br>
        <br>
        <p>Thanks for the business</p>
+     `,
+        invoice
+      );
+
+      console.log('Pending shipment email sent:', mailResponse);
+    } catch (error) {
+      return error;
+    }
+  };
+
+  sendProductCancelEmailToCustomer = async (transaction) => {
+    try {
+      const invoice = await generatePdf(transaction);
+
+      const mailResponse = await this.mailSender(
+        transaction.customerEmail,
+        'Product Shipment Details',
+        `
+       <h2>Product Shipment Status Updated</h2>
+       <p>Hello ${transaction.customerName || ''},</p>
+       <p>Your shipment status for Order Id: <b>${transaction._id}</b> is Cancelled</p>
+       <p>Your order status has changed to <b>${transaction.shipment}</b></p>
+       <p>Please find all details of the Order in the attached PDF</p>
+       <br>
+       <br>
+       <p>For more Information. Contact Here ${transaction.performedBy.email}</p>
      `,
         invoice
       );
