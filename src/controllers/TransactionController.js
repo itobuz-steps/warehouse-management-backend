@@ -79,7 +79,9 @@ export default class TransactionController {
       ]);
 
       const statusCounts = await Transaction.aggregate([
-        // { $match: matchStage },
+        { $match: {
+          type: "OUT",
+        } },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
       ]);
 
@@ -227,6 +229,7 @@ export default class TransactionController {
               { sourceWarehouse: warehouseObjectId },
               { destinationWarehouse: warehouseObjectId },
             ],
+            type: "OUT",
           },
         },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
