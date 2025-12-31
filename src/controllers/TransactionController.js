@@ -420,6 +420,7 @@ export default class TransactionController {
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
           createdTransaction._id,
+          req.userId
         );
       }
 
@@ -427,6 +428,7 @@ export default class TransactionController {
         await notification.notifyLowStock(
           notification.productId,
           notification.warehouseId,
+          req.userId,
         );
       }
 
@@ -584,7 +586,7 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        await notification.notifyLowStock(productId, warehouseId);
+        await notification.notifyLowStock(productId, warehouseId, req.userId);
       }
 
       res.status(201).json({

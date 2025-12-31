@@ -55,13 +55,17 @@ export default class NotificationController {
 
   getNotifications = async (req, res, next) => {
     try {
+      console.log('I am in getNotifications');
+
       const offset = parseInt(req.params.offset, 10) || 0;
       const limit = 10;
 
       const notifications = await Notification.aggregate([
         {
           $match: {
-            userId: new mongoose.Types.ObjectId(req.userId),
+            userIds: {
+              $in: [new mongoose.Types.ObjectId(req.userId)],
+            },
           },
         },
         {
@@ -78,15 +82,8 @@ export default class NotificationController {
         {
           $lookup: {
             from: 'users',
-            localField: 'userId',
+            localField: 'transactionPerformedBy',
             foreignField: '_id',
-            pipeline: [
-              {
-                $project: {
-                  profileImage: 1, // Only include the profileImage field
-                },
-              },
-            ],
             as: 'user', // alias for the result
           },
         },
@@ -95,13 +92,18 @@ export default class NotificationController {
             path: '$user', // Unwind the 'user' array to directly get the user object
           },
         },
-
         {
-          $project: {
-            notification: '$$ROOT',
+          $addFields: {
+            performedByName: '$user.name',
+            performedByImage: '$user.profileImage',
           },
         },
+        {
+          $unset: 'user',
+        },
       ]);
+
+      console.log('this is thee notification', notifications);
 
       // Unseen notification count.
       const unseenCount = await Notification.countDocuments({
@@ -114,7 +116,6 @@ export default class NotificationController {
         data: notifications,
         unseenCount,
       });
-
     } catch (error) {
       next(error);
     }

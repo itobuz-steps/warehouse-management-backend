@@ -15,7 +15,7 @@ const sendNotification = async ({
   product,
   warehouse,
   transactionId,
-  transactionPerformedBy
+  transactionPerformedBy,
 }) => {
   try {
     if (!users || !users.length) {
@@ -24,10 +24,43 @@ const sendNotification = async ({
 
     const payload = JSON.stringify({ title, body: message });
     const results = [];
+    const userIds = users.map((user) => user._id);
 
+    let notificationData;
+
+    if (!transactionId) {
+      notificationData = {
+        type,
+        title,
+        message,
+        product,
+        warehouse,
+        transactionId,
+        transactionPerformedBy,
+        userIds,
+      };
+    } else {
+      notificationData = {
+        type,
+        title,
+        message,
+        product,
+        warehouse,
+        transactionPerformedBy,
+        userIds,
+      };
+    }
+
+    const data = await Notification.create(notificationData);
+    console.log("Saved Data", data);
+
+    if(!data){
+      throw new Error('Unable to create notification');
+    }
+    
     for (const user of users) {
       const userId = user._id;
-      // const subscriptions = await Subscription.find({ userId });
+
       const subscriptions = await Subscription.find({ userId }).sort({
         updatedAt: -1,
       });
@@ -40,34 +73,6 @@ const sendNotification = async ({
         });
         continue;
       }
-
-      let data;
-
-      // Save notification in DB.
-      if (!transactionId) {
-        data = await Notification.create({
-          userId,
-          transactionPerformedBy,
-          type,
-          title,
-          message,
-          product,
-          warehouse,
-        });
-      } else {
-        data = await Notification.create({
-          userId,
-          transactionPerformedBy,
-          type,
-          title,
-          message,
-          product,
-          warehouse,
-          transactionId,
-        });
-      }
-
-      console.log('This is the saved data', data);
 
       //Sending email.
       console.log('sending email');
@@ -108,14 +113,13 @@ const sendNotification = async ({
       );
     }
 
-    
-
     return {
       success: true,
       message: 'Notifications processed',
       results,
     };
   } catch (err) {
+    console.log(err);
     throw new Error(err.message);
   }
 };

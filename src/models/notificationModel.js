@@ -3,8 +3,8 @@ import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 
 const notificationSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
+    userIds: {
+      type: [mongoose.Schema.Types.ObjectId],
       ref: 'User',
       required: true,
     },
@@ -61,4 +61,4 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('BNotification', notificationSchema);
+export default mongoose.model('DummyNotifications', notificationSchema);
