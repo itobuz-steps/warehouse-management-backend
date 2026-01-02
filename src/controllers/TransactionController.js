@@ -1,7 +1,7 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 // import Notifications from '../utils/Notifications.js';
-import BrowserNotification from '../utils/BrowserNotification.js';
+import Notification from '../utils/Notification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
@@ -9,7 +9,7 @@ import Warehouse from '../models/warehouseModel.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 
 // const notifications = new Notifications();
-const browserNotification = new BrowserNotification();
+const notification = new Notification();
 
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
@@ -304,6 +304,16 @@ export default class TransactionController {
 
       await session.commitTransaction();
 
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await notification.notifyTransaction(
+          createdTransaction.product,
+          createdTransaction.destinationWarehouse,
+          createdTransaction._id,
+          req.userId
+        );
+      }
+
       res.status(201).json({
         success: true,
         message: 'Stock-in transactions created successfully',
@@ -390,6 +400,7 @@ export default class TransactionController {
           lowStockNotifications.push({
             productId,
             warehouseId: sourceWarehouse,
+            transactionPerformedBy: req.userId,
           });
         }
       }
@@ -398,17 +409,19 @@ export default class TransactionController {
 
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
-        await browserNotification.notifyPendingShipment(
+        await notification.notifyPendingShipment(
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
-          createdTransaction._id
+          createdTransaction._id,
+          req.userId
         );
       }
 
       for (const notification of lowStockNotifications) {
-        await browserNotification.notifyLowStock(
+        await notification.notifyLowStock(
           notification.productId,
-          notification.warehouseId
+          notification.warehouseId,
+          req.userId
         );
       }
 
@@ -509,11 +522,21 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          await browserNotification.notifyLowStock(productId, sourceWarehouse);
+          await notification.notifyLowStock(productId, sourceWarehouse);
         }
       }
 
       await session.commitTransaction();
+
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await notification.notifyTransaction(
+          createdTransaction.product,
+          createdTransaction.sourceWarehouse,
+          createdTransaction._id,
+          req.userId
+        );
+      }
 
       res.status(201).json({
         success: true,
@@ -564,9 +587,15 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        //await Notifications.notifyLowStock(productId, warehouseId);
-        await browserNotification.notifyLowStock(productId, warehouseId);
+        await notification.notifyLowStock(productId, warehouseId);
       }
+
+      await notification.notifyTransaction(
+        createdTransaction.product,
+        createdTransaction.destinationWarehouse,
+        createdTransaction._id,
+        req.userId
+      );
 
       res.status(201).json({
         success: true,
