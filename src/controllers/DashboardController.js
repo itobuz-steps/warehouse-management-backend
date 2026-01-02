@@ -64,7 +64,6 @@ export default class DashboardController {
 
   getTopFiveProductsData = async (id) => {
     try {
-      console.log(id);
       const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
       const topProducts = await Quantity.aggregate([

@@ -4,6 +4,7 @@ import Warehouse from '../models/warehouseModel.js';
 import User from '../models/userModel.js';
 import sendNotification from '../services/notificationService.js';
 import USER_TYPES from '../constants/userConstants.js';
+import Transaction from '../models/transactionModel.js';
 
 export default class Notification {
   notifyLowStock = async (productId, warehouseId, transactionPerformedBy) => {
@@ -76,10 +77,11 @@ export default class Notification {
     }
   };
 
-  notifyStockIn = async (productId, warehouseId, transactionPerformedBy) => {
+  notifyTransaction = async (productId, warehouseId, transactionId, transactionPerformedBy) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
       const product = await Product.findById(productId);
+      const transaction = await Transaction.findById(transactionId);
 
       //find users related to warehouse.
       const users = await User.find({
@@ -96,75 +98,12 @@ export default class Notification {
 
       await sendNotification({
         users,
-        type: NOTIFICATION_TYPES.STOCK_IN,
-        title: 'Stock In Alert',
-        message: `A stock ${product.name} is made in ${warehouse.name}`,
+        type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
+        title: `Transaction ${transaction.type} Alert`,
+        message: `Transaction of Type: ${transaction.type} for ${product.name} regarding ${warehouse.name} is done.`,
         warehouse,
         product,
-        transactionPerformedBy,
-      });
-    } catch (err) {
-      throw new Error(err);
-    }
-  };
-
-  notifyStockTransfer = async (productId, sourceWarehouseId, destinationWarehouseId, transactionPerformedBy) => {
-    try {
-      const warehouse = await Warehouse.findById(sourceWarehouseId);
-      const product = await Product.findById(productId);
-
-      //find users related to warehouse.
-      const users = await User.find({
-        $or: [
-          { role: USER_TYPES.ADMIN },
-          { _id: { $in: warehouse?.managerIds || [] } },
-        ],
-      });
-
-      if (!users.length) {
-        console.log('No user linked with the warehouse!');
-        return;
-      }
-
-      await sendNotification({
-        users,
-        type: NOTIFICATION_TYPES.STOCK_TRANSFER,
-        title: 'Stock Transfer Alert',
-        message: `A stock of ${product.name} has moved from ${sourceWarehouseId} to ${destinationWarehouseId}.`,
-        warehouse,
-        product,
-        transactionPerformedBy,
-      });
-    } catch (err) {
-      throw new Error(err);
-    }
-  };
-
-  notifyStockAdjustment = async (productId, warehouseId, transactionPerformedBy) => {
-    try {
-      const warehouse = await Warehouse.findById(warehouseId);
-      const product = await Product.findById(productId);
-
-      //find users related to warehouse.
-      const users = await User.find({
-        $or: [
-          { role: USER_TYPES.ADMIN },
-          { _id: { $in: warehouse?.managerIds || [] } },
-        ],
-      });
-
-      if (!users.length) {
-        console.log('No user linked with the warehouse!');
-        return;
-      }
-
-      await sendNotification({
-        users,
-        type: NOTIFICATION_TYPES.STOCK_ADJUSTMENT,
-        title: 'Stock Adjustment Alert',
-        message: `An adjustment of ${product.name} is made in ${warehouse.name}.`,
-        warehouse,
-        product,
+        transactionId,
         transactionPerformedBy,
       });
     } catch (err) {

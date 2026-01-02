@@ -83,8 +83,6 @@ export default class TransactionController {
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
       ]);
 
-      
-
       res.status(200).json({
         success: true,
         message: 'Transactions fetched successfully',
@@ -303,6 +301,16 @@ export default class TransactionController {
 
       await session.commitTransaction();
 
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await notification.notifyTransaction(
+          createdTransaction.product,
+          createdTransaction.destinationWarehouse,
+          createdTransaction._id,
+          req.userId
+        );
+      }
+
       res.status(201).json({
         success: true,
         message: 'Stock-in transactions created successfully',
@@ -382,26 +390,6 @@ export default class TransactionController {
         const createdTransaction = await transaction.save({ session });
         transactions.push(createdTransaction);
 
-        // await notifications.notifyPendingShipment(
-        //   productId,
-        //   sourceWarehouse,
-        //   createdTransaction._id
-        // );
-
-        // await browserNotification.notifyPendingShipment(
-        //   productId,
-        //   sourceWarehouse,
-        //   createdTransaction._id
-        // );
-
-        // if (
-        //   quantityRecord.quantity <= quantityRecord.limit &&
-        //   previousQty > quantityRecord.limit
-        // ) {
-        //   // await notifications.notifyLowStock(productId, sourceWarehouse);
-        //   await browserNotification.notifyLowStock(productId, sourceWarehouse);
-        //   console.log('Browser notification called!');
-        // }
         if (
           quantityRecord.quantity <= quantityRecord.limit &&
           previousQty > quantityRecord.limit
@@ -430,7 +418,7 @@ export default class TransactionController {
         await notification.notifyLowStock(
           notification.productId,
           notification.warehouseId,
-          req.userId,
+          req.userId
         );
       }
 
@@ -439,7 +427,6 @@ export default class TransactionController {
         message: 'Stock-out transactions created successfully',
         data: transactions,
       });
-
     } catch (error) {
       await session.abortTransaction();
       next(error);
@@ -532,12 +519,21 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          console.log('notify low stock should be called');
-          await notification.notifyLowStock(productId, sourceWarehouse, req.userId);
+          await notification.notifyLowStock(productId, sourceWarehouse);
         }
       }
 
       await session.commitTransaction();
+
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await notification.notifyTransaction(
+          createdTransaction.product,
+          createdTransaction.sourceWarehouse,
+          createdTransaction._id,
+          req.userId
+        );
+      }
 
       res.status(201).json({
         success: true,
@@ -588,8 +584,15 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        await notification.notifyLowStock(productId, warehouseId, req.userId);
+        await notification.notifyLowStock(productId, warehouseId);
       }
+
+      await notification.notifyTransaction(
+        createdTransaction.product,
+        createdTransaction.destinationWarehouse,
+        createdTransaction._id,
+        req.userId
+      );
 
       res.status(201).json({
         success: true,

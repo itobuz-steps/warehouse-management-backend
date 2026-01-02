@@ -28,7 +28,7 @@ const sendNotification = async ({
 
     let notificationData;
 
-    if (!transactionId) {
+    if (transactionId) {
       notificationData = {
         type,
         title,
@@ -52,7 +52,6 @@ const sendNotification = async ({
     }
 
     const data = await Notification.create(notificationData);
-    console.log("Saved Data", data);
 
     if(!data){
       throw new Error('Unable to create notification');
@@ -119,7 +118,7 @@ const sendNotification = async ({
       results,
     };
   } catch (err) {
-    console.log(err);
+    console.log(err.message);
     throw new Error(err.message);
   }
 };

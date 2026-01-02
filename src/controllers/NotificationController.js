@@ -55,16 +55,15 @@ export default class NotificationController {
 
   getNotifications = async (req, res, next) => {
     try {
-      console.log('I am in getNotifications');
-
       const offset = parseInt(req.params.offset, 10) || 0;
       const limit = 10;
+      const userId = new mongoose.Types.ObjectId(req.userId);
 
       const notifications = await Notification.aggregate([
         {
           $match: {
             userIds: {
-              $in: [new mongoose.Types.ObjectId(req.userId)],
+              $in: [userId],
             },
           },
         },
@@ -84,12 +83,12 @@ export default class NotificationController {
             from: 'users',
             localField: 'transactionPerformedBy',
             foreignField: '_id',
-            as: 'user', // alias for the result
+            as: 'user',
           },
         },
         {
           $unwind: {
-            path: '$user', // Unwind the 'user' array to directly get the user object
+            path: '$user',
           },
         },
         {
@@ -103,11 +102,11 @@ export default class NotificationController {
         },
       ]);
 
-      console.log('this is thee notification', notifications);
+      console.log('this is the notification', notifications);
 
       // Unseen notification count.
       const unseenCount = await Notification.countDocuments({
-        userId: req.userId,
+        userIds: { $in: [userId] },
         seen: false,
       });
 
@@ -123,7 +122,10 @@ export default class NotificationController {
 
   markAllAsSeen = async (req, res, next) => {
     try {
-      await Notification.updateMany({ userId: req.userId }, { seen: true });
+      await Notification.updateMany(
+        { userIds: { $in: [new mongoose.Types.ObjectId(req.userId)] } },
+        { $set: { seen: true } }
+      );
 
       res.status(200).json({
         success: true,
