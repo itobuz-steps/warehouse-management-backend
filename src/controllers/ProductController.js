@@ -167,7 +167,7 @@ export default class ProductController {
       const productId = req.params.id;
 
       const qr = await generateQrCode(
-        `${req.protocol}://${config.FRONTEND_URL}/pages/product.html?id=${productId}`
+        `${req.protocol}://${config.FRONTEND_URL}/pages/qr-product.html?id=${productId}`
       );
       res.setHeader('Content-Type', 'image/png');
       res.setHeader('Content-Disposition', 'inline; filename="qrcode.png"');

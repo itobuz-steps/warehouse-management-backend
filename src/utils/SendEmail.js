@@ -1,8 +1,9 @@
 import nodemailer from 'nodemailer';
 import config from '../config/config.js';
+import generatePdf from '../services/generatePdf.js';
 
 export default class SendEmail {
-  mailSender = async (email, title, body) => {
+  mailSender = async (email, title, body, attachment = null) => {
     try {
       console.log('sending email...');
 
@@ -14,12 +15,24 @@ export default class SendEmail {
         },
       });
 
-      const info = await transporter.sendMail({
+      const mailFields = {
         from: config.MAIL_USER,
         to: email,
         subject: title,
         html: body,
-      });
+      };
+
+      if (attachment) {
+        mailFields.attachments = [
+          {
+            filename: 'invoice.pdf',
+            content: attachment,
+            contentType: 'application/pdf',
+          },
+        ];
+      }
+
+      const info = await transporter.sendMail(mailFields);
 
       return info;
     } catch (error) {
@@ -77,7 +90,7 @@ export default class SendEmail {
 
       console.log('Low stock email sent:', mailResponse);
     } catch (err) {
-      throw new Error(err)
+      throw new Error(err);
     }
   };
 
@@ -95,7 +108,59 @@ export default class SendEmail {
 
       console.log('Pending shipment email sent:', mailResponse);
     } catch (err) {
-      throw new Error(err)
+      throw new Error(err);
+    }
+  };
+
+  sendProductShippedEmailToCustomer = async (transaction) => {
+    try {
+      const invoice = await generatePdf(transaction);
+
+      const mailResponse = await this.mailSender(
+        transaction.customerEmail,
+        'Product Shipment Details',
+        `
+       <h2>Product Shipment Status Updated</h2>
+       <p>Hello ${transaction.customerName || ''},</p>
+       <p>Your shipment status for Order Id: <b>${transaction._id}</b> is successfully Delivered</p>
+       <p>Your order status has changed to <b>${transaction.shipment}</b></p>
+       <p>Please find all details of the Order in the attached PDF</p>
+       <br>
+       <br>
+       <p>Thanks for the business</p>
+     `,
+        invoice
+      );
+
+      console.log('Pending shipment email sent:', mailResponse);
+    } catch (error) {
+      return error;
+    }
+  };
+
+  sendProductCancelEmailToCustomer = async (transaction) => {
+    try {
+      const invoice = await generatePdf(transaction);
+
+      const mailResponse = await this.mailSender(
+        transaction.customerEmail,
+        'Product Shipment Details',
+        `
+       <h2>Product Shipment Status Updated</h2>
+       <p>Hello ${transaction.customerName || ''},</p>
+       <p>Your shipment status for Order Id: <b>${transaction._id}</b> is Cancelled</p>
+       <p>Your order status has changed to <b>${transaction.shipment}</b></p>
+       <p>Please find all details of the Order in the attached PDF</p>
+       <br>
+       <br>
+       <p>For more Information. Contact Here ${transaction.performedBy.email}</p>
+     `,
+        invoice
+      );
+
+      console.log('Pending shipment email sent:', mailResponse);
+    } catch (error) {
+      console.log(error);
     }
   };
 }

@@ -6,6 +6,7 @@ import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import Quantity from '../models/quantityModel.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
+import SendEmail from '../utils/SendEmail.js';
 
 export default class NotificationController {
   subscribe = async (req, res, next) => {
@@ -136,9 +137,16 @@ export default class NotificationController {
     }
   };
 
-  changeShipmentStatus = async (req, res, next) => {
+  shipShipmentStatus = async (req, res, next) => {
     try {
-      const transaction = await Transaction.findById(req.params.id);
+      const transaction = await Transaction.findByIdAndUpdate(
+        new mongoose.Types.ObjectId(`${req.params.id}`),
+        {
+          shipment: SHIPMENT_TYPES.SHIPPED,
+        },
+        { new: true }
+      ).populate('product performedBy sourceWarehouse');
+
       const product = await Product.findById(transaction.product);
       const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
 
@@ -156,6 +164,8 @@ export default class NotificationController {
         { new: true }
       );
 
+      await new SendEmail().sendProductShippedEmailToCustomer(transaction);
+
       res.status(201).json({
         success: true,
         message: 'Status Changed to Shipped Successfully',
@@ -165,16 +175,16 @@ export default class NotificationController {
     }
   };
 
-  cancelShipment = async (req, res, next) => {
+  cancelShipmentStatus = async (req, res, next) => {
     let session;
 
     try {
       session = await mongoose.startSession();
       session.startTransaction();
 
-      const transaction = await Transaction.findById(req.params.id).session(
-        session
-      );
+      const transaction = await Transaction.findById(req.params.id)
+        .session(session)
+        .populate('product performedBy sourceWarehouse');
 
       const product = await Product.findById(transaction.product);
       const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
@@ -211,6 +221,10 @@ export default class NotificationController {
         },
         { session }
       );
+
+      console.log('Transaction:', transaction);
+
+      await new SendEmail().sendProductCancelEmailToCustomer(transaction);
 
       await session.commitTransaction();
 
