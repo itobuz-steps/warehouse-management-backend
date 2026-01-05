@@ -906,7 +906,7 @@ export default class DashboardController {
             label: '$_id',
             profit: { $round: ['$profit', 2] },
             loss: { $round: ['$loss', 2] },
-            net: { $round: [{ $subtract: ['$profit', '$loss'] }, 2] },
+            net: { $round: [{ $subtract: ['$profit', '$loss'] }, 2] }, // For net Transaction value
           },
         },
       ];
