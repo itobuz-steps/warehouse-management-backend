@@ -7,6 +7,7 @@ import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import Warehouse from '../models/warehouseModel.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
+import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 
 // const notifications = new Notifications();
 const notification = new Notification();
@@ -310,6 +311,7 @@ export default class TransactionController {
           createdTransaction.product,
           createdTransaction.destinationWarehouse,
           createdTransaction._id,
+          NOTIFICATION_TYPES.STOCK_IN,
           req.userId
         );
       }
@@ -534,6 +536,7 @@ export default class TransactionController {
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
           createdTransaction._id,
+          NOTIFICATION_TYPES.STOCK_TRANSFER,
           req.userId
         );
       }
@@ -594,6 +597,7 @@ export default class TransactionController {
         createdTransaction.product,
         createdTransaction.destinationWarehouse,
         createdTransaction._id,
+        NOTIFICATION_TYPES.STOCK_ADJUSTMENT,
         req.userId
       );
 

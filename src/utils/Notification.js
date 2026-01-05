@@ -77,7 +77,7 @@ export default class Notification {
     }
   };
 
-  notifyTransaction = async (productId, warehouseId, transactionId, transactionPerformedBy) => {
+  notifyTransaction = async (productId, warehouseId, transactionId, type, transactionPerformedBy) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
       const product = await Product.findById(productId);
@@ -98,7 +98,7 @@ export default class Notification {
 
       await sendNotification({
         users,
-        type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
+        type: type,
         title: `Transaction ${transaction.type} Alert`,
         message: `Transaction of Type: ${transaction.type} for ${product.name} regarding ${warehouse.name} is done.`,
         warehouse,
