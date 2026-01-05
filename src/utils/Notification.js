@@ -43,6 +43,7 @@ export default class Notification {
     productId,
     warehouseId,
     transactionId,
+    quantity,
     transactionPerformedBy
   ) => {
     try {
@@ -66,7 +67,7 @@ export default class Notification {
         users,
         type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
         title: 'Pending Shipment Alert',
-        message: `A shipment for ${product.name} from ${warehouse.name} is pending.`,
+        message: `A shipment for ${product.name} of Quantity: ${quantity} from ${warehouse.name} is pending.`,
         warehouse,
         product,
         transactionId,
@@ -77,7 +78,14 @@ export default class Notification {
     }
   };
 
-  notifyTransaction = async (productId, warehouseId, transactionId, transactionPerformedBy) => {
+  notifyTransaction = async (
+    productId,
+    warehouseId,
+    transactionId,
+    quantity,
+    transactionType,
+    transactionPerformedBy
+  ) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
       const product = await Product.findById(productId);
@@ -98,9 +106,9 @@ export default class Notification {
 
       await sendNotification({
         users,
-        type: NOTIFICATION_TYPES.PENDING_SHIPMENT,
+        type: transactionType,
         title: `Transaction ${transaction.type} Alert`,
-        message: `Transaction of Type: ${transaction.type} for ${product.name} regarding ${warehouse.name} is done.`,
+        message: `Transaction of Type: ${transaction.type} for ${product.name} regarding ${warehouse.name} of Quantity: ${quantity} is done.`,
         warehouse,
         product,
         transactionId,

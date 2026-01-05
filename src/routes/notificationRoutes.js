@@ -10,11 +10,11 @@ router.post('/subscribe', notificationController.subscribe);
 router.put('/mark-all-seen', notificationController.markAllAsSeen);
 router.patch(
   '/change-shipment-status/:id',
-  notificationController.changeShipmentStatus
+  notificationController.shipShipmentStatus
 );
 router.patch(
   '/cancel-shipment/:id',
-  notificationController.cancelShipment
+  notificationController.cancelShipmentStatus
 );
 
 export default router;

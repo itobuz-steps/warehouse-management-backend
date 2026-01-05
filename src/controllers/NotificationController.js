@@ -93,13 +93,28 @@ export default class NotificationController {
           },
         },
         {
-          $addFields: {
-            performedByName: '$user.name',
-            performedByImage: '$user.profileImage',
+          $lookup: {
+            from: 'users',
+            localField: 'reportedBy',
+            foreignField: '_id',
+            as: 'reportedByUser',
           },
         },
         {
-          $unset: 'user',
+          $unwind: {
+            path: '$reportedByUser',
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $addFields: {
+            performedByName: '$user.name',
+            performedByImage: '$user.profileImage',
+            reportedByName: '$reportedByUser.name',
+          },
+        },
+        {
+          $unset: ['user', 'reportedByUser'],
         },
       ]);
 
@@ -159,7 +174,7 @@ export default class NotificationController {
           title: 'Pending Shipment Alert: Shipped',
           isShipped: true,
           reportedBy: req.userId,
-          message: `Shipment done for ${product.name} from ${warehouse.name} of Quantity:${transaction.quantity}.`,
+          message: `Shipment done for ${product.name} from ${warehouse.name} of Quantity: ${transaction.quantity}.`,
         },
         { new: true }
       );
@@ -217,7 +232,7 @@ export default class NotificationController {
           title: 'Pending Shipment Alert: Cancelled',
           isCancelled: true,
           reportedBy: req.userId,
-          message: `Shipment Cancelled for ${product.name} from ${warehouse.name} of Quantity:${transaction.quantity}.`,
+          message: `Shipment Cancelled for ${product.name} from ${warehouse.name} of Quantity: ${transaction.quantity}.`,
         },
         { session }
       );
