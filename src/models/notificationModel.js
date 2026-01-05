@@ -50,7 +50,7 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    
+
     reportedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -61,4 +61,4 @@ const notificationSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('DummyNotifications', notificationSchema);
+export default mongoose.model('Notifications', notificationSchema);
