@@ -218,7 +218,8 @@ export default class DashboardController {
         `${req.params.warehouseId}`
       );
 
-      const transactionDetails = await this.getDaysTransaction(warehouseId);
+      const transactionDetails =
+        await this.getProductTransactionData(warehouseId);
 
       res.status(200).json({
         message: 'Data fetched successfully',
@@ -241,7 +242,8 @@ export default class DashboardController {
         `${req.params.warehouseId}`
       );
 
-      const transactionDetails = await this.getDaysTransaction(warehouseId);
+      const transactionDetails =
+        await this.getProductTransactionData(warehouseId);
 
       const result = await generateWeeklyTransactionExcel(transactionDetails);
 
@@ -262,7 +264,7 @@ export default class DashboardController {
     }
   };
 
-  getDaysTransaction = async (warehouseId) => {
+  getProductTransactionData = async (warehouseId) => {
     const start = subDays(new Date(), 6); //6 days before
     const end = new Date(); //today
 
@@ -333,6 +335,7 @@ export default class DashboardController {
     return sevenDays;
   };
 
+  // Transaction Card Stat
   getTransactionStats = async (req, res, next) => {
     try {
       if (!req.params?.warehouseId) {
@@ -777,8 +780,8 @@ export default class DashboardController {
     }
   };
 
-  // Profit Loss Chart in a given timeline
-  getProfitLossAnalytics = async (req, res, next) => {
+  // Profit Loss Part - Line Chart
+  getProfitLoss = async (req, res, next) => {
     try {
       const { period = 'week', warehouseId, from, to } = req.query;
 
@@ -826,8 +829,10 @@ export default class DashboardController {
 
       if (warehouseId) {
         matchStage.$or = [
-          { sourceWarehouse: new mongoose.Types.ObjectId(warehouseId) },
-          { destinationWarehouse: new mongoose.Types.ObjectId(warehouseId) },
+          { sourceWarehouse: new mongoose.Types.ObjectId(`${warehouseId}`) },
+          {
+            destinationWarehouse: new mongoose.Types.ObjectId(`${warehouseId}`),
+          },
         ];
       }
 
