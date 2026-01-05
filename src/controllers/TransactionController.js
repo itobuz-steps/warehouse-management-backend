@@ -8,6 +8,7 @@ import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import Warehouse from '../models/warehouseModel.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
+import Product from '../models/productModel.js';
 
 // const notifications = new Notifications();
 const notification = new Notification();
@@ -80,9 +81,11 @@ export default class TransactionController {
       ]);
 
       const statusCounts = await Transaction.aggregate([
-        { $match: {
-          type: "OUT",
-        } },
+        {
+          $match: {
+            type: 'OUT',
+          },
+        },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
       ]);
 
@@ -230,7 +233,7 @@ export default class TransactionController {
               { sourceWarehouse: warehouseObjectId },
               { destinationWarehouse: warehouseObjectId },
             ],
-            type: "OUT",
+            type: 'OUT',
           },
         },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
@@ -311,6 +314,7 @@ export default class TransactionController {
           createdTransaction.product,
           createdTransaction.destinationWarehouse,
           createdTransaction._id,
+          createdTransaction.quantity,
           NOTIFICATION_TYPES.STOCK_IN,
           req.userId
         );
@@ -353,6 +357,8 @@ export default class TransactionController {
       for (const item of products) {
         const { productId, quantity } = item;
 
+        const product = await Product.findById(productId);
+
         const quantityRecord = await Quantity.findOne({
           warehouseId: sourceWarehouse,
           productId,
@@ -361,14 +367,14 @@ export default class TransactionController {
         if (quantityRecord.quantity < quantity) {
           await session.abortTransaction();
           return res.status(400).json({
-            message: `Insufficient stock. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
+            message: `Insufficient stock for Product: ${product.name}. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
           });
         }
 
         if (quantity > quantityRecord.limit) {
           await session.abortTransaction();
           return res.status(400).json({
-            message: `Stock out Quantity exceeded Product Limit: ${quantityRecord.limit}`,
+            message: `Stock out Quantity exceeded for Product: ${product.name}, Limit: ${quantityRecord.limit}`,
           });
         }
 
@@ -415,6 +421,7 @@ export default class TransactionController {
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
           createdTransaction._id,
+          createdTransaction.quantity,
           req.userId
         );
       }
@@ -460,6 +467,9 @@ export default class TransactionController {
       const updatedQuantities = [];
 
       for (const { productId, quantity } of products) {
+
+        const product = await Product.findById(productId);
+
         const sourceQuantity = await Quantity.findOne({
           warehouseId: sourceWarehouse,
           productId,
@@ -476,7 +486,7 @@ export default class TransactionController {
         if (sourceQuantity.quantity < quantity) {
           await session.abortTransaction();
           return res.status(400).json({
-            message: `Insufficient stock for product ${productId}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
+            message: `Insufficient stock for Product: ${product.name}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
           });
         }
 
@@ -536,6 +546,7 @@ export default class TransactionController {
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
           createdTransaction._id,
+          createdTransaction.quantity,
           NOTIFICATION_TYPES.STOCK_TRANSFER,
           req.userId
         );
@@ -597,6 +608,7 @@ export default class TransactionController {
         createdTransaction.product,
         createdTransaction.destinationWarehouse,
         createdTransaction._id,
+        createdTransaction.quantity,
         NOTIFICATION_TYPES.STOCK_ADJUSTMENT,
         req.userId
       );
