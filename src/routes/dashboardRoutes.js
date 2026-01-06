@@ -51,5 +51,6 @@ router.get(
   '/get-most-adjusted-products/:warehouseId',
   dashboardController.getMostAdjustedProducts
 );
+router.get('/get-profit-loss', dashboardController.getProfitLoss);
 
 export default router;
