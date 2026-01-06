@@ -37,7 +37,7 @@ app.use('/product', verifyToken, productRoutes);
 app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', verifyToken, transactionRoutes);
 app.use('/profile', verifyToken, profileRoutes);
-app.use('/dashboard/', verifyToken, dashboardRoutes);
+app.use('/dashboard/', dashboardRoutes);
 app.use('/analytics', verifyToken, analyticsRoutes);
 app.use('/notifications', verifyToken, notificationRoutes);
 

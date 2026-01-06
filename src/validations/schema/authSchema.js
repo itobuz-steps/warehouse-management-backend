@@ -6,7 +6,14 @@ export const signupSchema = yup.object({
   email: yup.string().required('Email is required'),
   isVerified: yup.boolean().default(false),
   isActive: yup.boolean().default(false),
-  password: yup.string().default(''),
+  password: yup
+    .string()
+    .required('Password is required')
+    .min(6, 'Password must be at least 6 characters')
+    .matches(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/,
+      'Password must contain uppercase, lowercase, number, and special character'
+    ),
   role: yup.string().default(USER_TYPES.MANAGER),
 });
 

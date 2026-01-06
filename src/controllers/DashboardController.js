@@ -218,7 +218,8 @@ export default class DashboardController {
         `${req.params.warehouseId}`
       );
 
-      const transactionDetails = await this.getDaysTransaction(warehouseId);
+      const transactionDetails =
+        await this.getProductTransactionData(warehouseId);
 
       res.status(200).json({
         message: 'Data fetched successfully',
@@ -241,7 +242,8 @@ export default class DashboardController {
         `${req.params.warehouseId}`
       );
 
-      const transactionDetails = await this.getDaysTransaction(warehouseId);
+      const transactionDetails =
+        await this.getProductTransactionData(warehouseId);
 
       const result = await generateWeeklyTransactionExcel(transactionDetails);
 
@@ -262,7 +264,7 @@ export default class DashboardController {
     }
   };
 
-  getDaysTransaction = async (warehouseId) => {
+  getProductTransactionData = async (warehouseId) => {
     const start = subDays(new Date(), 6); //6 days before
     const end = new Date(); //today
 
@@ -333,6 +335,7 @@ export default class DashboardController {
     return sevenDays;
   };
 
+  // Transaction Card Stat
   getTransactionStats = async (req, res, next) => {
     try {
       if (!req.params?.warehouseId) {
@@ -778,5 +781,182 @@ export default class DashboardController {
     } catch (error) {
       next(error);
     }
+  };
+
+  // Profit Loss Part - Line Chart
+  getProfitLoss = async (req, res, next) => {
+    try {
+      const { period = 'week', warehouseId, from, to } = req.query;
+
+      let start, end, totalDays;
+
+      const now = new Date();
+
+      // Find Range
+      if (from && to) {
+        start = new Date(from);
+        start.setHours(0, 0, 0, 0);
+
+        end = new Date(to);
+        end.setHours(23, 59, 59, 999);
+
+        if (start > end) {
+          return res.status(400).json({
+            success: false,
+            message: '`from` date must be before `to` date',
+          });
+        }
+
+        totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+      } else {
+        // Find Period like week and month
+        if (!['week', 'month'].includes(period)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid period. Allowed values: week, month',
+          });
+        }
+
+        end = now;
+        start = new Date();
+        start.setHours(0, 0, 0, 0);
+
+        totalDays = period === 'week' ? 7 : 30;
+        start.setDate(start.getDate() - (totalDays - 1));
+      }
+
+      // Match with start and end duration
+      const matchStage = {
+        createdAt: { $gte: start, $lte: end },
+      };
+
+      if (warehouseId) {
+        matchStage.$or = [
+          { sourceWarehouse: new mongoose.Types.ObjectId(`${warehouseId}`) },
+          {
+            destinationWarehouse: new mongoose.Types.ObjectId(`${warehouseId}`),
+          },
+        ];
+      }
+
+      // Aggregation Logic to Find Data
+      const pipeline = [
+        { $match: matchStage },
+
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'product',
+            foreignField: '_id',
+            as: 'product',
+          },
+        },
+        { $unwind: '$product' },
+
+        // Profit Loss Data Processing
+        {
+          $addFields: {
+            profitAmount: {
+              $cond: [
+                {
+                  $in: [
+                    '$type',
+                    [TRANSACTION_TYPES.OUT, TRANSACTION_TYPES.TRANSFER],
+                  ],
+                },
+                {
+                  $multiply: [
+                    '$quantity',
+                    {
+                      $multiply: [
+                        '$product.price',
+                        { $add: [1, { $divide: ['$product.markup', 100] }] },
+                      ],
+                    },
+                  ],
+                },
+                0,
+              ],
+            },
+            lossAmount: {
+              $cond: [
+                {
+                  $in: [
+                    '$type',
+                    [TRANSACTION_TYPES.IN, TRANSACTION_TYPES.ADJUSTMENT],
+                  ],
+                },
+                { $multiply: ['$quantity', '$product.price'] },
+                0,
+              ],
+            },
+          },
+        },
+
+        // Group by Day
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$createdAt',
+                timezone: 'Asia/Kolkata', // Local Time Date
+              },
+            },
+            profit: { $sum: '$profitAmount' },
+            loss: { $sum: '$lossAmount' },
+          },
+        },
+
+        {
+          $project: {
+            _id: 0,
+            label: '$_id',
+            profit: { $round: ['$profit', 2] },
+            loss: { $round: ['$loss', 2] },
+            net: { $round: [{ $subtract: ['$profit', '$loss'] }, 2] }, // For net Transaction value
+          },
+        },
+      ];
+
+      const dbData = await Transaction.aggregate(pipeline);
+
+      // Fill missing days that not provided and fill data with default value
+      const map = {};
+      dbData.forEach((d) => (map[d.label] = d));
+
+      const finalData = [];
+
+      for (let i = 0; i < totalDays; i++) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+
+        const label = this.formatDateLocal(date);
+
+        finalData.push(
+          map[label] || {
+            label,
+            profit: 0,
+            loss: 0,
+            net: 0,
+          }
+        );
+      }
+
+      res.json({
+        success: true,
+        message: 'Profit & Loss Analytics',
+        data: finalData,
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+  formatDateLocal = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   };
 }
