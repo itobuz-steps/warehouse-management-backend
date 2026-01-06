@@ -3,8 +3,6 @@ import multer from 'multer';
 import path from 'path';
 import config from '../config/config.js';
 import ProfileController from '../controllers/profileController.js';
-import { validate } from '../validations/middlewares/validator.js';
-import { updateProfileSchema } from '../validations/schema/profileSchema.js';
 import isAdmin from '../validations/middlewares/checkAdmin.js';
 
 const router = express.Router();
@@ -32,7 +30,6 @@ router.get('/me', profileController.getCurrentUser);
 router.patch(
   '/update-profile',
   upload.single('profile-img'),
-  validate(updateProfileSchema),
   profileController.updateProfile
 );
 
