@@ -25,6 +25,7 @@ export default class TransactionController {
       const user = req.user; // authenticated user
 
       const matchStage = {};
+      let warehouseMatch = {};
 
       if (startDate || endDate) {
         matchStage.createdAt = {};
@@ -57,10 +58,15 @@ export default class TransactionController {
         }).select('_id');
         const warehouseIds = warehouses.map((warehouse) => warehouse._id);
 
-        matchStage.$or = [
-          { sourceWarehouse: { $in: warehouseIds } },
-          { destinationWarehouse: { $in: warehouseIds } },
-        ];
+        warehouseMatch = {
+          $or: [
+            { sourceWarehouse: { $in: warehouseIds } },
+            { destinationWarehouse: { $in: warehouseIds } },
+          ],
+        };
+
+        // apply to main query
+        Object.assign(matchStage, warehouseMatch);
       }
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -74,14 +80,17 @@ export default class TransactionController {
       const totalCount = await Transaction.countDocuments(matchStage);
 
       const typeCounts = await Transaction.aggregate([
-        // { $match: matchStage },
+        { $match: warehouseMatch },
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]);
 
       const statusCounts = await Transaction.aggregate([
-        { $match: {
-          type: "OUT",
-        } },
+        {
+          $match: {
+            ...warehouseMatch,
+            type: 'OUT',
+          },
+        },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
       ]);
 
@@ -229,7 +238,7 @@ export default class TransactionController {
               { sourceWarehouse: warehouseObjectId },
               { destinationWarehouse: warehouseObjectId },
             ],
-            type: "OUT",
+            type: 'OUT',
           },
         },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
