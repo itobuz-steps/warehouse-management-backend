@@ -5,10 +5,13 @@ export default class ProfileController {
   updateProfile = async (req, res, next) => {
     try {
       const user = req.user;
-      const profile = req.file ? req.file.filename : '';
 
-      user.name = req.body.name || '';
-      ((user.profileImage = `${req.protocol}://${req.get('host')}/uploads/user/${profile}`),
+      if (!req.file) {
+        res.status(401);
+        throw new Error('Please select an image');
+      }
+
+      ((user.profileImage = `${req.protocol}://${req.get('host')}/uploads/user/${req.file.filename}`),
         await user.save());
 
       res.status(200).json({

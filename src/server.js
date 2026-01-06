@@ -13,7 +13,7 @@ import dashboardRoutes from './routes/dashboardRoutes.js';
 // import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
-import BrowserNotificationRoutes from './routes/browserNotificationRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 import verifyToken from './validations/middlewares/verifyToken.js';
 
 const app = express();
@@ -37,10 +37,9 @@ app.use('/product', verifyToken, productRoutes);
 app.use('/quantity', verifyToken, quantityRoutes);
 app.use('/transaction', verifyToken, transactionRoutes);
 app.use('/profile', verifyToken, profileRoutes);
-app.use('/dashboard/', verifyToken, dashboardRoutes);
+app.use('/dashboard/', dashboardRoutes);
 app.use('/analytics', verifyToken, analyticsRoutes);
-// app.use('/notifications', verifyToken, notificationRoutes);
-app.use('/browser-notifications', verifyToken, BrowserNotificationRoutes);
+app.use('/notifications', verifyToken, notificationRoutes);
 
 app.use(errorHandler);
 

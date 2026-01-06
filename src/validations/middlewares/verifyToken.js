@@ -29,6 +29,11 @@ export default async function verifyToken(req, res, next) {
         throw new Error('User not found!');
       }
 
+      if (!user.isActive) {
+        res.status(404);
+        throw new Error('User has been blocked!');
+      }
+
       req.userId = payload.id;
       req.user = user;
 

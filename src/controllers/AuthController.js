@@ -154,36 +154,37 @@ export default class AuthController {
 
       if (!user) {
         res.status(404);
-        throw new Error(`User does not exist!`);
+        throw new Error('User does not exist!');
       }
 
       if (otp.length !== 6) {
         res.status(400);
-        throw new Error(`OTP should be 6 digits!`);
+        throw new Error('OTP should be 6 digits!');
       }
 
-      const otpDoc = await OTP.findOne({ email });
-      const otpArrLength = otpDoc.otp.length;
+      const oneMinAgo = new Date(Date.now() - 1 * 60 * 1000);
 
-      if (!otpDoc || otpArrLength === 0) {
+      const otpDoc = await OTP.findOne(
+        {
+          email: email,
+          updatedAt: { $gte: oneMinAgo },
+          otp: { $exists: true, $ne: [] },
+        },
+        { _id: 0, email: 0, otp: { $slice: -1 } }
+      );
+
+      if (!otpDoc || otpDoc.otp[0].length != 6) {
         res.status(400);
-        throw new Error(`Please resend OTP!`);
+        throw new Error('OTP expired or not found, please resend OTP!');
       }
 
-      const latestOtp = otpDoc.otp[otpArrLength - 1];
-      const otpCreated = new Date(otpDoc.updatedAt).getTime();
-
-      if (Date.now() - otpCreated > 60 * 5000) {
-        res.status(403);
-        throw new Error(`OTP expired, please request a new one`);
-      }
-
-      if (latestOtp !== otp) {
+      if (otpDoc.otp[0] !== otp) {
         res.status(401);
-        return next(new Error(`Wrong OTP`));
+        return next(new Error('Invalid OTP'));
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
+
       user.password = hashedPassword;
       await user.save();
 

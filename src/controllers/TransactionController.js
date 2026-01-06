@@ -1,15 +1,18 @@
 import Transaction from '../models/transactionModel.js';
 import Quantity from '../models/quantityModel.js';
 // import Notifications from '../utils/Notifications.js';
-import BrowserNotification from '../utils/BrowserNotification.js';
+import Notification from '../utils/Notification.js';
 import mongoose from 'mongoose';
 import generatePdf from '../services/generatePdf.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import Warehouse from '../models/warehouseModel.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
+import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
+import Product from '../models/productModel.js';
+import USER_TYPES from '../constants/userConstants.js';
 
 // const notifications = new Notifications();
-const browserNotification = new BrowserNotification();
+const notification = new Notification();
 
 export default class TransactionController {
   getTransactions = async (req, res, next) => {
@@ -25,6 +28,7 @@ export default class TransactionController {
       const user = req.user; // authenticated user
 
       const matchStage = {};
+      let warehouseMatch = {};
 
       if (startDate || endDate) {
         matchStage.createdAt = {};
@@ -50,17 +54,22 @@ export default class TransactionController {
       }
 
       // Manager warehouse restriction
-      if (user.role === 'manager') {
+      if (user.role === USER_TYPES.MANAGER) {
         // Find all warehouses managed by this manager
         const warehouses = await Warehouse.find({
           managerIds: user._id,
         }).select('_id');
         const warehouseIds = warehouses.map((warehouse) => warehouse._id);
 
-        matchStage.$or = [
-          { sourceWarehouse: { $in: warehouseIds } },
-          { destinationWarehouse: { $in: warehouseIds } },
-        ];
+        warehouseMatch = {
+          $or: [
+            { sourceWarehouse: { $in: warehouseIds } },
+            { destinationWarehouse: { $in: warehouseIds } },
+          ],
+        };
+
+        // apply to main query
+        Object.assign(matchStage, warehouseMatch);
       }
 
       const skip = (parseInt(page) - 1) * parseInt(limit);
@@ -74,14 +83,17 @@ export default class TransactionController {
       const totalCount = await Transaction.countDocuments(matchStage);
 
       const typeCounts = await Transaction.aggregate([
-        // { $match: matchStage },
+        { $match: warehouseMatch },
         { $group: { _id: '$type', count: { $sum: 1 } } },
       ]);
 
       const statusCounts = await Transaction.aggregate([
-        { $match: {
-          type: "OUT",
-        } },
+        {
+          $match: {
+            ...warehouseMatch,
+            type: TRANSACTION_TYPES.OUT,
+          },
+        },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
       ]);
 
@@ -229,7 +241,7 @@ export default class TransactionController {
               { sourceWarehouse: warehouseObjectId },
               { destinationWarehouse: warehouseObjectId },
             ],
-            type: "OUT",
+            type: TRANSACTION_TYPES.OUT,
           },
         },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
@@ -304,6 +316,18 @@ export default class TransactionController {
 
       await session.commitTransaction();
 
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await notification.notifyTransaction(
+          createdTransaction.product,
+          createdTransaction.destinationWarehouse,
+          createdTransaction._id,
+          createdTransaction.quantity,
+          NOTIFICATION_TYPES.STOCK_IN,
+          req.userId
+        );
+      }
+
       res.status(201).json({
         success: true,
         message: 'Stock-in transactions created successfully',
@@ -319,10 +343,12 @@ export default class TransactionController {
 
   createStockOut = async (req, res, next) => {
     let session;
+    let transactionStarted = false;
 
     try {
       session = await mongoose.startSession();
       session.startTransaction();
+      transactionStarted = true;
 
       const {
         products,
@@ -341,6 +367,7 @@ export default class TransactionController {
       for (const item of products) {
         const { productId, quantity } = item;
 
+        const product = await Product.findById(productId);
         const quantityRecord = await Quantity.findOne({
           warehouseId: sourceWarehouse,
           productId,
@@ -348,15 +375,17 @@ export default class TransactionController {
 
         if (quantityRecord.quantity < quantity) {
           await session.abortTransaction();
+          transactionStarted = false;
           return res.status(400).json({
-            message: `Insufficient stock. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
+            message: `Insufficient stock for Product: ${product.name}. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
           });
         }
 
         if (quantity > quantityRecord.limit) {
           await session.abortTransaction();
+          transactionStarted = false;
           return res.status(400).json({
-            message: `Stock out Quantity exceeded Product Limit: ${quantityRecord.limit}`,
+            message: `Stock out Quantity exceeded for Product: ${product.name}, Limit: ${quantityRecord.limit}`,
           });
         }
 
@@ -390,25 +419,30 @@ export default class TransactionController {
           lowStockNotifications.push({
             productId,
             warehouseId: sourceWarehouse,
+            transactionPerformedBy: req.userId,
           });
         }
       }
 
       await session.commitTransaction();
+      transactionStarted = false;
 
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
-        await browserNotification.notifyPendingShipment(
+        await notification.notifyPendingShipment(
           createdTransaction.product,
           createdTransaction.sourceWarehouse,
-          createdTransaction._id
+          createdTransaction._id,
+          createdTransaction.quantity,
+          req.userId
         );
       }
 
-      for (const notification of lowStockNotifications) {
-        await browserNotification.notifyLowStock(
-          notification.productId,
-          notification.warehouseId
+      for (const notif of lowStockNotifications) {
+        await notification.notifyLowStock(
+          notif.productId,
+          notif.warehouseId,
+          req.userId
         );
       }
 
@@ -418,7 +452,9 @@ export default class TransactionController {
         data: transactions,
       });
     } catch (error) {
-      await session.abortTransaction();
+      if (transactionStarted) {
+        await session.abortTransaction();
+      }
       next(error);
     } finally {
       session.endSession();
@@ -427,10 +463,12 @@ export default class TransactionController {
 
   createTransfer = async (req, res, next) => {
     let session;
+    let transactionStarted = false;
 
     try {
       session = await mongoose.startSession();
       session.startTransaction();
+      transactionStarted = true;
 
       const { products, notes, sourceWarehouse, destinationWarehouse } =
         req.body;
@@ -445,6 +483,8 @@ export default class TransactionController {
       const updatedQuantities = [];
 
       for (const { productId, quantity } of products) {
+        const product = await Product.findById(productId);
+
         const sourceQuantity = await Quantity.findOne({
           warehouseId: sourceWarehouse,
           productId,
@@ -452,6 +492,7 @@ export default class TransactionController {
 
         if (!sourceQuantity) {
           await session.abortTransaction();
+          transactionStarted = false;
           res.status(404).json({
             success: false,
           });
@@ -460,8 +501,9 @@ export default class TransactionController {
 
         if (sourceQuantity.quantity < quantity) {
           await session.abortTransaction();
+          transactionStarted = false;
           return res.status(400).json({
-            message: `Insufficient stock for product ${productId}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
+            message: `Insufficient stock for Product: ${product.name}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
           });
         }
 
@@ -509,11 +551,28 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          await browserNotification.notifyLowStock(productId, sourceWarehouse);
+          await notification.notifyLowStock(
+            productId,
+            sourceWarehouse,
+            req.userId
+          );
         }
       }
 
       await session.commitTransaction();
+      transactionStarted = false;
+
+      // Send notifications after transaction commit
+      for (const createdTransaction of transactions) {
+        await notification.notifyTransaction(
+          createdTransaction.product,
+          createdTransaction.sourceWarehouse,
+          createdTransaction._id,
+          createdTransaction.quantity,
+          NOTIFICATION_TYPES.STOCK_TRANSFER,
+          req.userId
+        );
+      }
 
       res.status(201).json({
         success: true,
@@ -521,7 +580,9 @@ export default class TransactionController {
         data: { transactions, updatedQuantities },
       });
     } catch (error) {
-      await session.abortTransaction();
+      if (transactionStarted) {
+        await session.abortTransaction();
+      }
       next(error);
     } finally {
       session.endSession();
@@ -564,9 +625,17 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        //await Notifications.notifyLowStock(productId, warehouseId);
-        await browserNotification.notifyLowStock(productId, warehouseId);
+        await notification.notifyLowStock(productId, warehouseId, req.userId);
       }
+
+      await notification.notifyTransaction(
+        createdTransaction.product,
+        createdTransaction.destinationWarehouse,
+        createdTransaction._id,
+        createdTransaction.quantity,
+        NOTIFICATION_TYPES.STOCK_ADJUSTMENT,
+        req.userId
+      );
 
       res.status(201).json({
         success: true,
