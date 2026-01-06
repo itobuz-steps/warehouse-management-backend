@@ -108,7 +108,7 @@ export default class Notification {
         users,
         type: transactionType,
         title: `Transaction ${transaction.type} Alert`,
-        message: `Transaction of Type: ${transaction.type} for ${product.name} regarding ${warehouse.name} of Quantity: ${quantity} is done.`,
+        message: `Transaction of Type: ${transaction.type} for ${product.name} in ${warehouse.name} of Quantity: ${quantity} is done.`,
         warehouse,
         product,
         transactionId,
