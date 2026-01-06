@@ -551,6 +551,7 @@ export default class DashboardController {
         {
           $project: {
             _id: 0,
+            productId: '$productData._id',
             quantity: 1,
             productName: '$productData.name',
           },
@@ -755,6 +756,7 @@ export default class DashboardController {
             productName: { $first: '$product.name' },
             category: { $first: '$product.category' },
             totalAdjustedQuantity: { $sum: '$quantity' },
+            reason: { $first: '$reason' },
           },
         },
         { $sort: { totalAdjustedQuantity: -1 } },
@@ -766,6 +768,7 @@ export default class DashboardController {
             productName: 1,
             category: 1,
             totalAdjustedQuantity: 1,
+            reason: 1,
           },
         },
       ]);
