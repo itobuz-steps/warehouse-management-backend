@@ -5,18 +5,37 @@ import Quantity from '../models/quantityModel.js';
 import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
 import Warehouse from '../models/warehouseModel.js';
+import Notification from '../utils/Notification.js';
 
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
+import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 
 dotenv.config();
 
 const MONGO_URI = process.env.DB_URI;
 
+const notification = new Notification();
+
 // ---------- helpers ----------
 const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const randomInt = (min, max) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
+
+const mapTxToNotificationType = (txType) => {
+  switch (txType) {
+    case TRANSACTION_TYPES.IN:
+      return NOTIFICATION_TYPES.STOCK_IN;
+    case TRANSACTION_TYPES.OUT:
+      return NOTIFICATION_TYPES.PENDING_SHIPMENT;
+    case TRANSACTION_TYPES.TRANSFER:
+      return NOTIFICATION_TYPES.STOCK_TRANSFER;
+    case TRANSACTION_TYPES.ADJUSTMENT:
+      return NOTIFICATION_TYPES.STOCK_ADJUSTMENT;
+    default:
+      return null;
+  }
+};
 
 // ---------- date range ----------
 const monthArg = process.argv[2]; // e.g. 2025-01
@@ -162,9 +181,28 @@ async function seedMonthlyTransactions() {
         transaction.reason = 'Monthly audit adjustment';
       }
 
-      await Transaction.create([transaction], { session });
+      const [createdTransaction] = await Transaction.create([transaction], {
+        session,
+      });
 
       await session.commitTransaction();
+      const notificationType = mapTxToNotificationType(txType);
+
+      if (notificationType) {
+        const warehouseId =
+          createdTransaction.destinationWarehouse ||
+          createdTransaction.sourceWarehouse;
+
+        await notification.notifyTransaction(
+          createdTransaction.product,
+          warehouseId,
+          createdTransaction._id,
+          createdTransaction.quantity,
+          notificationType,
+          createdTransaction.performedBy
+        );
+      }
+
       console.log(` ${txType} | ${currentDate.toDateString()}`);
     } catch (err) {
       await session.abortTransaction();

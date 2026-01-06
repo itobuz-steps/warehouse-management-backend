@@ -7,6 +7,7 @@ import {
   forgotPasswordSchema,
   loginSchema,
   sendOtpSchema,
+  signupUserSchema,
 } from '../validations/schema/authSchema.js';
 
 const router = express.Router();
@@ -15,7 +16,11 @@ const authValidation = new AuthValidation();
 
 router.post('/signup', authValidation.signupValidation, authController.signup); // send email
 router.post('/signup/:token', authController.verify);
-router.post('/signup/set-password/:token', authController.setPassword); // send name and password
+router.post(
+  '/signup/set-password/:token',
+  validate(signupUserSchema),
+  authController.setPassword
+); // send name and password
 
 router.post('/login', validate(loginSchema), authController.login); // email and password
 
