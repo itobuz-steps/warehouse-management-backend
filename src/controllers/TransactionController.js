@@ -343,10 +343,12 @@ export default class TransactionController {
 
   createStockOut = async (req, res, next) => {
     let session;
+    let transactionStarted = false;
 
     try {
       session = await mongoose.startSession();
       session.startTransaction();
+      transactionStarted = true;
 
       const {
         products,
@@ -366,7 +368,6 @@ export default class TransactionController {
         const { productId, quantity } = item;
 
         const product = await Product.findById(productId);
-
         const quantityRecord = await Quantity.findOne({
           warehouseId: sourceWarehouse,
           productId,
@@ -374,6 +375,7 @@ export default class TransactionController {
 
         if (quantityRecord.quantity < quantity) {
           await session.abortTransaction();
+          transactionStarted = false;
           return res.status(400).json({
             message: `Insufficient stock for Product: ${product.name}. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
           });
@@ -381,6 +383,7 @@ export default class TransactionController {
 
         if (quantity > quantityRecord.limit) {
           await session.abortTransaction();
+          transactionStarted = false;
           return res.status(400).json({
             message: `Stock out Quantity exceeded for Product: ${product.name}, Limit: ${quantityRecord.limit}`,
           });
@@ -422,6 +425,7 @@ export default class TransactionController {
       }
 
       await session.commitTransaction();
+      transactionStarted = false;
 
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
@@ -434,10 +438,10 @@ export default class TransactionController {
         );
       }
 
-      for (const notification of lowStockNotifications) {
+      for (const notif of lowStockNotifications) {
         await notification.notifyLowStock(
-          notification.productId,
-          notification.warehouseId,
+          notif.productId,
+          notif.warehouseId,
           req.userId
         );
       }
@@ -448,7 +452,9 @@ export default class TransactionController {
         data: transactions,
       });
     } catch (error) {
-      await session.abortTransaction();
+      if (transactionStarted) {
+        await session.abortTransaction();
+      }
       next(error);
     } finally {
       session.endSession();
@@ -457,10 +463,12 @@ export default class TransactionController {
 
   createTransfer = async (req, res, next) => {
     let session;
+    let transactionStarted = false;
 
     try {
       session = await mongoose.startSession();
       session.startTransaction();
+      transactionStarted = true;
 
       const { products, notes, sourceWarehouse, destinationWarehouse } =
         req.body;
@@ -484,6 +492,7 @@ export default class TransactionController {
 
         if (!sourceQuantity) {
           await session.abortTransaction();
+          transactionStarted = false;
           res.status(404).json({
             success: false,
           });
@@ -492,6 +501,7 @@ export default class TransactionController {
 
         if (sourceQuantity.quantity < quantity) {
           await session.abortTransaction();
+          transactionStarted = false;
           return res.status(400).json({
             message: `Insufficient stock for Product: ${product.name}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
           });
@@ -541,11 +551,16 @@ export default class TransactionController {
           sourceQuantity.quantity <= sourceQuantity.limit &&
           prevQty > sourceQuantity.limit
         ) {
-          await notification.notifyLowStock(productId, sourceWarehouse);
+          await notification.notifyLowStock(
+            productId,
+            sourceWarehouse,
+            req.userId
+          );
         }
       }
 
       await session.commitTransaction();
+      transactionStarted = false;
 
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
@@ -565,7 +580,9 @@ export default class TransactionController {
         data: { transactions, updatedQuantities },
       });
     } catch (error) {
-      await session.abortTransaction();
+      if (transactionStarted) {
+        await session.abortTransaction();
+      }
       next(error);
     } finally {
       session.endSession();
@@ -608,7 +625,7 @@ export default class TransactionController {
         quantityRecord.quantity <= quantityRecord.limit &&
         prevQty > quantityRecord.limit
       ) {
-        await notification.notifyLowStock(productId, warehouseId);
+        await notification.notifyLowStock(productId, warehouseId, req.userId);
       }
 
       await notification.notifyTransaction(
