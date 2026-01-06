@@ -881,10 +881,7 @@ export default class DashboardController {
             lossAmount: {
               $cond: [
                 {
-                  $in: [
-                    '$type',
-                    [TRANSACTION_TYPES.IN, TRANSACTION_TYPES.ADJUSTMENT],
-                  ],
+                  $in: ['$type', [TRANSACTION_TYPES.ADJUSTMENT]],
                 },
                 { $multiply: ['$quantity', '$product.price'] },
                 0,

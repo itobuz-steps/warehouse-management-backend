@@ -9,6 +9,7 @@ import Warehouse from '../models/warehouseModel.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 import Product from '../models/productModel.js';
+import USER_TYPES from '../constants/userConstants.js';
 
 // const notifications = new Notifications();
 const notification = new Notification();
@@ -53,7 +54,7 @@ export default class TransactionController {
       }
 
       // Manager warehouse restriction
-      if (user.role === 'manager') {
+      if (user.role === USER_TYPES.MANAGER) {
         // Find all warehouses managed by this manager
         const warehouses = await Warehouse.find({
           managerIds: user._id,
@@ -90,7 +91,7 @@ export default class TransactionController {
         {
           $match: {
             ...warehouseMatch,
-            type: 'OUT',
+            type: TRANSACTION_TYPES.OUT,
           },
         },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
@@ -240,7 +241,7 @@ export default class TransactionController {
               { sourceWarehouse: warehouseObjectId },
               { destinationWarehouse: warehouseObjectId },
             ],
-            type: 'OUT',
+            type: TRANSACTION_TYPES.OUT,
           },
         },
         { $group: { _id: '$shipment', count: { $sum: 1 } } },
