@@ -482,7 +482,7 @@ export default class TransactionController {
       const transactions = [];
       const updatedQuantities = [];
 
-      for (const { productId, quantity } of products) {
+      for (const { productId, quantity, limit } of products) {
         const product = await Product.findById(productId);
 
         const sourceQuantity = await Quantity.findOne({
@@ -524,7 +524,7 @@ export default class TransactionController {
             warehouseId: destinationWarehouse,
             productId,
             quantity: 0,
-            limit: 0,
+            limit: limit ?? 10,
           });
         }
 
