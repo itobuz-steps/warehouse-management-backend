@@ -24,28 +24,60 @@ const randomInt = (min, max) =>
 
 const mapTxToNotificationType = (txType) => {
   switch (txType) {
-    case TRANSACTION_TYPES.IN:
-      return NOTIFICATION_TYPES.STOCK_IN;
+    // case TRANSACTION_TYPES.IN:
+    //   return NOTIFICATION_TYPES.STOCK_IN;
     case TRANSACTION_TYPES.OUT:
       return NOTIFICATION_TYPES.PENDING_SHIPMENT;
-    case TRANSACTION_TYPES.TRANSFER:
-      return NOTIFICATION_TYPES.STOCK_TRANSFER;
-    case TRANSACTION_TYPES.ADJUSTMENT:
-      return NOTIFICATION_TYPES.STOCK_ADJUSTMENT;
+    // case TRANSACTION_TYPES.TRANSFER:
+    //   return NOTIFICATION_TYPES.STOCK_TRANSFER;
+    // case TRANSACTION_TYPES.ADJUSTMENT:
+    //   return NOTIFICATION_TYPES.STOCK_ADJUSTMENT;
     default:
       return null;
   }
 };
 
 // ---------- date range ----------
-const monthArg = process.argv[2]; // e.g. 2025-01
-const startDate = monthArg
-  ? new Date(`${monthArg}-01`)
-  : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+const arg1 = process.argv[2]; // YYYY-MM or YYYY-MM-DD
+const arg2 = process.argv[3]; // YYYY-MM-DD
 
-const endDate = new Date(startDate);
-endDate.setMonth(endDate.getMonth() + 1);
-endDate.setDate(0);
+let startDate;
+let endDate;
+
+// Case 1: Custom date range (YYYY-MM-DD YYYY-MM-DD)
+if (arg1 && arg2) {
+  startDate = new Date(arg1);
+  endDate = new Date(arg2);
+
+  if (isNaN(startDate) || isNaN(endDate)) {
+    throw new Error('Invalid date range. Use YYYY-MM-DD YYYY-MM-DD');
+  }
+
+  if (startDate > endDate) {
+    throw new Error('Start date must be before end date');
+  }
+}
+
+// Case 2: Single month (YYYY-MM)
+else if (arg1 && /^\d{4}-\d{2}$/.test(arg1)) {
+  const [year, month] = arg1.split('-').map(Number);
+
+  startDate = new Date(year, month - 1, 1);
+  endDate = new Date(year, month, 0);
+}
+
+// Case 3: No args → current month
+else {
+  const now = new Date();
+  startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+}
+
+console.log({
+  startDate: startDate.toISOString().slice(0, 10),
+  endDate: endDate.toISOString().slice(0, 10),
+});
+
 
 async function seedMonthlyTransactions() {
   await mongoose.connect(MONGO_URI);
