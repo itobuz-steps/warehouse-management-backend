@@ -10,7 +10,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import warehouseRoutes from './routes/warehouseRoutes.js';
 import profileRoutes from './routes/profileRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
-// import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
+import loggerMiddleware from './validations/middlewares/loggerMiddleware.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import transactionRoutes from './routes/transactionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
@@ -22,7 +22,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// app.use(loggerMiddleware);
+app.use(loggerMiddleware);
 app.use('/uploads', express.static('uploads'));
 app.use('/chart-data', express.static('chart-data'));
 

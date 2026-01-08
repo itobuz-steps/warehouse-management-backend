@@ -1,6 +1,15 @@
 export default function loggerMiddleware(req, res, next) {
   try {
-    const { body, headers, params, query, originalUrl, baseUrl, host } = req;
+    const {
+      body,
+      headers,
+      params,
+      query,
+      originalUrl,
+      baseUrl,
+      host,
+      protocol,
+    } = req;
 
     console.log(':::::::::::::::::::::Incoming Request:::::::::::::::::::::');
     console.log({
@@ -11,6 +20,8 @@ export default function loggerMiddleware(req, res, next) {
       originalUrl,
       baseUrl,
       host,
+      hostV2: req.get('host'),
+      protocol,
       time: new Date().toLocaleTimeString(),
     });
     console.log(':::::::::::::::::::::Request Ends:::::::::::::::::::::');
