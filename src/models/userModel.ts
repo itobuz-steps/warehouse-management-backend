@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import USER_TYPES from '../constants/userConstants.js';
+import USER_TYPES from '../constants/userConstants.ts';
 
 const userModel = new mongoose.Schema(
   {

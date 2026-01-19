@@ -1,12 +1,19 @@
-import Warehouse from '../models/warehouseModel.js';
-import User from '../models/userModel.js';
+import Warehouse from '../models/warehouseModel.ts';
+import User from '../models/userModel.ts';
 import mongoose from 'mongoose';
-import USER_TYPES from '../constants/userConstants.js';
+import USER_TYPES from '../constants/userConstants.ts';
+import { Request, Response, NextFunction } from 'express';
 
 export default class AdminController {
-  addWarehouse = async (req, res, next) => {
+  addWarehouse = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      let { name, address, description, managers: managerIds, capacity } = req.body;
+      let {
+        name,
+        address,
+        description,
+        managers: managerIds,
+        capacity,
+      } = req.body;
 
       managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(`${id}`));
 
@@ -16,7 +23,7 @@ export default class AdminController {
         address,
         description,
         managerIds,
-        capacity
+        capacity,
       });
 
       newWarehouse.save();
