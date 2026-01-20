@@ -22,7 +22,9 @@
     "allowJs": true,
     "checkJs": false,
 
-    "verbatimModuleSyntax": false
+    "verbatimModuleSyntax": false,
+
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   },
   "include": ["src/**/*"]
 }

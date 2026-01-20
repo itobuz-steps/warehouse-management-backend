@@ -106,7 +106,7 @@ export type ITransaction = {
 export type IUser = Document & {
   name?: string;
   email: string;
-  password?: string;
+  password: string;
   role: (typeof USER_TYPES)[keyof typeof USER_TYPES];
   isVerified: boolean;
   profileImage?: string;

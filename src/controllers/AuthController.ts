@@ -1,18 +1,29 @@
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
+
 import SendInvitation from '../utils/SendEmail.js';
 import TokenGenerator from '../utils/TokenGenerator.js';
-import jwt from 'jsonwebtoken';
 import config from '../config/config.js';
 import OtpGenerator from '../utils/OtpGenerator.js';
+
+import type { AppRequest, AppResponse, AppNext } from '../types/express.js';
 
 const mailSender = new SendInvitation();
 const tokenGenerator = new TokenGenerator();
 const genOtp = new OtpGenerator();
 
+type InvitationTokenPayload = jwt.JwtPayload & {
+  email: string;
+};
+
 export default class AuthController {
-  signup = async (req, res, next) => {
+  signup = async (
+    req: AppRequest<{}, { email: string }>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const email = req.body.email;
       const isUser = await User.findOne({ email });
@@ -43,16 +54,23 @@ export default class AuthController {
     }
   };
 
-  verify = async (req, res, next) => {
+  verify = async (
+    req: AppRequest<{ token: string }>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
-      const tokenData = jwt.verify(req.params.token, config.TOKEN_SECRET);
+      const tokenData = jwt.verify(
+        req.params.token,
+        config.TOKEN_SECRET
+      ) as InvitationTokenPayload;
 
       res.status(200).json({
         message: 'token valid',
         success: true,
         data: tokenData,
       });
-    } catch (err) {
+    } catch (err: any) {
       if (err.message == 'jwt expired') {
         res.status(401).json({
           message: 'Link Expired',
@@ -63,9 +81,16 @@ export default class AuthController {
     }
   };
 
-  setPassword = async (req, res, next) => {
+  setPassword = async (
+    req: AppRequest<{ token: string }, { password: string; name: string }>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
-      const tokenData = jwt.verify(req.params.token, config.TOKEN_SECRET);
+      const tokenData = jwt.verify(
+        req.params.token,
+        config.TOKEN_SECRET
+      ) as InvitationTokenPayload;
 
       const user = await User.findOneAndUpdate(
         { email: tokenData.email, isVerified: false },
@@ -89,7 +114,7 @@ export default class AuthController {
         message: 'Registration successful.',
         success: true,
       });
-    } catch (err) {
+    } catch (err: any) {
       if (err.message == 'jwt expired') {
         res.status(401).json({
           message: 'Link Expired',
@@ -100,7 +125,11 @@ export default class AuthController {
     }
   };
 
-  login = async (req, res, next) => {
+  login = async (
+    req: AppRequest<{}, { email: string; password: string }>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const user = await User.findOneAndUpdate(
         {
@@ -132,7 +161,7 @@ export default class AuthController {
         throw new Error('Invalid Password');
       }
 
-      const tokens = tokenGenerator.generateToken(user._id);
+      const tokens = tokenGenerator.generateToken(user._id.toString());
 
       res.status(200).json({
         message: 'User Login Successful',
@@ -147,7 +176,11 @@ export default class AuthController {
     }
   };
 
-  forgotPassword = async (req, res, next) => {
+  forgotPassword = async (
+    req: AppRequest<{}, { email: string; otp: string; password: string }>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const { email, otp, password } = req.body;
       const user = await User.findOne({ email });
@@ -188,7 +221,7 @@ export default class AuthController {
       user.password = hashedPassword;
       await user.save();
 
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         message: 'OTP verified successfully',
       });
@@ -197,7 +230,11 @@ export default class AuthController {
     }
   };
 
-  sendOtp = async (req, res, next) => {
+  sendOtp = async (
+    req: AppRequest<{}, { email: string }>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const email = req.body.email;
       const isUser = await User.findOne({ email });
@@ -230,8 +267,13 @@ export default class AuthController {
     }
   };
 
-  refresh = async (req, res, next) => {
+  refresh = async (req: AppRequest, res: AppResponse, next: AppNext) => {
     try {
+      if (!req.userId) {
+        res.status(401);
+        throw new Error('Unauthorized');
+      }
+
       const tokens = tokenGenerator.generateToken(req.userId);
 
       res.status(200).json({

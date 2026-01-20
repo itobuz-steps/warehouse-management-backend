@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { SignOptions } from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -8,21 +9,23 @@ const config = {
 
   DB_URI: process.env.DB_URI,
 
-  TOKEN_SECRET: process.env.TOKEN_SECRET,
-  TOKEN_EXPIRE: process.env.TOKEN_EXPIRE,
+  TOKEN_SECRET: process.env.TOKEN_SECRET || 'secret_key',
+  TOKEN_EXPIRE: process.env.TOKEN_EXPIRE as SignOptions['expiresIn'],
 
   MAIL_SERVICE: process.env.MAIL_SERVICE,
   MAIL_USER: process.env.MAIL_USER,
   MAIL_PASS: process.env.MAIL_PASS,
 
   ACCESS_SECRET_KEY: process.env.ACCESS_SECRET_KEY,
-  ACCESS_TOKEN_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY,
+  ACCESS_TOKEN_EXPIRY: process.env
+    .ACCESS_TOKEN_EXPIRY as SignOptions['expiresIn'],
 
   REFRESH_SECRET_KEY: process.env.REFRESH_SECRET_KEY,
-  REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY,
+  REFRESH_TOKEN_EXPIRY: process.env
+    .REFRESH_TOKEN_EXPIRY as SignOptions['expiresIn'],
 
   UPLOAD_FILE_SIZE: process.env.UPLOAD_FILE_SIZE,
-  
+
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
 };
