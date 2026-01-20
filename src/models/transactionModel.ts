@@ -1,8 +1,9 @@
-import mongoose from 'mongoose';
+import mongoose, { Model, Schema } from 'mongoose';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
+import type { ITransaction } from '../types/models.js';
 
-const transactionModel = new mongoose.Schema(
+const transactionModel = new mongoose.Schema<ITransaction>(
   {
     type: {
       type: String,
@@ -10,7 +11,7 @@ const transactionModel = new mongoose.Schema(
       required: true,
     },
     product: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Product',
       required: true,
     },
@@ -49,13 +50,13 @@ const transactionModel = new mongoose.Schema(
       default: '',
     },
     performedBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
-    sourceWarehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
+    sourceWarehouse: { type: Schema.Types.ObjectId, ref: 'Warehouse' },
     destinationWarehouse: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Warehouse',
     },
   },
@@ -64,5 +65,8 @@ const transactionModel = new mongoose.Schema(
   }
 );
 
-const Transaction = mongoose.model('Transaction', transactionModel);
+const Transaction: Model<ITransaction> = mongoose.model<ITransaction>(
+  'Transaction',
+  transactionModel
+);
 export default Transaction;

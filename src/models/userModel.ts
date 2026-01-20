@@ -1,7 +1,8 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 import USER_TYPES from '../constants/userConstants.js';
+import type { IUser } from '../types/models.js';
 
-const userModel = new mongoose.Schema(
+const userModel = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -43,5 +44,5 @@ const userModel = new mongoose.Schema(
   }
 );
 
-const User = mongoose.model('User', userModel);
+const User: Model<IUser> = mongoose.model<IUser>('User', userModel);
 export default User;

@@ -1,14 +1,15 @@
-import mongoose from 'mongoose';
+import mongoose, { Model, Schema } from 'mongoose';
+import type { IQuantity } from '../types/models.js';
 
-const quantityModel = new mongoose.Schema(
+const quantityModel = new Schema<IQuantity>(
   {
     warehouseId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Warehouse',
       required: true,
     },
     productId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'Product',
       required: true,
     },
@@ -28,5 +29,8 @@ const quantityModel = new mongoose.Schema(
   }
 );
 
-const Quantity = mongoose.model('Quantity', quantityModel);
+const Quantity: Model<IQuantity> = mongoose.model<IQuantity>(
+  'Quantity',
+  quantityModel
+);
 export default Quantity;

@@ -1,7 +1,8 @@
-import mongoose from 'mongoose';
+import mongoose, { Model, Schema } from 'mongoose';
 import CATEGORY_TYPES from '../constants/categoryConstants.js';
+import type { IProduct } from '../types/models.js';
 
-const productModel = new mongoose.Schema(
+const productModel = new Schema<IProduct>(
   {
     name: {
       type: String,
@@ -32,7 +33,7 @@ const productModel = new mongoose.Schema(
       default: 10,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: 'User',
     },
     isArchived: {
@@ -45,5 +46,8 @@ const productModel = new mongoose.Schema(
   }
 );
 
-const Product = mongoose.model('Product', productModel);
+const Product: Model<IProduct> = mongoose.model<IProduct>(
+  'Product',
+  productModel
+);
 export default Product;

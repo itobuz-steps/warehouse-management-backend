@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
+import type { WarehouseDocument } from '../types/models.js';
 
-const warehouseModel = new mongoose.Schema(
+const warehouseModel = new Schema<WarehouseDocument>(
   {
     name: {
       type: String,
@@ -13,10 +14,12 @@ const warehouseModel = new mongoose.Schema(
     description: {
       type: String,
     },
-    managerIds: {
-      type: [mongoose.Schema.Types.ObjectId],
-      ref: 'User',
-    },
+    managerIds: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
     active: {
       type: Boolean,
       default: true,
@@ -24,7 +27,7 @@ const warehouseModel = new mongoose.Schema(
     capacity: {
       type: Number,
       default: 10000,
-      required: true
+      required: true,
     },
   },
   {
@@ -32,5 +35,9 @@ const warehouseModel = new mongoose.Schema(
   }
 );
 
-const Warehouse = mongoose.model('Warehouse', warehouseModel);
+const Warehouse: Model<WarehouseDocument> = mongoose.model(
+  'Warehouse',
+  warehouseModel
+);
+
 export default Warehouse;
