@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "format": "npx prettier --write .",
-    "dev": "nodemon --inspect src/server.js",
+    "dev": "nodemon --inspect dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

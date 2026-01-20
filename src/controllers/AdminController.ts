@@ -1,21 +1,36 @@
-import Warehouse from '../models/warehouseModel.ts';
-import User from '../models/userModel.ts';
+import Warehouse from '../models/warehouseModel.js';
+import User from '../models/userModel.js';
 import mongoose from 'mongoose';
-import USER_TYPES from '../constants/userConstants.ts';
-import { Request, Response, NextFunction } from 'express';
+import USER_TYPES from '../constants/userConstants.js';
+import type { AppRequest, AppResponse, AppNext } from '../types/express.js';
+
+type AddWarehouseBody = {
+  name: string;
+  address: string;
+  description?: string;
+  managers: string[];
+  capacity: number;
+};
+
+type UpdateWarehouseBody = {
+  name?: string;
+  address?: string;
+  description?: string;
+  managers?: string[];
+};
 
 export default class AdminController {
-  addWarehouse = async (req: Request, res: Response, next: NextFunction) => {
+  addWarehouse = async (
+    req: AppRequest<{}, AddWarehouseBody>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
-      let {
-        name,
-        address,
-        description,
-        managers: managerIds,
-        capacity,
-      } = req.body;
+      const { name, address, description, managers, capacity } = req.body;
 
-      managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(`${id}`));
+      const managerIds = managers.map(
+        (id) => new mongoose.Types.ObjectId(`${id}`)
+      );
 
       // Create the warehouse document
       const newWarehouse = new Warehouse({
@@ -37,19 +52,24 @@ export default class AdminController {
     }
   };
 
-  updateWarehouse = async (req, res, next) => {
+  updateWarehouse = async (
+    req: AppRequest<{ warehouseId: string }, UpdateWarehouseBody>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
-      let { name, address, description, managers: managerIds } = req.body;
+      const { name, address, description, managers } = req.body;
 
-      managerIds = managerIds.map((id) => new mongoose.Types.ObjectId(`${id}`));
-
+      const managerIdsArray = managers?.map(
+        (id) => new mongoose.Types.ObjectId(`${id}`)
+      );
       const updatedWarehouse = await Warehouse.findByIdAndUpdate(
         req.params.warehouseId,
         {
           name,
           address,
           description,
-          managerIds,
+          managerIds: managerIdsArray,
         },
         {
           new: true,
@@ -73,7 +93,11 @@ export default class AdminController {
     }
   };
 
-  removeWarehouse = async (req, res, next) => {
+  removeWarehouse = async (
+    req: AppRequest<{ warehouseId: string }>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const warehouse = await Warehouse.findOneAndUpdate(
         { _id: req.params.warehouseId, active: true },
@@ -95,7 +119,11 @@ export default class AdminController {
     }
   };
 
-  getManagers = async (req, res, next) => {
+  getManagers = async (
+    req: AppRequest,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const managers = await User.find({
         role: USER_TYPES.MANAGER,
