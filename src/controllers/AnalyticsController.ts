@@ -6,9 +6,26 @@ import {
   generateTwoProductQuantityExcel,
   generateTwoProductTransactionExcel,
 } from '../services/generateExcel.js';
+import type { AppRequest, AppResponse, AppNext } from '../types/express.js';
+import type {
+  TwoProductQuantityResult,
+  TwoProductHistoryResult,
+  TransactionHistoryItem,
+} from '../types/analyticsTypes.js';
+
+export type TwoProductQuery = {
+  warehouseId?: string;
+  productA?: string;
+  productB?: string;
+};
+
 export default class AnalyticsController {
   // for bar chart
-  getTwoProductQuantitiesForWarehouse = async (req, res, next) => {
+  getTwoProductQuantitiesForWarehouse = async (
+    req: AppRequest<{}, unknown, TwoProductQuery>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const result = await this.getTwoProductQuantitiesForWarehouseData(
         req.query
@@ -25,7 +42,11 @@ export default class AnalyticsController {
     }
   };
 
-  getTwoProductQuantitiesForWarehouseExcel = async (req, res, next) => {
+  getTwoProductQuantitiesForWarehouseExcel = async (
+    req: AppRequest<{}, unknown, TwoProductQuery>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const quantities = await this.getTwoProductQuantitiesForWarehouseData(
         req.query
@@ -50,7 +71,9 @@ export default class AnalyticsController {
     }
   };
 
-  getTwoProductQuantitiesForWarehouseData = async (ids) => {
+  getTwoProductQuantitiesForWarehouseData = async (
+    ids: TwoProductQuery
+  ): Promise<TwoProductQuantityResult> => {
     console.log(ids);
     const { warehouseId, productA, productB } = ids;
 
@@ -97,7 +120,11 @@ export default class AnalyticsController {
   };
 
   // for line chart
-  getTwoProductComparisonHistoryForWarehouse = async (req, res, next) => {
+  getTwoProductComparisonHistoryForWarehouse = async (
+    req: AppRequest<{}, unknown, TwoProductQuery>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const result = await this.getTwoProductComparisonHistoryForWarehouseData(
         req.query
@@ -113,7 +140,11 @@ export default class AnalyticsController {
     }
   };
 
-  getTwoProductComparisonHistoryForWarehouseExcel = async (req, res, next) => {
+  getTwoProductComparisonHistoryForWarehouseExcel = async (
+    req: AppRequest<{}, unknown, TwoProductQuery>,
+    res: AppResponse,
+    next: AppNext
+  ): Promise<void> => {
     try {
       const quantities =
         await this.getTwoProductComparisonHistoryForWarehouseData(req.query);
@@ -137,7 +168,9 @@ export default class AnalyticsController {
     }
   };
 
-  getTwoProductComparisonHistoryForWarehouseData = async (ids) => {
+  getTwoProductComparisonHistoryForWarehouseData = async (
+    ids: TwoProductQuery
+  ): Promise<TwoProductHistoryResult> => {
     const { warehouseId, productA, productB } = ids;
 
     if (!warehouseId || !productA || !productB) {
@@ -175,8 +208,11 @@ export default class AnalyticsController {
       ],
     }).lean();
 
-    const counts = { productA: {}, productB: {} };
-    const dateList = [];
+    const counts: Record<'productA' | 'productB', Record<string, number>> = {
+      productA: {},
+      productB: {},
+    };
+    const dateList: string[] = [];
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(startDate);
@@ -204,7 +240,7 @@ export default class AnalyticsController {
       }
     }
 
-    const result = {
+    const result: TwoProductHistoryResult = {
       warehouse: warehouse.name,
       productA: {
         id: productA,

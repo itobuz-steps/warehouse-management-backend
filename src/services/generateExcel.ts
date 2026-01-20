@@ -1,6 +1,37 @@
 import ExcelJS from 'exceljs';
+import type {
+  TwoProductQuantityResult,
+  TwoProductHistoryResult,
+} from '../types/analyticsTypes.js';
 
-const generateTopFiveProductsExcel = async (products) => {
+type TopProductExcelItem = {
+  productId: string;
+  productName: string;
+  category: string;
+  price: number;
+  totalQuantity: number;
+};
+
+type InventoryCategoryExcelItem = {
+  _id: string;
+  totalProducts: number;
+};
+
+type WeeklyTransactionExcelItem = {
+  _id: string; // date string
+  IN: number;
+  OUT: number;
+};
+
+type TwoProductTransactionExcelRow = {
+  date: string;
+  productATransactions: number;
+  productBTransactions: number;
+};
+
+const generateTopFiveProductsExcel = async (
+  products: TopProductExcelItem[]
+): Promise<Buffer> => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Top Products');
 
@@ -58,7 +89,7 @@ const generateTopFiveProductsExcel = async (products) => {
   // column formatting
   worksheet.columns.forEach((column) => {
     let maxLength = 12;
-    column.eachCell({ includeEmpty: true }, (cell) => {
+    (column as ExcelJS.Column).eachCell({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 0;
       if (columnLength > maxLength) maxLength = columnLength;
     });
@@ -66,10 +97,13 @@ const generateTopFiveProductsExcel = async (products) => {
   });
 
   // Return Excel buffer
-  return await workbook.xlsx.writeBuffer();
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 };
 
-const generateInventoryByCategoryExcel = async (categories) => {
+const generateInventoryByCategoryExcel = async (
+  categories: InventoryCategoryExcelItem[]
+): Promise<Buffer> => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Category');
 
@@ -115,7 +149,7 @@ const generateInventoryByCategoryExcel = async (categories) => {
   // column formatting
   worksheet.columns.forEach((column) => {
     let maxLength = 12;
-    column.eachCell({ includeEmpty: true }, (cell) => {
+    (column as ExcelJS.Column).eachCell({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 0;
       if (columnLength > maxLength) maxLength = columnLength;
     });
@@ -123,10 +157,13 @@ const generateInventoryByCategoryExcel = async (categories) => {
   });
 
   // Return Excel buffer
-  return await workbook.xlsx.writeBuffer();
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 };
 
-const generateWeeklyTransactionExcel = async (transactions) => {
+const generateWeeklyTransactionExcel = async (
+  transactions: WeeklyTransactionExcelItem[]
+): Promise<Buffer> => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Weekly Transactions');
 
@@ -176,7 +213,7 @@ const generateWeeklyTransactionExcel = async (transactions) => {
   // column formatting
   worksheet.columns.forEach((column) => {
     let maxLength = 12;
-    column.eachCell({ includeEmpty: true }, (cell) => {
+    (column as ExcelJS.Column).eachCell({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 0;
       if (columnLength > maxLength) maxLength = columnLength;
     });
@@ -184,14 +221,21 @@ const generateWeeklyTransactionExcel = async (transactions) => {
   });
 
   // Return Excel buffer
-  return await workbook.xlsx.writeBuffer();
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 };
 
-const generateTwoProductQuantityExcel = async (data) => {
+const generateTwoProductQuantityExcel = async (
+  data: TwoProductQuantityResult
+): Promise<Buffer> => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Two Product - Quantities');
 
-  const dataArray = new Array(data.productA, data.productB);
+  const dataArray: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+  }> = [data.productA, data.productB];
 
   // Define header
   const header = ['ID', 'Name', 'Quantity'];
@@ -235,7 +279,7 @@ const generateTwoProductQuantityExcel = async (data) => {
   // column formatting
   worksheet.columns.forEach((column) => {
     let maxLength = 12;
-    column.eachCell({ includeEmpty: true }, (cell) => {
+    (column as ExcelJS.Column).eachCell({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 0;
       if (columnLength > maxLength) maxLength = columnLength;
     });
@@ -243,10 +287,13 @@ const generateTwoProductQuantityExcel = async (data) => {
   });
 
   // Return Excel buffer
-  return await workbook.xlsx.writeBuffer();
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 };
 
-const generateTwoProductTransactionExcel = async (data) => {
+const generateTwoProductTransactionExcel = async (
+  data: TwoProductHistoryResult
+): Promise<Buffer> => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Two Product - Transactions');
 
@@ -259,7 +306,8 @@ const generateTwoProductTransactionExcel = async (data) => {
   const dataA = data.productA.history.splice(-7);
   const dataB = data.productB.history.splice(-7);
 
-  let dataArray = [];
+  const dataArray: TwoProductTransactionExcelRow[] = [];
+
   for (let i = 0; i < dataA.length; i++) {
     dataArray.push({
       date: dataA[i].date,
@@ -310,7 +358,7 @@ const generateTwoProductTransactionExcel = async (data) => {
   // column formatting
   worksheet.columns.forEach((column) => {
     let maxLength = 12;
-    column.eachCell({ includeEmpty: true }, (cell) => {
+    (column as ExcelJS.Column).eachCell({ includeEmpty: true }, (cell) => {
       const columnLength = cell.value ? cell.value.toString().length : 0;
       if (columnLength > maxLength) maxLength = columnLength;
     });
@@ -318,7 +366,8 @@ const generateTwoProductTransactionExcel = async (data) => {
   });
 
   // Return Excel buffer
-  return await workbook.xlsx.writeBuffer();
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
 };
 
 export {
