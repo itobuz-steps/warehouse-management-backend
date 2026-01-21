@@ -27,6 +27,16 @@ export type AsyncController<
   next: AppNext
 ) => Promise<void>;
 
+export type AppMiddleware<
+  P = Record<string, string>,
+  Req = unknown,
+  Q = Record<string, string>,
+> = (
+  req: Request<P, any, Req, Q>,
+  res: Response,
+  next: NextFunction
+) => void | Promise<void>;
+
 // export type SyncController<
 //   P = Record<string, string>,
 //   Req = unknown,
