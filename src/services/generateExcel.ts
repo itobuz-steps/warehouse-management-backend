@@ -102,7 +102,7 @@ const generateTopFiveProductsExcel = async (
 };
 
 const generateInventoryByCategoryExcel = async (
-  categories: InventoryCategoryExcelItem[]
+  categories: InventoryCategoryExcelItem[] & { products: { price: number }[] }[]
 ): Promise<Buffer> => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Category');

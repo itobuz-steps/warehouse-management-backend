@@ -16,3 +16,25 @@ export type AppRequest<
 
 export type AppResponse = Response;
 export type AppNext = NextFunction;
+
+export type AsyncController<
+  P = Record<string, string>,
+  Req = unknown,
+  Q = Record<string, string>,
+> = (
+  req: AppRequest<P, Req, Q>,
+  res: AppResponse,
+  next: AppNext
+) => Promise<void>;
+
+// export type SyncController<
+//   P = Record<string, string>,
+//   Req = unknown,
+//   Q = Record<string, string>,
+// > = (req: AppRequest<P, Req, Q>, res: AppResponse, next: AppNext) => void;
+
+// export type Controller<
+//   P = Record<string, string>,
+//   Req = unknown,
+//   Q = Record<string, string>,
+// > = AsyncController<P, Req, Q> | SyncController<P, Req, Q>;
