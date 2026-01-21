@@ -1,21 +1,68 @@
 import mongoose from 'mongoose';
 import Quantity from '../models/quantityModel.js';
+import { AsyncController } from '../types/express.js';
+
+type AddProductQuantityBody = {
+  productId: string;
+  warehouseId: string;
+  quantity: number;
+  limit: number;
+};
+
+type UpdateProductLimitParams = {
+  id: string;
+};
+
+type UpdateProductLimitBody = {
+  limit: number;
+};
+
+type ProductIdParams = {
+  productId: string;
+};
+
+type WarehouseIdParams = {
+  warehouseId: string;
+};
+
+type ProductWarehouseQuery = {
+  productId: string;
+  warehouseId: string;
+};
+
+type ProductsHavingQuantityQuery = {
+  search?: string;
+  category?: string;
+  sort?:
+    | 'name_asc'
+    | 'name_desc'
+    | 'category_asc'
+    | 'quantity_asc'
+    | 'quantity_desc';
+  warehouseId?: string;
+  page?: string;
+  limit?: string;
+};
 
 export default class QuantityController {
   // adding a product in a specific warehouse
-  addProductQuantity = async (req, res, next) => {
+  addProductQuantity: AsyncController<
+    Record<string, never>,
+    AddProductQuantityBody
+  > = async (req, res, next): Promise<void> => {
     try {
-      const { quantity, limit } = req.body;
-      let result = await Quantity.create({
-        productId: req.body.productId,
-        warehouseId: req.body.warehouseId,
+      const { productId, warehouseId, quantity, limit } = req.body;
+
+      const createdQuantity = await Quantity.create({
+        productId,
+        warehouseId,
         quantity,
         limit,
       });
 
-      result = await Quantity.findById({ _id: result._id }).populate(
-        'warehouseId productId'
-      );
+      const result = await Quantity.findById({
+        _id: createdQuantity._id,
+      }).populate('warehouseId productId');
 
       res.status(200).json({
         message: 'Product Quantity Updated',
@@ -27,9 +74,12 @@ export default class QuantityController {
     }
   };
 
-  updateProductLimit = async (req, res, next) => {
+  updateProductLimit: AsyncController<
+    UpdateProductLimitParams,
+    UpdateProductLimitBody
+  > = async (req, res, next): Promise<void> => {
     try {
-      const { id } = req.params; 
+      const { id } = req.params;
       const { limit } = req.body;
 
       const result = await Quantity.findByIdAndUpdate(
@@ -39,7 +89,7 @@ export default class QuantityController {
       ).populate('warehouseId productId');
 
       if (!result) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           message: 'Quantity record not found',
         });
@@ -56,7 +106,11 @@ export default class QuantityController {
   };
 
   // getting total quantity of a product across all warehouse
-  getTotalProductQuantity = async (req, res, next) => {
+  getTotalProductQuantity: AsyncController<ProductIdParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const productId = req.params.productId;
 
@@ -91,7 +145,11 @@ export default class QuantityController {
   };
 
   // getting quantity details of a specific product in a specific warehouse -> for Managers
-  getProductQuantityAcrossSpecificWarehouse = async (req, res, next) => {
+  getProductQuantityAcrossSpecificWarehouse: AsyncController<
+    Record<string, never>,
+    never,
+    ProductWarehouseQuery
+  > = async (req, res, next): Promise<void> => {
     try {
       const { productId, warehouseId } = req.query;
 
@@ -113,7 +171,11 @@ export default class QuantityController {
   };
 
   // Get all products in a specific warehouse -> for Managers
-  getWarehouseSpecificProducts = async (req, res, next) => {
+  getWarehouseSpecificProducts: AsyncController<WarehouseIdParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const result = await Quantity.aggregate([
         {
@@ -146,7 +208,11 @@ export default class QuantityController {
   };
 
   // get warehouses where a specific product is stored
-  getProductSpecificWarehouses = async (req, res, next) => {
+  getProductSpecificWarehouses: AsyncController<ProductIdParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const result = await Quantity.find({ productId: req.params.productId })
         .populate({
@@ -165,11 +231,22 @@ export default class QuantityController {
     }
   };
 
-  getProductsHavingQuantity = async (req, res, next) => {
+  getProductsHavingQuantity: AsyncController<
+    Record<string, never>,
+    never,
+    ProductsHavingQuantityQuery
+  > = async (req, res, next): Promise<void> => {
     try {
-      const { search, category, sort, warehouseId, page, limit } = req.query;
+      const {
+        search,
+        category,
+        sort,
+        warehouseId,
+        page = '1',
+        limit = '10',
+      } = req.query;
 
-      const pipeline = [];
+      const pipeline: any[] = [];
 
       // Filter by warehouse if provided
       if (warehouseId) {
