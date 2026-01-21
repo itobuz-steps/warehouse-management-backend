@@ -2,11 +2,56 @@ import Product from '../models/productModel.js';
 import mongoose from 'mongoose';
 import generateQrCode from '../services/generateQr.js';
 import config from '../config/config.js';
+import type { AsyncController } from '../types/express.js';
+
+type ProductParams = {
+  id: string;
+};
+
+type GetProductsQuery = {
+  search?: string;
+  category?: string;
+  sort?: 'name_asc' | 'name_desc' | 'category_asc' | 'latest';
+  page?: string;
+  limit?: string;
+};
+
+type UpdateProductBody = {
+  name?: string;
+  category?: string;
+  description?: string;
+  price?: number;
+  markup?: number;
+};
+
+type CreateProductBody = {
+  name: string;
+  category: string;
+  description?: string;
+  price: number;
+  markup?: number;
+  createdBy: string;
+};
+
+type CreateProductParams = Record<string, never>;
+
+type GetArchivedProductsQuery = {
+  search?: string;
+  category?: string;
+  sort?: 'name_asc' | 'name_desc' | 'category_asc' | 'latest';
+  page?: string;
+  limit?: string;
+};
+
 export default class ProductController {
-  getProducts = async (req, res, next) => {
+  getProducts: AsyncController<{}, {}, GetProductsQuery> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
-      const { search, category, sort, page, limit } = req.query;
-      const filter = { isArchived: false };
+      const { search, category, sort, page = '1', limit = '10' } = req.query;
+      const filter: Record<string, any> = { isArchived: false };
 
       if (category) {
         filter.category = category;
@@ -30,13 +75,15 @@ export default class ProductController {
         }
       }
       // Calculate skip and limit for pagination
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-      const products = await query.skip(skip).limit(parseInt(limit));
+      const pageNumber = Math.max(parseInt(page, 10), 1);
+      const limitNumber = Math.max(parseInt(limit, 10), 1);
+      const skip = (pageNumber - 1) * limitNumber;
+      const products = await query.skip(skip).limit(limitNumber);
 
       // Get the total count of products for pagination info
       const totalCount = await Product.countDocuments(filter);
 
-      const totalPages = Math.ceil(totalCount / parseInt(limit));
+      const totalPages = Math.ceil(totalCount / limitNumber);
 
       res.status(200).json({
         success: true,
@@ -44,8 +91,8 @@ export default class ProductController {
           products,
           totalCount,
           totalPages,
-          currentPage: parseInt(page),
-          productsPerPage: parseInt(limit),
+          currentPage: pageNumber,
+          productsPerPage: limitNumber,
         },
       });
     } catch (error) {
@@ -53,18 +100,29 @@ export default class ProductController {
     }
   };
 
-  updateProduct = async (req, res, next) => {
+  updateProduct: AsyncController<ProductParams, UpdateProductBody> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const id = req.params.id;
-      const updates = {};
+      const updates: UpdateProductBody & { productImage?: string[] } = {};
+      const { name, category, description, price, markup } = req.body;
 
-      for (const [key, value] of Object.entries(req.body)) {
-        if (value) {
-          updates[key] = value;
-        }
-      }
+      if (name !== undefined) updates.name = name;
+      if (category !== undefined) updates.category = category;
+      if (description !== undefined) updates.description = description;
+      if (price !== undefined) updates.price = price;
+      if (markup !== undefined) updates.markup = markup;
 
-      if (req.files && req.files.length > 0) {
+      // for (const [key, value] of Object.entries(req.body)) {
+      //   if (value) {
+      //     updates[key] = value;
+      //   }
+      // }
+
+      if (req.files && Array.isArray(req.files) && req.files.length > 0) {
         updates.productImage = req.files.map(
           (file) => `${req.protocol}://${req.get('host')}/${file.path}`
         );
@@ -91,32 +149,46 @@ export default class ProductController {
     }
   };
 
-  createProduct = async (req, res, next) => {
-    try {
-      const { name, category, description, price, markup } = req.body;
-      const product = await Product.create({
-        name,
-        category,
-        description,
-        price,
-        markup,
-        productImage: req.files.map(
-          (file) => `${req.protocol}://${req.get('host')}/${file.path}`
-        ),
-        createdBy: new mongoose.Types.ObjectId(`${req.body.createdBy}`),
-      });
+  createProduct: AsyncController<CreateProductParams, CreateProductBody> =
+    async (req, res, next): Promise<void> => {
+      try {
+        const { name, category, description, price, markup, createdBy } =
+          req.body;
+        const productImages: string[] = [];
 
-      res.status(201).json({
-        message: 'Product Successfully Saved',
-        success: true,
-        data: product,
-      });
-    } catch (err) {
-      next(err);
-    }
-  };
+        if (req.files && Array.isArray(req.files)) {
+          for (const file of req.files) {
+            productImages.push(
+              `${req.protocol}://${req.get('host')}/${file.path}`
+            );
+          }
+        }
 
-  deleteProduct = async (req, res, next) => {
+        const product = await Product.create({
+          name,
+          category,
+          description,
+          price,
+          markup,
+          productImage: productImages,
+          createdBy: new mongoose.Types.ObjectId(createdBy),
+        });
+
+        res.status(201).json({
+          message: 'Product Successfully Saved',
+          success: true,
+          data: product,
+        });
+      } catch (err) {
+        next(err);
+      }
+    };
+
+  deleteProduct: AsyncController<ProductParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const id = req.params.id;
       const updatedProduct = await Product.findOneAndUpdate(
@@ -139,7 +211,11 @@ export default class ProductController {
     }
   };
 
-  restoreProduct = async (req, res, next) => {
+  restoreProduct: AsyncController<ProductParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const id = req.params.id;
       const updatedProduct = await Product.findOneAndUpdate(
@@ -162,7 +238,11 @@ export default class ProductController {
     }
   };
 
-  getProductQrCode = async (req, res, next) => {
+  getProductQrCode: AsyncController<ProductParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const productId = req.params.id;
 
@@ -178,7 +258,11 @@ export default class ProductController {
     }
   };
 
-  getProductById = async (req, res, next) => {
+  getProductById: AsyncController<ProductParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const product = await Product.findById(req.params.id);
 
@@ -192,11 +276,15 @@ export default class ProductController {
     }
   };
 
-  getArchivedProducts = async (req, res, next) => {
+  getArchivedProducts: AsyncController<
+    Record<string, never>,
+    never,
+    GetArchivedProductsQuery
+  > = async (req, res, next) => {
     try {
-      const { search, category, sort, page, limit } = req.query;
+      const { search, category, sort, page = '1', limit = '10' } = req.query;
 
-      const filter = { isArchived: true };
+      const filter: Record<string, unknown> = { isArchived: true };
 
       if (category) {
         filter.category = category;
@@ -220,14 +308,16 @@ export default class ProductController {
         }
       }
 
+      const pageNumber = Number(page);
+      const limitNumber = Number(limit);
+      const skip = (pageNumber - 1) * limitNumber;
       // Calculate skip and limit for pagination
-      const skip = (parseInt(page) - 1) * parseInt(limit);
-      const products = await query.skip(skip).limit(parseInt(limit));
+      const products = await query.skip(skip).limit(limitNumber);
 
       // Get the total count of products for pagination info
       const totalCount = await Product.countDocuments(filter);
 
-      const totalPages = Math.ceil(totalCount / parseInt(limit));
+      const totalPages = Math.ceil(totalCount / limitNumber);
 
       res.status(200).json({
         success: true,
@@ -235,8 +325,8 @@ export default class ProductController {
           products,
           totalCount,
           totalPages,
-          currentPage: parseInt(page),
-          productsPerPage: parseInt(limit),
+          currentPage: pageNumber,
+          productsPerPage: limitNumber,
         },
       });
     } catch (error) {
