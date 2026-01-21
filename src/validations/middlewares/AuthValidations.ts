@@ -1,9 +1,21 @@
 import USER_TYPES from '../../constants/userConstants.js';
+import type { AppMiddleware } from '../../types/express.js';
 import { signupSchema } from '../schema/authSchema.js';
 import { ValidationError } from 'yup';
 
+type SignupBody = {
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+};
+
 export default class AuthValidation {
-  signupValidation = async (req, res, next) => {
+  signupValidation: AppMiddleware<{}, SignupBody> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       if (req.headers.role === USER_TYPES.ADMIN) {
         req.body.role = req.headers.role;
