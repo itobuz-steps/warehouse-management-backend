@@ -1,8 +1,14 @@
 import USER_TYPES from '../constants/userConstants.js';
 import User from '../models/userModel.js';
+import { AsyncController } from '../types/express.js';
+import { IUser } from '../types/models.js';
+
+type ManagerParams = {
+  managerId: string;
+};
 
 export default class ProfileController {
-  updateProfile = async (req, res, next) => {
+  updateProfile: AsyncController = async (req, res, next): Promise<void> => {
     try {
       const user = req.user;
 
@@ -23,7 +29,7 @@ export default class ProfileController {
     }
   };
 
-  getCurrentUser = async (req, res, next) => {
+  getCurrentUser: AsyncController = async (req, res, next): Promise<void> => {
     try {
       const user = req.user;
 
@@ -37,12 +43,12 @@ export default class ProfileController {
     }
   };
 
-  getUserDetails = async (req, res, next) => {
+  getUserDetails: AsyncController = async (req, res, next): Promise<void> => {
     try {
       const user = req.user;
 
-      let verifiedManagers = [];
-      let unverifiedManagers = [];
+      let verifiedManagers: IUser[] = [];
+      let unverifiedManagers: IUser[] = [];
 
       if (user.role === USER_TYPES.ADMIN) {
         verifiedManagers = await User.find({
@@ -67,7 +73,7 @@ export default class ProfileController {
     }
   };
 
-  deleteUser = async (req, res, next) => {
+  deleteUser: AsyncController = async (req, res, next): Promise<void> => {
     try {
       const user = req.user;
 
@@ -86,7 +92,11 @@ export default class ProfileController {
     }
   };
 
-  changeStatus = async (req, res, next) => {
+  changeStatus: AsyncController<ManagerParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const manager = await User.findOneAndUpdate(
         {
