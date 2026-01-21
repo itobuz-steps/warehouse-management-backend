@@ -1,4 +1,6 @@
-export default function loggerMiddleware(req, res, next) {
+import type { AppMiddleware } from '../../types/express.js';
+
+const loggerMiddleware: AppMiddleware = (req, res, next) => {
   try {
     const {
       body,
@@ -30,4 +32,6 @@ export default function loggerMiddleware(req, res, next) {
   } catch (error) {
     next(error);
   }
-}
+};
+
+export default loggerMiddleware;
