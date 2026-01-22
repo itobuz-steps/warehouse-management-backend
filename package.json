@@ -53,6 +53,7 @@
     "@types/node": "^25.0.9",
     "@types/nodemailer": "^7.0.5",
     "@types/qrcode": "^1.5.6",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.38.0",
     "globals": "^16.4.0",
     "nodemon": "^3.1.10",

@@ -8,7 +8,7 @@ if (!CURRENT_IP) {
   process.exit(1);
 }
 
-await mongoose.connect(process.env.DB_URI);
+await mongoose.connect(process.env.DB_URI as string);
 
 await Product.updateMany({}, [
   {
