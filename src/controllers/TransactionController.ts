@@ -10,25 +10,104 @@ import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 import Product from '../models/productModel.js';
 import USER_TYPES from '../constants/userConstants.js';
+import { AsyncController } from '../types/express.js';
+import { IQuantity, ITransaction } from '../types/models.js';
+import { Document } from 'mongoose';
+
+type GetTransactionsQuery = {
+  startDate?: string;
+  endDate?: string;
+  type?: string;
+  status?: string;
+  page?: string;
+  limit?: string;
+};
+
+type WarehouseParams = {
+  warehouseId: string;
+};
+
+type WarehouseTxQuery = {
+  startDate?: string;
+  endDate?: string;
+  type?: string;
+  status?: string;
+  page?: string;
+  limit?: string;
+};
+
+type StockInBody = {
+  products: {
+    productId: string;
+    quantity: number;
+    limit?: number;
+  }[];
+  supplier?: string;
+  notes?: string;
+  destinationWarehouse: string;
+};
+
+type StockOutBody = {
+  products: {
+    productId: string;
+    quantity: number;
+  }[];
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string | number;
+  customerAddress?: string;
+  orderNumber?: string;
+  notes?: string;
+  sourceWarehouse: string;
+};
+
+type TransferBody = {
+  products: {
+    productId: string;
+    quantity: number;
+    limit?: number;
+  }[];
+  notes?: string | null;
+  sourceWarehouse: string;
+  destinationWarehouse: string;
+};
+
+type AdjustmentBody = {
+  products: {
+    productId: string;
+    quantity: number;
+  }[];
+  warehouseId: string;
+  reason?: string;
+  notes?: string | null;
+};
+
+type InvoiceParams = {
+  id: string;
+};
 
 // const notifications = new Notifications();
 const notification = new Notification();
 
 export default class TransactionController {
-  getTransactions = async (req, res, next) => {
+  getTransactions: AsyncController<{}, {}, GetTransactionsQuery> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const {
         startDate,
         endDate,
         type,
         status,
-        page = 1,
-        limit = 10,
+        page = '1',
+        limit = '10',
       } = req.query;
       const user = req.user; // authenticated user
 
-      const matchStage = {};
-      let warehouseMatch = {};
+      const matchStage: Record<string, any> = {};
+      let warehouseMatch: Record<string, any> = {};
 
       if (startDate || endDate) {
         matchStage.createdAt = {};
@@ -119,7 +198,11 @@ export default class TransactionController {
     }
   };
 
-  getWarehouseSpecificTransactions = async (req, res, next) => {
+  getWarehouseSpecificTransactions: AsyncController<
+    WarehouseParams,
+    {},
+    WarehouseTxQuery
+  > = async (req, res, next): Promise<void> => {
     try {
       const { warehouseId } = req.params;
       const {
@@ -127,12 +210,13 @@ export default class TransactionController {
         endDate,
         type,
         status,
-        page = 1,
-        limit = 10,
+        page = '1',
+        limit = '10',
       } = req.query;
       const warehouseObjectId = new mongoose.Types.ObjectId(`${warehouseId}`);
       const skip = (parseInt(page) - 1) * parseInt(limit);
-      const dateFilter = {};
+
+      const dateFilter: Record<string, Date> = {};
 
       if (startDate) {
         dateFilter.$gte = new Date(startDate);
@@ -143,7 +227,7 @@ export default class TransactionController {
         dateFilter.$lte = new Date(new Date(endDate).setHours(23, 59, 59, 999));
       }
 
-      const filter = {
+      const filter: Record<string, any> = {
         $or: [
           { sourceWarehouse: warehouseObjectId },
           { destinationWarehouse: warehouseObjectId },
@@ -269,15 +353,19 @@ export default class TransactionController {
     }
   };
 
-  createStockIn = async (req, res, next) => {
-    let session;
+  createStockIn: AsyncController<{}, StockInBody> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
+    let session: mongoose.ClientSession | null = null;
 
     try {
       session = await mongoose.startSession();
       session.startTransaction();
 
       const { products, supplier, notes, destinationWarehouse } = req.body;
-      const transactions = [];
+      const transactions: (ITransaction & Document)[] = [];
 
       for (const item of products) {
         const { productId, quantity, limit } = item;
@@ -319,9 +407,9 @@ export default class TransactionController {
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
         await notification.notifyTransaction(
-          createdTransaction.product,
-          createdTransaction.destinationWarehouse,
-          createdTransaction._id,
+          createdTransaction.product as mongoose.Types.ObjectId,
+          createdTransaction.destinationWarehouse as mongoose.Types.ObjectId,
+          createdTransaction._id.toString(),
           createdTransaction.quantity,
           NOTIFICATION_TYPES.STOCK_IN,
           req.userId
@@ -334,15 +422,19 @@ export default class TransactionController {
         data: transactions,
       });
     } catch (error) {
-      await session.abortTransaction();
+      if (session) await session.abortTransaction();
       next(error);
     } finally {
-      session.endSession();
+      session?.endSession();
     }
   };
 
-  createStockOut = async (req, res, next) => {
-    let session;
+  createStockOut: AsyncController<{}, StockOutBody> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
+    let session: mongoose.ClientSession | null = null;
     let transactionStarted = false;
 
     try {
@@ -361,32 +453,47 @@ export default class TransactionController {
         sourceWarehouse,
       } = req.body;
 
-      const transactions = [];
-      const lowStockNotifications = [];
+      const transactions: (ITransaction & Document)[] = [];
+      const lowStockNotifications: {
+        productId: string;
+        warehouseId: string;
+        transactionPerformedBy?: string;
+      }[] = [];
 
       for (const item of products) {
         const { productId, quantity } = item;
 
         const product = await Product.findById(productId);
+
+        if (!product) {
+          throw new Error('Product not found');
+        }
+
         const quantityRecord = await Quantity.findOne({
           warehouseId: sourceWarehouse,
           productId,
         });
 
+        if (!quantityRecord) {
+          throw new Error('Quantity record not found');
+        }
+
         if (quantityRecord.quantity < quantity) {
           await session.abortTransaction();
           transactionStarted = false;
-          return res.status(400).json({
+          res.status(400).json({
             message: `Insufficient stock for Product: ${product.name}. Available: ${quantityRecord.quantity}, Requested: ${quantity}`,
           });
+          return;
         }
 
         if (quantity > quantityRecord.limit) {
           await session.abortTransaction();
           transactionStarted = false;
-          return res.status(400).json({
+          res.status(400).json({
             message: `Stock out Quantity exceeded for Product: ${product.name}, Limit: ${quantityRecord.limit}`,
           });
+          return;
         }
 
         const previousQty = quantityRecord.quantity;
@@ -430,9 +537,9 @@ export default class TransactionController {
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
         await notification.notifyPendingShipment(
-          createdTransaction.product,
-          createdTransaction.sourceWarehouse,
-          createdTransaction._id,
+          createdTransaction.product as mongoose.Types.ObjectId,
+          createdTransaction.sourceWarehouse as mongoose.Types.ObjectId,
+          createdTransaction._id.toString(),
           createdTransaction.quantity,
           req.userId
         );
@@ -452,17 +559,21 @@ export default class TransactionController {
         data: transactions,
       });
     } catch (error) {
-      if (transactionStarted) {
+      if (transactionStarted && session) {
         await session.abortTransaction();
       }
       next(error);
     } finally {
-      session.endSession();
+      session?.endSession();
     }
   };
 
-  createTransfer = async (req, res, next) => {
-    let session;
+  createTransfer: AsyncController<{}, TransferBody> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
+    let session: mongoose.ClientSession | null = null;
     let transactionStarted = false;
 
     try {
@@ -474,20 +585,29 @@ export default class TransactionController {
         req.body;
 
       if (sourceWarehouse === destinationWarehouse) {
-        return res.status(400).json({
+        res.status(400).json({
           message: 'Source and destination warehouses cannot be the same',
         });
+        return;
       }
 
-      const transactions = [];
-      const updatedQuantities = [];
+      const transactions: (ITransaction & Document)[] = [];
+      const updatedQuantities: {
+        productId: mongoose.Types.ObjectId;
+        sourceQuantity: IQuantity;
+        destQuantity: IQuantity;
+      }[] = [];
 
       for (const { productId, quantity, limit } of products) {
         const product = await Product.findById(productId);
 
+        if (!product) {
+          throw new Error('Product not found');
+        }
+
         const sourceQuantity = await Quantity.findOne({
           warehouseId: sourceWarehouse,
-          productId,
+          productId: new mongoose.Types.ObjectId(productId),
         });
 
         if (!sourceQuantity) {
@@ -502,9 +622,10 @@ export default class TransactionController {
         if (sourceQuantity.quantity < quantity) {
           await session.abortTransaction();
           transactionStarted = false;
-          return res.status(400).json({
+          res.status(400).json({
             message: `Insufficient stock for Product: ${product.name}. Available: ${sourceQuantity.quantity}, Requested: ${quantity}`,
           });
+          return;
         }
 
         const prevQty = sourceQuantity.quantity;
@@ -531,7 +652,11 @@ export default class TransactionController {
         destQuantity.quantity += quantity;
         await destQuantity.save({ session });
 
-        updatedQuantities.push({ productId, sourceQuantity, destQuantity });
+        updatedQuantities.push({
+          productId: new mongoose.Types.ObjectId(productId),
+          sourceQuantity,
+          destQuantity,
+        });
 
         // Create transaction
         const transaction = new Transaction({
@@ -565,9 +690,9 @@ export default class TransactionController {
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
         await notification.notifyTransaction(
-          createdTransaction.product,
-          createdTransaction.sourceWarehouse,
-          createdTransaction._id,
+          createdTransaction.product as mongoose.Types.ObjectId,
+          createdTransaction.sourceWarehouse as mongoose.Types.ObjectId,
+          createdTransaction._id.toString(),
           createdTransaction.quantity,
           NOTIFICATION_TYPES.STOCK_TRANSFER,
           req.userId
@@ -580,16 +705,20 @@ export default class TransactionController {
         data: { transactions, updatedQuantities },
       });
     } catch (error) {
-      if (transactionStarted) {
+      if (transactionStarted && session) {
         await session.abortTransaction();
       }
       next(error);
     } finally {
-      session.endSession();
+      session?.endSession();
     }
   };
 
-  createAdjustment = async (req, res, next) => {
+  createAdjustment: AsyncController<{}, AdjustmentBody> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     let session;
 
     try {
@@ -600,6 +729,10 @@ export default class TransactionController {
       const { productId, quantity } = products[0];
 
       let quantityRecord = await Quantity.findOne({ warehouseId, productId });
+
+      if (!quantityRecord) {
+        throw new Error('Quantity record not found');
+      }
 
       const prevQty = quantityRecord.quantity;
 
@@ -629,9 +762,9 @@ export default class TransactionController {
       }
 
       await notification.notifyTransaction(
-        createdTransaction.product,
-        createdTransaction.destinationWarehouse,
-        createdTransaction._id,
+        createdTransaction.product as mongoose.Types.ObjectId,
+        createdTransaction.destinationWarehouse as mongoose.Types.ObjectId,
+        createdTransaction._id.toString(),
         createdTransaction.quantity,
         NOTIFICATION_TYPES.STOCK_ADJUSTMENT,
         req.userId
@@ -646,18 +779,27 @@ export default class TransactionController {
         },
       });
     } catch (error) {
-      await session.abortTransaction();
+      if (session) await session.abortTransaction();
       next(error);
     } finally {
-      session.endSession();
+      session?.endSession();
     }
   };
 
-  generateInvoice = async (req, res, next) => {
+  generateInvoice: AsyncController<InvoiceParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const transaction = await Transaction.findById(req.params.id).populate(
         'product performedBy sourceWarehouse'
       );
+
+      if (!transaction) {
+        res.status(404).json({ message: 'Transaction not found' });
+        return;
+      }
 
       const result = await generatePdf(transaction);
 

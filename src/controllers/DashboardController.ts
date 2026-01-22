@@ -1,7 +1,7 @@
 import Quantity from '../models/quantityModel.js';
 // import Product from '../models/productModel.js';
 import Transaction from '../models/transactionModel.js';
-import mongoose from 'mongoose';
+import mongoose, { FilterQuery, Types } from 'mongoose';
 import { subDays, eachDayOfInterval, format } from 'date-fns';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
@@ -10,10 +10,99 @@ import {
   generateInventoryByCategoryExcel,
   generateWeeklyTransactionExcel,
 } from '../services/generateExcel.js';
+import type { AsyncController } from '../types/express.js';
+import { safeFirst } from '../types/array.js';
+import { ITransaction } from '../types/models.js';
+
+type WarehouseParams = {
+  warehouseId: string;
+};
+
+type TopProductExcelItem = {
+  productId: mongoose.Types.ObjectId;
+  totalQuantity: number;
+  productName: string;
+  category: string;
+  price: number;
+};
+
+type InventoryByCategoryAggItem = {
+  _id: string; // category
+  totalProducts: number;
+  products: {
+    price: number;
+  }[];
+};
+
+type ProductTransactionDay = {
+  _id: string; // yyyy-MM-dd
+  IN: number;
+  OUT: number;
+};
+
+type SalesOverview = {
+  totalSales: number;
+  saleQuantity: number;
+};
+
+type PurchaseOverview = {
+  totalPurchase: number;
+  purchaseQuantity: number;
+};
+
+type InventoryOverview = {
+  totalQuantity: number;
+};
+
+type TodayShipmentOverview = {
+  quantity: number;
+};
+
+type TransactionStatsResponse = {
+  sales: SalesOverview;
+  purchase: PurchaseOverview;
+  inventory: InventoryOverview;
+  todayShipment: TodayShipmentOverview;
+};
+
+export type LowStockProduct = {
+  productId: Types.ObjectId;
+  quantity: number;
+  productName: string;
+};
+
+export type TopSellingProduct = {
+  productId: Types.ObjectId;
+  productName: string;
+  category: string;
+  price: number;
+  totalSoldQuantity: number;
+  totalSalesAmount: number;
+  productImage?: string;
+};
+
+export type MostAdjustedProduct = {
+  productId: Types.ObjectId;
+  productName: string;
+  category: string;
+  totalAdjustedQuantity: number;
+  reason?: string;
+};
+
+export type ProfitLossItem = {
+  label: string;
+  profit: number;
+  loss: number;
+  net: number;
+};
 
 export default class DashboardController {
   // Top 5 Product Data and Export - Bar Chart
-  getTopFiveProducts = async (req, res, next) => {
+  getTopFiveProducts: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ) => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -34,7 +123,11 @@ export default class DashboardController {
     }
   };
 
-  generateTopFiveProductsExcel = async (req, res, next) => {
+  generateTopFiveProductsExcel: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ) => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -63,61 +156,63 @@ export default class DashboardController {
     }
   };
 
-  getTopFiveProductsData = async (id) => {
-    try {
-      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
+  getTopFiveProductsData = async (
+    id: string
+  ): Promise<TopProductExcelItem[]> => {
+    const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
-      const topProducts = await Quantity.aggregate([
-        {
-          $match: {
-            warehouseId: warehouseId,
-          },
+    const topProducts = await Quantity.aggregate<TopProductExcelItem>([
+      {
+        $match: {
+          warehouseId: warehouseId,
         },
-        {
-          $group: {
-            _id: '$productId',
-            totalQuantity: { $sum: '$quantity' },
-          },
+      },
+      {
+        $group: {
+          _id: '$productId',
+          totalQuantity: { $sum: '$quantity' },
         },
+      },
 
-        { $sort: { totalQuantity: -1 } },
-        {
-          $lookup: {
-            from: 'products',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'product',
-          },
+      { $sort: { totalQuantity: -1 } },
+      {
+        $lookup: {
+          from: 'products',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'product',
         },
+      },
 
-        { $unwind: '$product' },
-        {
-          $match: {
-            'product.isArchived': false,
-          },
+      { $unwind: '$product' },
+      {
+        $match: {
+          'product.isArchived': false,
         },
+      },
 
-        {
-          $project: {
-            _id: 0,
-            productId: '$_id',
-            totalQuantity: 1,
-            productName: '$product.name',
-            category: '$product.category',
-            price: '$product.price',
-          },
+      {
+        $project: {
+          _id: 0,
+          productId: { $toString: '$_id' },
+          totalQuantity: 1,
+          productName: '$product.name',
+          category: '$product.category',
+          price: '$product.price',
         },
-        { $limit: 5 },
-      ]);
+      },
+      { $limit: 5 },
+    ]);
 
-      return topProducts;
-    } catch (err) {
-      return err;
-    }
+    return topProducts;
   };
 
   // Inventory by Category - Pie Chart
-  getInventoryByCategory = async (req, res, next) => {
+  getInventoryByCategory: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ) => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -138,7 +233,11 @@ export default class DashboardController {
     }
   };
 
-  getInventoryByCategoryExcel = async (req, res, next) => {
+  getInventoryByCategoryExcel: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ) => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -168,11 +267,13 @@ export default class DashboardController {
     }
   };
 
-  getInventoryByCategoryData = async (id) => {
-    try {
-      const warehouseId = new mongoose.Types.ObjectId(`${id}`);
+  getInventoryByCategoryData = async (
+    id: string
+  ): Promise<InventoryByCategoryAggItem[]> => {
+    const warehouseId = new mongoose.Types.ObjectId(`${id}`);
 
-      const productsCategory = await Quantity.aggregate([
+    const productsCategory =
+      await Quantity.aggregate<InventoryByCategoryAggItem>([
         {
           $match: { warehouseId: warehouseId },
         },
@@ -200,14 +301,15 @@ export default class DashboardController {
         },
       ]);
 
-      return productsCategory;
-    } catch (err) {
-      return err;
-    }
+    return productsCategory;
   };
 
   // Transaction Part - Line Chart
-  getProductTransaction = async (req, res, next) => {
+  getProductTransaction: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ) => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -231,7 +333,11 @@ export default class DashboardController {
     }
   };
 
-  getProductTransactionExcel = async (req, res, next) => {
+  getProductTransactionExcel: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ) => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -264,18 +370,23 @@ export default class DashboardController {
     }
   };
 
-  getProductTransactionData = async (warehouseId) => {
+  getProductTransactionData = async (
+    warehouseId: mongoose.Types.ObjectId
+  ): Promise<ProductTransactionDay[]> => {
     const start = subDays(new Date(), 6); //6 days before
     const end = new Date(); //today
 
     //template of last 7 days.
-    const sevenDays = eachDayOfInterval({ start, end }).map((d) => ({
+    const sevenDays: ProductTransactionDay[] = eachDayOfInterval({
+      start,
+      end,
+    }).map((d) => ({
       _id: format(d, 'yyyy-MM-dd'),
       IN: 0,
       OUT: 0,
     }));
 
-    const daysTransaction = await Transaction.aggregate([
+    const daysTransaction = await Transaction.aggregate<ProductTransactionDay>([
       {
         $match: {
           createdAt: {
@@ -336,7 +447,11 @@ export default class DashboardController {
   };
 
   // Transaction Card Stat
-  getTransactionStats = async (req, res, next) => {
+  getTransactionStats: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -348,7 +463,7 @@ export default class DashboardController {
       );
 
       //for sales overview.
-      const sales = await Transaction.aggregate([
+      const sales = await Transaction.aggregate<SalesOverview>([
         {
           $match: { type: TRANSACTION_TYPES.OUT, sourceWarehouse: warehouseId },
         },
@@ -386,7 +501,7 @@ export default class DashboardController {
       ]);
 
       //for purchase overview
-      const purchase = await Transaction.aggregate([
+      const purchase = await Transaction.aggregate<PurchaseOverview>([
         {
           $match: {
             type: TRANSACTION_TYPES.IN,
@@ -426,7 +541,7 @@ export default class DashboardController {
       ]);
 
       //for inventory summary.
-      const inventory = await Quantity.aggregate([
+      const inventory = await Quantity.aggregate<InventoryOverview>([
         {
           $match: {
             warehouseId: warehouseId,
@@ -468,7 +583,7 @@ export default class DashboardController {
 
       const now = new Date();
 
-      const todayShipment = await Transaction.aggregate([
+      const todayShipment = await Transaction.aggregate<TodayShipmentOverview>([
         {
           $match: {
             sourceWarehouse: warehouseId,
@@ -490,6 +605,16 @@ export default class DashboardController {
         },
       ]);
 
+      const data: TransactionStatsResponse = {
+        sales: safeFirst(sales, { totalSales: 0, saleQuantity: 0 }),
+        purchase: safeFirst(purchase, {
+          totalPurchase: 0,
+          purchaseQuantity: 0,
+        }),
+        inventory: safeFirst(inventory, { totalQuantity: 0 }),
+        todayShipment: safeFirst(todayShipment, { quantity: 0 }),
+      };
+
       res.status(200).json({
         message: 'Data fetched successfully',
         success: true,
@@ -506,7 +631,11 @@ export default class DashboardController {
   };
 
   // Low Stock Product Table
-  getLowStockProducts = async (req, res, next) => {
+  getLowStockProducts: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       if (!req.params?.warehouseId) {
         res.status(404);
@@ -517,7 +646,7 @@ export default class DashboardController {
         `${req.params.warehouseId}`
       );
 
-      const lowStockProducts = await Quantity.aggregate([
+      const lowStockProducts = await Quantity.aggregate<LowStockProduct>([
         {
           $match: {
             warehouseId: warehouseId,
@@ -571,10 +700,15 @@ export default class DashboardController {
   };
 
   // Top Selling Products by Warehouse (Stock Out)
-  getTopSellingProducts = async (req, res, next) => {
+  getTopSellingProducts: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const { warehouseId } = req.params;
-      const { limit = 5 } = req.query;
+      const limit =
+        typeof req.query.limit === 'string' ? Number(req.query.limit) : 5;
 
       if (!warehouseId) {
         res.status(404);
@@ -583,55 +717,57 @@ export default class DashboardController {
 
       const warehouseObjectId = new mongoose.Types.ObjectId(warehouseId);
 
-      const topSellingProducts = await Transaction.aggregate([
-        {
-          $match: {
-            type: TRANSACTION_TYPES.OUT,
-            sourceWarehouse: warehouseObjectId,
-          },
-        },
-        {
-          $lookup: {
-            from: 'products',
-            localField: 'product',
-            foreignField: '_id',
-            as: 'product',
-          },
-        },
-        { $unwind: '$product' },
-        {
-          $match: {
-            'product.isArchived': false,
-          },
-        },
-        {
-          $group: {
-            _id: '$product._id',
-            productName: { $first: '$product.name' },
-            category: { $first: '$product.category' },
-            price: { $first: '$product.price' },
-            totalSoldQuantity: { $sum: '$quantity' },
-            totalSalesAmount: {
-              $sum: { $multiply: ['$quantity', '$product.price'] },
+      const topSellingProducts = await Transaction.aggregate<TopSellingProduct>(
+        [
+          {
+            $match: {
+              type: TRANSACTION_TYPES.OUT,
+              sourceWarehouse: warehouseObjectId,
             },
-            productImage: { $first: '$product.productImage' },
           },
-        },
-        { $sort: { totalSoldQuantity: -1 } },
-        { $limit: parseInt(limit) },
-        {
-          $project: {
-            _id: 0,
-            productId: '$_id',
-            productName: 1,
-            category: 1,
-            price: 1,
-            totalSoldQuantity: 1,
-            totalSalesAmount: 1,
-            productImage: { $arrayElemAt: ['$productImage', 0] },
+          {
+            $lookup: {
+              from: 'products',
+              localField: 'product',
+              foreignField: '_id',
+              as: 'product',
+            },
           },
-        },
-      ]);
+          { $unwind: '$product' },
+          {
+            $match: {
+              'product.isArchived': false,
+            },
+          },
+          {
+            $group: {
+              _id: '$product._id',
+              productName: { $first: '$product.name' },
+              category: { $first: '$product.category' },
+              price: { $first: '$product.price' },
+              totalSoldQuantity: { $sum: '$quantity' },
+              totalSalesAmount: {
+                $sum: { $multiply: ['$quantity', '$product.price'] },
+              },
+              productImage: { $first: '$product.productImage' },
+            },
+          },
+          { $sort: { totalSoldQuantity: -1 } },
+          { $limit: limit },
+          {
+            $project: {
+              _id: 0,
+              productId: '$_id',
+              productName: 1,
+              category: 1,
+              price: 1,
+              totalSoldQuantity: 1,
+              totalSalesAmount: 1,
+              productImage: { $arrayElemAt: ['$productImage', 0] },
+            },
+          },
+        ]
+      );
 
       res.status(200).json({
         success: true,
@@ -644,10 +780,16 @@ export default class DashboardController {
   };
 
   // Most Cancelled Products by Warehouse
-  getMostCancelledProducts = async (req, res, next) => {
+  getMostCancelledProducts: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const { warehouseId } = req.params;
-      const { limit = 5, startDate, endDate } = req.query;
+      const { startDate, endDate } = req.query;
+      const limit =
+        typeof req.query.limit === 'string' ? Number(req.query.limit) : 5;
 
       if (!warehouseId) {
         res.status(404);
@@ -656,7 +798,7 @@ export default class DashboardController {
 
       const warehouseObjectId = new mongoose.Types.ObjectId(warehouseId);
 
-      const match = {
+      const match: FilterQuery<ITransaction> = {
         shipment: SHIPMENT_TYPES.CANCELLED,
         sourceWarehouse: warehouseObjectId,
       };
@@ -694,7 +836,7 @@ export default class DashboardController {
           },
         },
         { $sort: { totalCancelledQuantity: -1 } },
-        { $limit: parseInt(limit) },
+        { $limit: limit },
         {
           $project: {
             _id: 0,
@@ -717,10 +859,15 @@ export default class DashboardController {
   };
 
   // Most Adjusted Products by Warehouse
-  getMostAdjustedProducts = async (req, res, next) => {
+  getMostAdjustedProducts: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const { warehouseId } = req.params;
-      const { limit = 5 } = req.query;
+      const limit =
+        typeof req.query.limit === 'string' ? Number(req.query.limit) : 5;
 
       if (!warehouseId) {
         res.status(404);
@@ -729,49 +876,50 @@ export default class DashboardController {
 
       const warehouseObjectId = new mongoose.Types.ObjectId(warehouseId);
 
-      const mostAdjustedProducts = await Transaction.aggregate([
-        {
-          $match: {
-            type: TRANSACTION_TYPES.ADJUSTMENT,
-            destinationWarehouse: warehouseObjectId,
+      const mostAdjustedProducts =
+        await Transaction.aggregate<MostAdjustedProduct>([
+          {
+            $match: {
+              type: TRANSACTION_TYPES.ADJUSTMENT,
+              destinationWarehouse: warehouseObjectId,
+            },
           },
-        },
-        {
-          $lookup: {
-            from: 'products',
-            localField: 'product',
-            foreignField: '_id',
-            as: 'product',
+          {
+            $lookup: {
+              from: 'products',
+              localField: 'product',
+              foreignField: '_id',
+              as: 'product',
+            },
           },
-        },
-        { $unwind: '$product' },
-        {
-          $match: {
-            'product.isArchived': false,
+          { $unwind: '$product' },
+          {
+            $match: {
+              'product.isArchived': false,
+            },
           },
-        },
-        {
-          $group: {
-            _id: '$product._id',
-            productName: { $first: '$product.name' },
-            category: { $first: '$product.category' },
-            totalAdjustedQuantity: { $sum: '$quantity' },
-            reason: { $first: '$reason' },
+          {
+            $group: {
+              _id: '$product._id',
+              productName: { $first: '$product.name' },
+              category: { $first: '$product.category' },
+              totalAdjustedQuantity: { $sum: '$quantity' },
+              reason: { $first: '$reason' },
+            },
           },
-        },
-        { $sort: { totalAdjustedQuantity: -1 } },
-        { $limit: parseInt(limit) },
-        {
-          $project: {
-            _id: 0,
-            productId: '$_id',
-            productName: 1,
-            category: 1,
-            totalAdjustedQuantity: 1,
-            reason: 1,
+          { $sort: { totalAdjustedQuantity: -1 } },
+          { $limit: limit },
+          {
+            $project: {
+              _id: 0,
+              productId: '$_id',
+              productName: 1,
+              category: 1,
+              totalAdjustedQuantity: 1,
+              reason: 1,
+            },
           },
-        },
-      ]);
+        ]);
 
       res.status(200).json({
         success: true,
@@ -784,11 +932,24 @@ export default class DashboardController {
   };
 
   // Profit Loss Part - Line Chart
-  getProfitLoss = async (req, res, next) => {
+  getProfitLoss: AsyncController = async (req, res, next): Promise<void> => {
     try {
-      const { period = 'week', warehouseId, from, to } = req.query;
+      const period =
+        typeof req.query.period === 'string' ? req.query.period : 'week';
 
-      let start, end, totalDays;
+      const warehouseId =
+        typeof req.query.warehouseId === 'string'
+          ? req.query.warehouseId
+          : undefined;
+
+      const from =
+        typeof req.query.from === 'string' ? req.query.from : undefined;
+
+      const to = typeof req.query.to === 'string' ? req.query.to : undefined;
+
+      let start: Date;
+      let end: Date;
+      let totalDays: number;
 
       const now = new Date();
 
@@ -801,17 +962,20 @@ export default class DashboardController {
         end.setHours(23, 59, 59, 999);
 
         if (start > end) {
-          return res.status(400).json({
+          res.status(400).json({
             success: false,
             message: '`from` date must be before `to` date',
           });
         }
 
-        totalDays = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        totalDays =
+          Math.floor(
+            (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+          ) + 1;
       } else {
         // Find Period like week and month
         if (!['week', 'month'].includes(period)) {
-          return res.status(400).json({
+          res.status(400).json({
             success: false,
             message: 'Invalid period. Allowed values: week, month',
           });
@@ -826,7 +990,7 @@ export default class DashboardController {
       }
 
       // Match with start and end duration
-      const matchStage = {
+      const matchStage: FilterQuery<ITransaction> = {
         createdAt: { $gte: start, $lte: end },
       };
 
@@ -916,10 +1080,10 @@ export default class DashboardController {
         },
       ];
 
-      const dbData = await Transaction.aggregate(pipeline);
+      const dbData = await Transaction.aggregate<ProfitLossItem>(pipeline);
 
       // Fill missing days that not provided and fill data with default value
-      const map = {};
+      const map: Record<string, ProfitLossItem> = {};
       dbData.forEach((d) => (map[d.label] = d));
 
       const finalData = [];
@@ -950,7 +1114,7 @@ export default class DashboardController {
     }
   };
 
-  formatDateLocal = (date) => {
+  formatDateLocal = (date: Date) => {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const d = String(date.getDate()).padStart(2, '0');

@@ -3,9 +3,10 @@ import type {
   TwoProductQuantityResult,
   TwoProductHistoryResult,
 } from '../types/analyticsTypes.js';
+import mongoose from 'mongoose';
 
 type TopProductExcelItem = {
-  productId: string;
+  productId: mongoose.Types.ObjectId;
   productName: string;
   category: string;
   price: number;
@@ -102,7 +103,7 @@ const generateTopFiveProductsExcel = async (
 };
 
 const generateInventoryByCategoryExcel = async (
-  categories: InventoryCategoryExcelItem[]
+  categories: InventoryCategoryExcelItem[] & { products: { price: number }[] }[]
 ): Promise<Buffer> => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Category');

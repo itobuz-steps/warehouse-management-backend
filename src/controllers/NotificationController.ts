@@ -7,19 +7,42 @@ import Quantity from '../models/quantityModel.js';
 import Product from '../models/productModel.js';
 import Warehouse from '../models/warehouseModel.js';
 import SendEmail from '../utils/SendEmail.js';
+import type { AsyncController } from '../types/express.js';
+
+type SubscribeBody = {
+  endpoint: string;
+  keys?: {
+    p256dh?: string;
+    auth?: string;
+  };
+  userId?: string; // will be injected server-side
+};
+
+type GetNotificationsParams = {
+  offset?: string;
+};
+
+type ShipmentParams = {
+  id: string;
+};
 
 export default class NotificationController {
-  subscribe = async (req, res, next) => {
+  subscribe: AsyncController<{}, SubscribeBody> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
-      const subscription = req.body ?? {};
+      const subscription = req.body;
       subscription.userId = req.userId;
 
       if (!subscription?.endpoint) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'Invalid subscription payload: missing endpoint',
           timestamp: new Date().toISOString(),
         });
+        return;
       }
 
       let existing = await Subscription.findOne({
@@ -32,18 +55,19 @@ export default class NotificationController {
         Object.assign(existing, subscription);
         await existing.save();
 
-        return res.status(200).json({
+        res.status(200).json({
           success: true,
           message: 'Subscription already exists – updated.',
           timestamp: new Date().toISOString(),
           data: existing,
         });
+        return;
       }
 
       //add a new entry in the database.
       const record = await Subscription.create(subscription);
 
-      return res.status(201).json({
+      res.status(201).json({
         success: true,
         message: 'Subscription saved in database.',
         timestamp: new Date().toISOString(),
@@ -54,9 +78,13 @@ export default class NotificationController {
     }
   };
 
-  getNotifications = async (req, res, next) => {
+  getNotifications: AsyncController<GetNotificationsParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
-      const offset = parseInt(req.params.offset, 10) || 0;
+      const offset = parseInt(req.params.offset ?? '0', 10);
       const limit = 10;
       const userId = new mongoose.Types.ObjectId(req.userId);
 
@@ -136,7 +164,7 @@ export default class NotificationController {
     }
   };
 
-  markAllAsSeen = async (req, res, next) => {
+  markAllAsSeen: AsyncController = async (req, res, next): Promise<void> => {
     try {
       await Notification.updateMany(
         { userIds: { $in: [new mongoose.Types.ObjectId(req.userId)] } },
@@ -152,7 +180,11 @@ export default class NotificationController {
     }
   };
 
-  shipShipmentStatus = async (req, res, next) => {
+  shipShipmentStatus: AsyncController<ShipmentParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const transaction = await Transaction.findByIdAndUpdate(
         new mongoose.Types.ObjectId(`${req.params.id}`),
@@ -162,8 +194,24 @@ export default class NotificationController {
         { new: true }
       ).populate('product performedBy sourceWarehouse');
 
+      if (!transaction) {
+        res.status(404).json({
+          success: false,
+          message: 'Transaction not found',
+        });
+        return;
+      }
+
       const product = await Product.findById(transaction.product);
       const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
+
+      if (!product || !warehouse) {
+        res.status(404).json({
+          success: false,
+          message: 'Product or Warehouse not found',
+        });
+        return;
+      }
 
       transaction.shipment = SHIPMENT_TYPES.SHIPPED;
       await transaction.save();
@@ -175,8 +223,7 @@ export default class NotificationController {
           isShipped: true,
           reportedBy: req.userId,
           message: `Shipment done for ${product.name} from ${warehouse.name} of Quantity: ${transaction.quantity}.`,
-        },
-        { new: true }
+        }
       );
 
       await new SendEmail().sendProductShippedEmailToCustomer(transaction);
@@ -190,8 +237,12 @@ export default class NotificationController {
     }
   };
 
-  cancelShipmentStatus = async (req, res, next) => {
-    let session;
+  cancelShipmentStatus: AsyncController<ShipmentParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
+    let session: mongoose.ClientSession | null = null;
 
     try {
       session = await mongoose.startSession();
@@ -201,15 +252,24 @@ export default class NotificationController {
         .session(session)
         .populate('product performedBy sourceWarehouse');
 
-      const product = await Product.findById(transaction.product);
-      const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
-
       if (!transaction) {
         await session.abortTransaction();
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           message: 'Transaction not found',
         });
+        return;
+      }
+
+      const product = await Product.findById(transaction.product);
+      const warehouse = await Warehouse.findById(transaction.sourceWarehouse);
+
+      if (!product || !warehouse) {
+        res.status(404).json({
+          success: false,
+          message: 'Product or Warehouse not found',
+        });
+        return;
       }
 
       // Restore stock quantity
@@ -217,6 +277,10 @@ export default class NotificationController {
         warehouseId: transaction.sourceWarehouse,
         productId: transaction.product,
       }).session(session);
+
+      if (!quantityRecord) {
+        throw new Error('Quantity record not found');
+      }
 
       quantityRecord.quantity += transaction.quantity;
       await quantityRecord.save({ session });
@@ -248,10 +312,14 @@ export default class NotificationController {
         message: 'Shipment cancelled and stock reverted successfully',
       });
     } catch (error) {
-      await session.abortTransaction();
+      if (session) {
+        await session.abortTransaction();
+      }
       next(error);
     } finally {
-      session.endSession();
+      if (session) {
+        session.endSession();
+      }
     }
   };
 }

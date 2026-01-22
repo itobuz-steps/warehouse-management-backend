@@ -8,7 +8,7 @@ type AddWarehouseBody = {
   name: string;
   address: string;
   description?: string;
-  managers: string[];
+  managers?: string[];
   capacity: number;
 };
 
@@ -28,7 +28,7 @@ export default class AdminController {
     try {
       const { name, address, description, managers, capacity } = req.body;
 
-      const managerIds = managers.map(
+      const managerIds = managers?.map(
         (id) => new mongoose.Types.ObjectId(`${id}`)
       );
 

@@ -4,9 +4,22 @@ import {
   deleteProductSchema,
 } from '../schema/productSchema.js';
 import { ValidationError } from 'yup';
+import type { AppMiddleware } from '../../types/express.js';
+
+type CreateProductBody = {
+  name: string;
+  category?: string;
+  description?: string;
+  price: number;
+  markup?: number;
+  createdBy?: string;
+};
 
 export default class ProductValidation {
-  createProductValidation = async (req, res, next) => {
+  createProductValidation: AppMiddleware<
+    Record<string, string>,
+    CreateProductBody
+  > = async (req, res, next): Promise<void> => {
     try {
       req.body.createdBy = req.userId;
 
@@ -19,14 +32,18 @@ export default class ProductValidation {
     } catch (err) {
       if (err instanceof ValidationError) {
         res.status(400);
-        return new Error(err.errors.join(', '));
+        throw new Error(err.errors.join(', '));
       }
 
       next(err);
     }
   };
 
-  updateProductValidation = async (req, res, next) => {
+  updateProductValidation: AppMiddleware = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       await updateProductSchema.validate(req.body, {
         abortEarly: false,
@@ -37,14 +54,18 @@ export default class ProductValidation {
     } catch (err) {
       if (err instanceof ValidationError) {
         res.status(400);
-        return new Error(err.errors.join(', '));
+        throw new Error(err.errors.join(', '));
       }
 
       next(err);
     }
   };
 
-  deleteProductValidation = async (req, res, next) => {
+  deleteProductValidation: AppMiddleware = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       await deleteProductSchema.validate(req.params, {
         abortEarly: false,
@@ -55,13 +76,17 @@ export default class ProductValidation {
     } catch (err) {
       if (err instanceof ValidationError) {
         res.status(400);
-        return new Error(err.errors.join(', '));
+        throw new Error(err.errors.join(', '));
       }
       next(err);
     }
   };
 
-  restoreProductValidation = async (req, res, next) => {
+  restoreProductValidation: AppMiddleware = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       await deleteProductSchema.validate(req.params, {
         abortEarly: false,
@@ -72,7 +97,7 @@ export default class ProductValidation {
     } catch (err) {
       if (err instanceof ValidationError) {
         res.status(400);
-        return new Error(err.errors.join(', '));
+        throw new Error(err.errors.join(', '));
       }
       next(err);
     }

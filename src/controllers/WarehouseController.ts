@@ -2,12 +2,18 @@ import mongoose from 'mongoose';
 import Warehouse from '../models/warehouseModel.js';
 import Quantity from '../models/quantityModel.js';
 import USER_TYPES from '../constants/userConstants.js';
+import { AsyncController } from '../types/express.js';
+import { WarehouseDocument } from '../types/models.js';
+
+type WarehouseParams = {
+  warehouseId: string;
+};
 
 export default class WarehouseController {
-  getWarehouses = async (req, res, next) => {
+  getWarehouses: AsyncController = async (req, res, next): Promise<void> => {
     try {
       const user = req.user;
-      let warehouses = [];
+      let warehouses: WarehouseDocument[] = [];
 
       if (user.role === USER_TYPES.MANAGER) {
         // Get only warehouses assigned to this manager
@@ -19,18 +25,11 @@ export default class WarehouseController {
           select: 'name email role',
         });
 
-        return res.status(200).json({
+        res.status(200).json({
           success: true,
           data: warehouses,
-          // {
-          //   manager: {
-          //     id: user._id,
-          //     name: user.name,
-          //     email: user.email,
-          //   },
-          //   assignedWarehouses: warehouses,
-          // },
         });
+        return;
       }
 
       if (user.role === USER_TYPES.ADMIN) {
@@ -40,23 +39,28 @@ export default class WarehouseController {
           select: 'name email role',
         });
 
-        return res.status(200).json({
+        res.status(200).json({
           message: 'All Warehouses',
           success: true,
           data: warehouses,
         });
+        return;
       }
     } catch (error) {
       next(error);
     }
   };
 
-  getWarehouseById = async (req, res, next) => {
+  getWarehouseById: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const { warehouseId } = req.params;
       const user = req.user;
 
-      let warehouse;
+      let warehouse: WarehouseDocument | null = null;
 
       if (user.role === USER_TYPES.MANAGER) {
         warehouse = await Warehouse.findOne({
@@ -74,7 +78,7 @@ export default class WarehouseController {
           );
         }
 
-        return res.status(200).json({
+        res.status(200).json({
           success: true,
           data: {
             manager: {
@@ -85,6 +89,7 @@ export default class WarehouseController {
             warehouse,
           },
         });
+        return;
       }
 
       if (user.role === USER_TYPES.ADMIN) {
@@ -98,11 +103,12 @@ export default class WarehouseController {
           throw new Error('Warehouse not found');
         }
 
-        return res.status(200).json({
+        res.status(200).json({
           message: 'Warehouse Details',
           success: true,
           data: warehouse,
         });
+        return;
       }
 
       res.status(403);
@@ -112,12 +118,16 @@ export default class WarehouseController {
     }
   };
 
-  getWarehouseCapacity = async (req, res, next) => {
+  getWarehouseCapacity: AsyncController<WarehouseParams> = async (
+    req,
+    res,
+    next
+  ): Promise<void> => {
     try {
       const { warehouseId } = req.params;
       const user = req.user;
 
-      let warehouse;
+      let warehouse: WarehouseDocument | null = null;
 
       if (user.role === USER_TYPES.MANAGER) {
         warehouse = await Warehouse.findOne({
@@ -144,10 +154,10 @@ export default class WarehouseController {
       }
 
       // Aggregate total quantity
-      const totalAgg = await Quantity.aggregate([
+      const totalAgg = await Quantity.aggregate<{ totalQuantity: number }>([
         {
           $match: {
-            warehouseId: new mongoose.Types.ObjectId(warehouse._id),
+            warehouseId: warehouse._id,
           },
         },
         {
@@ -166,14 +176,14 @@ export default class WarehouseController {
       // Calculate percentage
 
       const capacity = warehouse.capacity || 0;
-      let percentage = null;
+      let percentage: number | null = null;
 
       if (capacity > 0) {
         percentage = (totalQuantity / capacity) * 100;
         percentage = Number(percentage.toFixed(2));
       }
 
-      return res.status(200).json({
+      res.status(200).json({
         success: true,
         data: {
           warehouse: {
@@ -185,6 +195,7 @@ export default class WarehouseController {
           percentage: percentage,
         },
       });
+      return;
     } catch (error) {
       next(error);
     }

@@ -5,13 +5,22 @@ import User from '../models/userModel.js';
 import sendNotification from '../services/notificationService.js';
 import USER_TYPES from '../constants/userConstants.js';
 import Transaction from '../models/transactionModel.js';
+import mongoose from 'mongoose';
 
 export default class Notification {
-  notifyLowStock = async (productId, warehouseId, transactionPerformedBy) => {
+  notifyLowStock = async (
+    productId: string | mongoose.Types.ObjectId,
+    warehouseId: string | mongoose.Types.ObjectId,
+    transactionPerformedBy: string
+  ) => {
     try {
       //extracting product and warehouse detail.
       const product = await Product.findById(productId);
       const warehouse = await Warehouse.findById(warehouseId);
+
+      if (!product || !warehouse) {
+        throw new Error('Product or Warehouse not found');
+      }
 
       //finding users linked with the warehouse.
       const users = await User.find({
@@ -35,20 +44,26 @@ export default class Notification {
 
       console.log(res);
     } catch (err) {
-      throw new Error(err);
+      if (err instanceof Error) {
+        throw err;
+      }
     }
   };
 
   notifyPendingShipment = async (
-    productId,
-    warehouseId,
-    transactionId,
-    quantity,
-    transactionPerformedBy
+    productId: mongoose.Types.ObjectId,
+    warehouseId: mongoose.Types.ObjectId,
+    transactionId: string,
+    quantity: number,
+    transactionPerformedBy: string
   ) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
       const product = await Product.findById(productId);
+
+      if (!product || !warehouse) {
+        throw new Error('Product or Warehouse not found');
+      }
 
       //find users related to warehouse.
       const users = await User.find({
@@ -74,22 +89,28 @@ export default class Notification {
         transactionPerformedBy,
       });
     } catch (err) {
-      throw new Error(err);
+      if (err instanceof Error) {
+        throw err;
+      }
     }
   };
 
   notifyTransaction = async (
-    productId,
-    warehouseId,
-    transactionId,
-    quantity,
-    transactionType,
-    transactionPerformedBy
+    productId: mongoose.Types.ObjectId,
+    warehouseId: mongoose.Types.ObjectId,
+    transactionId: string,
+    quantity: number,
+    transactionType: string,
+    transactionPerformedBy: string
   ) => {
     try {
       const warehouse = await Warehouse.findById(warehouseId);
       const product = await Product.findById(productId);
       const transaction = await Transaction.findById(transactionId);
+
+      if (!product || !warehouse) {
+        throw new Error('Product or Warehouse not found');
+      }
 
       //find users related to warehouse.
       const users = await User.find({
@@ -107,15 +128,17 @@ export default class Notification {
       await sendNotification({
         users,
         type: transactionType,
-        title: `Transaction ${transaction.type} Alert`,
-        message: `Transaction of Type: ${transaction.type} for ${product.name} in ${warehouse.name} of Quantity: ${quantity} is done.`,
+        title: `Transaction ${transaction?.type} Alert`,
+        message: `Transaction of Type: ${transaction?.type} for ${product.name} in ${warehouse.name} of Quantity: ${quantity} is done.`,
         warehouse,
         product,
         transactionId,
         transactionPerformedBy,
       });
     } catch (err) {
-      throw new Error(err);
+      if (err instanceof Error) {
+        throw err;
+      }
     }
   };
 }

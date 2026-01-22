@@ -1,10 +1,27 @@
-import { PDFDocument, PageSizes, rgb } from 'pdf-lib';
+import {
+  Color,
+  PDFDocument,
+  PDFFont,
+  PDFImage,
+  PDFPage,
+  PageSizes,
+  rgb,
+} from 'pdf-lib';
 import fs from 'fs/promises';
 import path, { dirname } from 'path';
 import * as fontkit from 'fontkit';
 import { fileURLToPath } from 'url';
+import { Font, Fontkit } from 'pdf-lib/cjs/types/fontkit.js';
+import {
+  IProduct,
+  ITransaction,
+  IUser,
+  WarehouseDocument,
+} from '../types/models.js';
+import { FontCollection } from 'fontkit';
+import { Document } from 'mongoose';
 
-const generatePdf = async (transaction) => {
+const generatePdf = async (transaction: ITransaction & Document) => {
   // Create new PDF document
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage(PageSizes.A4);
@@ -30,7 +47,7 @@ const generatePdf = async (transaction) => {
   // Draw background logo
   drawImage(page, pngImage, 150, 250, 300, 300, 0.2);
 
-  pdfDoc.registerFontkit(fontkit);
+  pdfDoc.registerFontkit(fontkit as unknown as Fontkit);
 
   // ---- LOAD UNICODE FONTS ----
   const regularFontPath = path.join(
@@ -51,18 +68,19 @@ const generatePdf = async (transaction) => {
   const height = page.getSize().height;
 
   const {
-    product,
     customerName,
     customerEmail,
     customerPhone,
     customerAddress,
     quantity,
-    performedBy,
     createdAt,
-    sourceWarehouse,
     _id,
     shipment,
   } = transaction;
+
+  const product = transaction.product as IProduct;
+  const sourceWarehouse = transaction.sourceWarehouse as WarehouseDocument;
+  const performedBy = transaction.performedBy as IUser;
 
   // Set line gap and Y axis length
   const lineGap = 20;
@@ -116,7 +134,7 @@ const generatePdf = async (transaction) => {
   writeText(page, `Name: `, 60, cursorY, 12, font);
   writeText(
     page,
-    customerName,
+    customerName as string,
     100,
     cursorY,
     12,
@@ -129,7 +147,7 @@ const generatePdf = async (transaction) => {
   writeText(page, `Email: `, 60, cursorY, 12, font);
   writeText(
     page,
-    customerEmail,
+    customerEmail as string,
     100,
     cursorY,
     12,
@@ -155,7 +173,7 @@ const generatePdf = async (transaction) => {
   writeText(page, `Address: `, 60, cursorY, 12, font);
   writeText(
     page,
-    customerAddress,
+    customerAddress as string,
     115,
     cursorY,
     12,
@@ -356,7 +374,15 @@ const generatePdf = async (transaction) => {
   return pdfBytes;
 };
 
-function writeText(page, text, x, y, size, font, color = rgb(0, 0, 0)) {
+function writeText(
+  page: PDFPage,
+  text: string,
+  x: number,
+  y: number,
+  size: number,
+  font: PDFFont,
+  color = rgb(0, 0, 0)
+) {
   page.drawText(text, {
     x,
     y,
@@ -366,7 +392,13 @@ function writeText(page, text, x, y, size, font, color = rgb(0, 0, 0)) {
   });
 }
 
-function writeLine(page, start, end, thickness, color) {
+function writeLine(
+  page: PDFPage,
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  thickness: number,
+  color?: Color
+) {
   page.drawLine({
     start,
     end,
@@ -375,7 +407,15 @@ function writeLine(page, start, end, thickness, color) {
   });
 }
 
-function drawImage(page, image, x, y, width, height, opacity = 1) {
+function drawImage(
+  page: PDFPage,
+  image: PDFImage,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  opacity: number = 1
+) {
   page.drawImage(image, {
     x,
     y,
@@ -385,10 +425,19 @@ function drawImage(page, image, x, y, width, height, opacity = 1) {
   });
 }
 
-function drawBadge(page, text, x, y, font, fontSize, bgColor, textColor) {
+function drawBadge(
+  page: PDFPage,
+  text: string,
+  x: number,
+  y: number,
+  font: PDFFont,
+  fontSize: number,
+  bgColor: Color,
+  textColor: Color
+) {
   const paddingX = 6;
   const paddingY = 3;
-  const borderRadius = 10;
+  const borderRadius: number = 10;
 
   const textWidth = font.widthOfTextAtSize(text, fontSize);
   const textHeight = fontSize;
@@ -400,7 +449,6 @@ function drawBadge(page, text, x, y, font, fontSize, bgColor, textColor) {
     width: textWidth + paddingX * 2,
     height: textHeight + paddingY,
     color: bgColor,
-    borderRadius,
   });
 
   // Draw text inside it

@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types, Document } from 'mongoose';
 import USER_TYPES from '../constants/userConstants.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
@@ -76,8 +76,9 @@ export type ISubscription = Document & {
 };
 
 export type ITransaction = {
+  _id: mongoose.Types.ObjectId;
   type: (typeof TRANSACTION_TYPES)[keyof typeof TRANSACTION_TYPES];
-  product: Types.ObjectId;
+  product: IProduct | mongoose.Types.ObjectId;
   quantity: number;
 
   // Stock IN
@@ -93,11 +94,11 @@ export type ITransaction = {
 
   // Adjustments
   reason?: string;
-  notes: string;
+  notes?: string;
 
-  performedBy: Types.ObjectId;
-  sourceWarehouse?: Types.ObjectId;
-  destinationWarehouse?: Types.ObjectId;
+  performedBy: IUser | mongoose.Types.ObjectId;
+  sourceWarehouse: WarehouseDocument | mongoose.Types.ObjectId;
+  destinationWarehouse: WarehouseDocument | mongoose.Types.ObjectId;
 
   createdAt: Date;
   updatedAt: Date;
@@ -106,7 +107,7 @@ export type ITransaction = {
 export type IUser = Document & {
   name?: string;
   email: string;
-  password?: string;
+  password: string;
   role: (typeof USER_TYPES)[keyof typeof USER_TYPES];
   isVerified: boolean;
   profileImage?: string;

@@ -3,6 +3,18 @@ import Notification from '../models/notificationModel.js';
 import webpush from '../config/webpush.js';
 import SendEmail from '../utils/SendEmail.js';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
+import { IProduct, IUser, WarehouseDocument } from '../types/models.js';
+
+type SendNotificationParams = {
+  users: IUser[];
+  type: string;
+  title: string;
+  message: string;
+  product?: IProduct;
+  warehouse?: WarehouseDocument;
+  transactionId?: string;
+  transactionPerformedBy?: string;
+};
 
 const sendMail = new SendEmail();
 
@@ -16,7 +28,7 @@ const sendNotification = async ({
   warehouse,
   transactionId,
   transactionPerformedBy,
-}) => {
+}: SendNotificationParams) => {
   try {
     if (!users || !users.length) {
       throw new Error('No user found!');
@@ -53,10 +65,10 @@ const sendNotification = async ({
 
     const data = await Notification.create(notificationData);
 
-    if(!data){
+    if (!data) {
       throw new Error('Unable to create notification');
     }
-    
+
     for (const user of users) {
       const userId = user._id;
 
@@ -75,6 +87,13 @@ const sendNotification = async ({
 
       //Sending email.
       console.log('sending email');
+
+      if (!product || !warehouse) {
+        throw new Error(
+          'Product or Warehouse details not found for sending email'
+        );
+      }
+
       if (type === NOTIFICATION_TYPES.LOW_STOCK) {
         await sendMail.sendLowStockEmail(user.email, user, product, warehouse);
       } else {
@@ -98,14 +117,15 @@ const sendNotification = async ({
 
             results.push({ userId: s.userId, success: true });
           } catch (err) {
-            if (err.statusCode === 410) {
+            const error = err as Error & { statusCode: number };
+            if (error.statusCode === 410) {
               await Subscription.deleteOne({ _id: s._id });
             }
 
             results.push({
               userId: s.userId,
               success: false,
-              error: err.message,
+              error: error.message,
             });
           }
         })
@@ -118,8 +138,10 @@ const sendNotification = async ({
       results,
     };
   } catch (err) {
-    console.log(err.message);
-    throw new Error(err.message);
+    if (err instanceof Error) {
+      console.log(err.message);
+      throw new Error(err.message);
+    }
   }
 };
 
