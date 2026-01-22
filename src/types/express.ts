@@ -11,7 +11,7 @@ import type { Request, Response, NextFunction } from 'express';
 export type AppRequest<
   P = Record<string, string>,
   Req = unknown,
-  Q = Record<string, string>,
+  Q = Record<string, unknown>,
 > = Request<P, unknown, Req, Q>;
 
 export type AppResponse = Response;

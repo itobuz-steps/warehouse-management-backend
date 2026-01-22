@@ -11,6 +11,8 @@ import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
 import Product from '../models/productModel.js';
 import USER_TYPES from '../constants/userConstants.js';
 import { AsyncController } from '../types/express.js';
+import { IQuantity, ITransaction } from '../types/models.js';
+import { Document } from 'mongoose';
 
 type GetTransactionsQuery = {
   startDate?: string;
@@ -52,7 +54,7 @@ type StockOutBody = {
   }[];
   customerName?: string;
   customerEmail?: string;
-  customerPhone?: string;
+  customerPhone?: string | number;
   customerAddress?: string;
   orderNumber?: string;
   notes?: string;
@@ -65,7 +67,7 @@ type TransferBody = {
     quantity: number;
     limit?: number;
   }[];
-  notes?: string;
+  notes?: string | null;
   sourceWarehouse: string;
   destinationWarehouse: string;
 };
@@ -77,7 +79,7 @@ type AdjustmentBody = {
   }[];
   warehouseId: string;
   reason?: string;
-  notes?: string;
+  notes?: string | null;
 };
 
 type InvoiceParams = {
@@ -363,7 +365,7 @@ export default class TransactionController {
       session.startTransaction();
 
       const { products, supplier, notes, destinationWarehouse } = req.body;
-      const transactions = [];
+      const transactions: (ITransaction & Document)[] = [];
 
       for (const item of products) {
         const { productId, quantity, limit } = item;
@@ -405,9 +407,9 @@ export default class TransactionController {
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
         await notification.notifyTransaction(
-          createdTransaction.product,
-          createdTransaction.destinationWarehouse,
-          createdTransaction._id,
+          createdTransaction.product as mongoose.Types.ObjectId,
+          createdTransaction.destinationWarehouse as mongoose.Types.ObjectId,
+          createdTransaction._id.toString(),
           createdTransaction.quantity,
           NOTIFICATION_TYPES.STOCK_IN,
           req.userId
@@ -451,7 +453,7 @@ export default class TransactionController {
         sourceWarehouse,
       } = req.body;
 
-      const transactions: any[] = [];
+      const transactions: (ITransaction & Document)[] = [];
       const lowStockNotifications: {
         productId: string;
         warehouseId: string;
@@ -535,9 +537,9 @@ export default class TransactionController {
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
         await notification.notifyPendingShipment(
-          createdTransaction.product,
-          createdTransaction.sourceWarehouse,
-          createdTransaction._id,
+          createdTransaction.product as mongoose.Types.ObjectId,
+          createdTransaction.sourceWarehouse as mongoose.Types.ObjectId,
+          createdTransaction._id.toString(),
           createdTransaction.quantity,
           req.userId
         );
@@ -589,8 +591,12 @@ export default class TransactionController {
         return;
       }
 
-      const transactions: any[] = [];
-      const updatedQuantities: any[] = [];
+      const transactions: (ITransaction & Document)[] = [];
+      const updatedQuantities: {
+        productId: mongoose.Types.ObjectId;
+        sourceQuantity: IQuantity;
+        destQuantity: IQuantity;
+      }[] = [];
 
       for (const { productId, quantity, limit } of products) {
         const product = await Product.findById(productId);
@@ -601,7 +607,7 @@ export default class TransactionController {
 
         const sourceQuantity = await Quantity.findOne({
           warehouseId: sourceWarehouse,
-          productId,
+          productId: new mongoose.Types.ObjectId(productId),
         });
 
         if (!sourceQuantity) {
@@ -646,7 +652,11 @@ export default class TransactionController {
         destQuantity.quantity += quantity;
         await destQuantity.save({ session });
 
-        updatedQuantities.push({ productId, sourceQuantity, destQuantity });
+        updatedQuantities.push({
+          productId: new mongoose.Types.ObjectId(productId),
+          sourceQuantity,
+          destQuantity,
+        });
 
         // Create transaction
         const transaction = new Transaction({
@@ -680,9 +690,9 @@ export default class TransactionController {
       // Send notifications after transaction commit
       for (const createdTransaction of transactions) {
         await notification.notifyTransaction(
-          createdTransaction.product,
-          createdTransaction.sourceWarehouse,
-          createdTransaction._id,
+          createdTransaction.product as mongoose.Types.ObjectId,
+          createdTransaction.sourceWarehouse as mongoose.Types.ObjectId,
+          createdTransaction._id.toString(),
           createdTransaction.quantity,
           NOTIFICATION_TYPES.STOCK_TRANSFER,
           req.userId
@@ -752,9 +762,9 @@ export default class TransactionController {
       }
 
       await notification.notifyTransaction(
-        createdTransaction.product,
-        createdTransaction.destinationWarehouse,
-        createdTransaction._id,
+        createdTransaction.product as mongoose.Types.ObjectId,
+        createdTransaction.destinationWarehouse as mongoose.Types.ObjectId,
+        createdTransaction._id.toString(),
         createdTransaction.quantity,
         NOTIFICATION_TYPES.STOCK_ADJUSTMENT,
         req.userId

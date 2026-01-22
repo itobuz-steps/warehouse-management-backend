@@ -24,7 +24,7 @@ const config = {
   REFRESH_TOKEN_EXPIRY: process.env
     .REFRESH_TOKEN_EXPIRY as SignOptions['expiresIn'],
 
-  UPLOAD_FILE_SIZE: process.env.UPLOAD_FILE_SIZE,
+  UPLOAD_FILE_SIZE: Number(process.env.UPLOAD_FILE_SIZE ?? 0),
 
   VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,

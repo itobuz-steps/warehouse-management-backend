@@ -26,11 +26,11 @@ type UpdateProductBody = {
 
 type CreateProductBody = {
   name: string;
-  category: string;
+  category?: string;
   description?: string;
   price: number;
   markup?: number;
-  createdBy: string;
+  createdBy?: string;
 };
 
 type CreateProductParams = Record<string, never>;

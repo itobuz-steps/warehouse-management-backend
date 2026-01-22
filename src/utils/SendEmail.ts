@@ -1,9 +1,23 @@
 import nodemailer from 'nodemailer';
 import config from '../config/config.js';
 import generatePdf from '../services/generatePdf.js';
+import Mail from 'nodemailer/lib/mailer/index.js';
+import { NextFunction } from 'express';
+import {
+  IProduct,
+  ITransaction,
+  IUser,
+  WarehouseDocument,
+} from '../types/models.js';
+import { Document } from 'mongoose';
 
 export default class SendEmail {
-  mailSender = async (email, title, body, attachment = null) => {
+  mailSender = async (
+    email: string,
+    title: string,
+    body: string,
+    attachment: Buffer | null = null
+  ) => {
     try {
       console.log('sending email...');
 
@@ -15,7 +29,7 @@ export default class SendEmail {
         },
       });
 
-      const mailFields = {
+      const mailFields: Mail.Options = {
         from: config.MAIL_USER,
         to: email,
         subject: title,
@@ -40,7 +54,11 @@ export default class SendEmail {
     }
   };
 
-  sendInvitationEmail = async (email, link, next) => {
+  sendInvitationEmail = async (
+    email: string,
+    link: string,
+    next: NextFunction
+  ) => {
     try {
       const mailResponse = await this.mailSender(
         email,
@@ -56,7 +74,7 @@ export default class SendEmail {
     }
   };
 
-  sendOtpHelper = async (email, otp, next) => {
+  sendOtpHelper = async (email: string, otp: string, next: NextFunction) => {
     try {
       const mailResponse = await this.mailSender(
         email,
@@ -75,7 +93,12 @@ export default class SendEmail {
     }
   };
 
-  sendLowStockEmail = async (email, user, product, warehouse) => {
+  sendLowStockEmail = async (
+    email: string,
+    user: IUser,
+    product: IProduct,
+    warehouse: WarehouseDocument
+  ) => {
     try {
       const mailResponse = await this.mailSender(
         email,
@@ -90,11 +113,18 @@ export default class SendEmail {
 
       console.log('Low stock email sent:', mailResponse);
     } catch (err) {
-      throw new Error(err);
+      if (err instanceof Error) {
+        throw err;
+      }
     }
   };
 
-  sendPendingShipmentEmail = async (email, user, product, warehouse) => {
+  sendPendingShipmentEmail = async (
+    email: string,
+    user: IUser,
+    product: IProduct,
+    warehouse: WarehouseDocument
+  ) => {
     try {
       const mailResponse = await this.mailSender(
         email,
@@ -108,16 +138,23 @@ export default class SendEmail {
 
       console.log('Pending shipment email sent:', mailResponse);
     } catch (err) {
-      throw new Error(err);
+      if (err instanceof Error) {
+        throw err;
+      }
     }
   };
 
-  sendProductShippedEmailToCustomer = async (transaction) => {
+  sendProductShippedEmailToCustomer = async (
+    transaction: ITransaction & Document
+  ) => {
     try {
-      const invoice = await generatePdf(transaction);
+      const invoice = (await generatePdf(transaction)) as Buffer;
+
+      // Buffer<ArrayBufferLike>;
+      // Uint8Array<ArrayBufferLike>;
 
       const mailResponse = await this.mailSender(
-        transaction.customerEmail,
+        transaction.customerEmail as string,
         'Product Shipment Details',
         `
        <h2>Product Shipment Status Updated</h2>
@@ -138,12 +175,14 @@ export default class SendEmail {
     }
   };
 
-  sendProductCancelEmailToCustomer = async (transaction) => {
+  sendProductCancelEmailToCustomer = async (
+    transaction: ITransaction & Document
+  ) => {
     try {
-      const invoice = await generatePdf(transaction);
+      const invoice = (await generatePdf(transaction)) as Buffer;
 
       const mailResponse = await this.mailSender(
-        transaction.customerEmail,
+        transaction.customerEmail as string,
         'Product Shipment Details',
         `
        <h2>Product Shipment Status Updated</h2>
@@ -153,7 +192,7 @@ export default class SendEmail {
        <p>Please find all details of the Order in the attached PDF</p>
        <br>
        <br>
-       <p>For more Information. Contact Here ${transaction.performedBy.email}</p>
+       <p>For more Information. Contact Here ${(transaction.performedBy as IUser).email}</p>
      `,
         invoice
       );

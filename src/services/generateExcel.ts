@@ -3,9 +3,10 @@ import type {
   TwoProductQuantityResult,
   TwoProductHistoryResult,
 } from '../types/analyticsTypes.js';
+import mongoose from 'mongoose';
 
 type TopProductExcelItem = {
-  productId: string;
+  productId: mongoose.Types.ObjectId;
   productName: string;
   category: string;
   price: number;

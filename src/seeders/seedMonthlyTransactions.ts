@@ -10,6 +10,12 @@ import Notification from '../utils/Notification.js';
 import TRANSACTION_TYPES from '../constants/transactionConstants.js';
 import SHIPMENT_TYPES from '../constants/shipmentConstants.js';
 import NOTIFICATION_TYPES from '../constants/notificationConstants.js';
+import {
+  IProduct,
+  ITransaction,
+  IUser,
+  WarehouseDocument,
+} from '../types/models.js';
 
 dotenv.config();
 
@@ -18,11 +24,12 @@ const MONGO_URI = process.env.DB_URI;
 const notification = new Notification();
 
 // ---------- helpers ----------
-const randomFrom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const randomInt = (min, max) =>
+const randomFrom = <T>(arr: T[]): T =>
+  arr[Math.floor(Math.random() * arr.length)];
+const randomInt = (min: number, max: number) =>
   Math.floor(Math.random() * (max - min + 1)) + min;
 
-const mapTxToNotificationType = (txType) => {
+const mapTxToNotificationType = (txType: string) => {
   switch (txType) {
     // case TRANSACTION_TYPES.IN:
     //   return NOTIFICATION_TYPES.STOCK_IN;
@@ -41,15 +48,15 @@ const mapTxToNotificationType = (txType) => {
 const arg1 = process.argv[2]; // YYYY-MM or YYYY-MM-DD
 const arg2 = process.argv[3]; // YYYY-MM-DD
 
-let startDate;
-let endDate;
+let startDate: Date;
+let endDate: Date;
 
 // Case 1: Custom date range (YYYY-MM-DD YYYY-MM-DD)
 if (arg1 && arg2) {
   startDate = new Date(arg1);
   endDate = new Date(arg2);
 
-  if (isNaN(startDate) || isNaN(endDate)) {
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
     throw new Error('Invalid date range. Use YYYY-MM-DD YYYY-MM-DD');
   }
 
@@ -78,9 +85,8 @@ console.log({
   endDate: endDate.toISOString().slice(0, 10),
 });
 
-
 async function seedMonthlyTransactions() {
-  await mongoose.connect(MONGO_URI);
+  await mongoose.connect(MONGO_URI as string);
   console.log(' MongoDB connected');
 
   const products = await Product.find();
@@ -103,13 +109,16 @@ async function seedMonthlyTransactions() {
       const quantity = randomInt(1, 15);
       const txType = randomFrom(Object.values(TRANSACTION_TYPES));
 
-      let transaction = {
+      let transaction: ITransaction = {
+        _id: new mongoose.Types.ObjectId(),
         type: txType,
-        product: product._id,
+        product: product._id as IProduct,
         quantity,
-        performedBy: user._id,
+        performedBy: user._id as IUser,
         createdAt: new Date(currentDate),
         updatedAt: new Date(currentDate),
+        sourceWarehouse: {} as WarehouseDocument,
+        destinationWarehouse: {} as WarehouseDocument,
       };
 
       // ---------- IN ----------
@@ -123,7 +132,7 @@ async function seedMonthlyTransactions() {
         );
 
         transaction.supplier = 'Auto Supplier';
-        transaction.destinationWarehouse = warehouse._id;
+        transaction.destinationWarehouse = warehouse._id as WarehouseDocument;
       }
 
       // ---------- OUT ----------
@@ -148,7 +157,7 @@ async function seedMonthlyTransactions() {
           { session }
         );
 
-        transaction.sourceWarehouse = warehouse._id;
+        transaction.sourceWarehouse = warehouse._id as WarehouseDocument;
         transaction.customerName = 'Auto Customer';
         transaction.shipment = SHIPMENT_TYPES.DELIVERED;
       }
@@ -183,8 +192,8 @@ async function seedMonthlyTransactions() {
           { upsert: true, session }
         );
 
-        transaction.sourceWarehouse = source._id;
-        transaction.destinationWarehouse = destination._id;
+        transaction.sourceWarehouse = source._id as WarehouseDocument;
+        transaction.destinationWarehouse = destination._id as WarehouseDocument;
       }
 
       // ---------- ADJUSTMENT ----------
@@ -209,7 +218,7 @@ async function seedMonthlyTransactions() {
           { session }
         );
 
-        transaction.destinationWarehouse = warehouse._id;
+        transaction.destinationWarehouse = warehouse._id as WarehouseDocument;
         transaction.reason = 'Monthly audit adjustment';
       }
 
@@ -226,19 +235,22 @@ async function seedMonthlyTransactions() {
           createdTransaction.sourceWarehouse;
 
         await notification.notifyTransaction(
-          createdTransaction.product,
-          warehouseId,
-          createdTransaction._id,
+          createdTransaction.product as mongoose.Types.ObjectId,
+          warehouseId as mongoose.Types.ObjectId,
+          createdTransaction._id.toString(),
           createdTransaction.quantity,
           notificationType,
-          createdTransaction.performedBy
+          createdTransaction.performedBy.toString()
+          // hydration, ssr, ssg, csr, react 18,19, react batching, when class based when functional components,
         );
       }
 
       console.log(` ${txType} | ${currentDate.toDateString()}`);
     } catch (err) {
       await session.abortTransaction();
-      console.error(' Error:', err.message);
+      if (err instanceof Error) {
+        console.error(' Error:', err.message);
+      }
     } finally {
       session.endSession();
     }

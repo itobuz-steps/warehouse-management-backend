@@ -3,8 +3,8 @@ import Quantity from '../models/quantityModel.js';
 import { AsyncController } from '../types/express.js';
 
 type AddProductQuantityBody = {
-  productId: string;
-  warehouseId: string;
+  productId: mongoose.Types.ObjectId;
+  warehouseId: mongoose.Types.ObjectId;
   quantity: number;
   limit: number;
 };
@@ -18,16 +18,16 @@ type UpdateProductLimitBody = {
 };
 
 type ProductIdParams = {
-  productId: string;
+  productId: mongoose.Types.ObjectId;
 };
 
 type WarehouseIdParams = {
-  warehouseId: string;
+  warehouseId: mongoose.Types.ObjectId;
 };
 
 type ProductWarehouseQuery = {
-  productId: string;
-  warehouseId: string;
+  productId: mongoose.Types.ObjectId;
+  warehouseId: mongoose.Types.ObjectId;
 };
 
 type ProductsHavingQuantityQuery = {

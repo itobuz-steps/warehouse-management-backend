@@ -43,7 +43,7 @@ export default class AuthController {
 
       const link = `${req.protocol}://${config.FRONTEND_URL}/pages/signup.html?token=${token}`;
 
-      mailSender.sendInvitationEmail(email, link);
+      mailSender.sendInvitationEmail(email, link, next);
 
       res.status(200).json({
         message: 'Invitation Link Sent Successfully.',
@@ -70,12 +70,14 @@ export default class AuthController {
         success: true,
         data: tokenData,
       });
-    } catch (err: any) {
-      if (err.message == 'jwt expired') {
-        res.status(401).json({
-          message: 'Link Expired',
-          success: false,
-        });
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message == 'jwt expired') {
+          res.status(401).json({
+            message: 'Link Expired',
+            success: false,
+          });
+        }
       }
       next(err);
     }
@@ -114,12 +116,14 @@ export default class AuthController {
         message: 'Registration successful.',
         success: true,
       });
-    } catch (err: any) {
-      if (err.message == 'jwt expired') {
-        res.status(401).json({
-          message: 'Link Expired',
-          success: false,
-        });
+    } catch (err) {
+      if (err instanceof Error) {
+        if (err.message == 'jwt expired') {
+          res.status(401).json({
+            message: 'Link Expired',
+            success: false,
+          });
+        }
       }
       next(err);
     }
@@ -161,7 +165,9 @@ export default class AuthController {
         throw new Error('Invalid Password');
       }
 
-      const tokens = tokenGenerator.generateToken(user._id.toString());
+      const tokens = tokenGenerator.generateToken(
+        (user._id as string).toString()
+      );
 
       res.status(200).json({
         message: 'User Login Successful',
@@ -256,7 +262,7 @@ export default class AuthController {
         }
       }
 
-      genOtp.generateOtp(email);
+      genOtp.generateOtp(email, next);
 
       res.status(200).json({
         success: true,

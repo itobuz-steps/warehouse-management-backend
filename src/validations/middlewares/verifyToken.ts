@@ -23,7 +23,7 @@ const getSecret = (key: string | undefined, name: string): string => {
   return key;
 };
 
-export const verifyToken: AppMiddleware = async (req, res, next) => {
+const verifyToken: AppMiddleware = async (req, res, next) => {
   try {
     if (req.path.includes('qr')) {
       return next();
@@ -72,3 +72,5 @@ export const verifyToken: AppMiddleware = async (req, res, next) => {
     return next(error);
   }
 };
+
+export default verifyToken;

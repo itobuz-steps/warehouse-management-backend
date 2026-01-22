@@ -19,7 +19,7 @@ type WarehouseParams = {
 };
 
 type TopProductExcelItem = {
-  productId: string;
+  productId: mongoose.Types.ObjectId;
   totalQuantity: number;
   productName: string;
   category: string;

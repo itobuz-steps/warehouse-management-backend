@@ -3,6 +3,7 @@ import Warehouse from '../models/warehouseModel.js';
 import Quantity from '../models/quantityModel.js';
 import USER_TYPES from '../constants/userConstants.js';
 import { AsyncController } from '../types/express.js';
+import { WarehouseDocument } from '../types/models.js';
 
 type WarehouseParams = {
   warehouseId: string;
@@ -12,7 +13,7 @@ export default class WarehouseController {
   getWarehouses: AsyncController = async (req, res, next): Promise<void> => {
     try {
       const user = req.user;
-      let warehouses: any[] = [];
+      let warehouses: WarehouseDocument[] = [];
 
       if (user.role === USER_TYPES.MANAGER) {
         // Get only warehouses assigned to this manager
@@ -59,7 +60,7 @@ export default class WarehouseController {
       const { warehouseId } = req.params;
       const user = req.user;
 
-      let warehouse: any;
+      let warehouse: WarehouseDocument | null = null;
 
       if (user.role === USER_TYPES.MANAGER) {
         warehouse = await Warehouse.findOne({
@@ -126,7 +127,7 @@ export default class WarehouseController {
       const { warehouseId } = req.params;
       const user = req.user;
 
-      let warehouse: any;
+      let warehouse: WarehouseDocument | null = null;
 
       if (user.role === USER_TYPES.MANAGER) {
         warehouse = await Warehouse.findOne({
