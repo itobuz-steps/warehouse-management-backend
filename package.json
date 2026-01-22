@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "format": "npx prettier --write .",
-    "dev": "nodemon --inspect src/server.js",
+    "dev": "nodemon --inspect dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -45,9 +45,19 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/fontkit": "^2.0.8",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^25.0.9",
+    "@types/nodemailer": "^7.0.5",
+    "@types/qrcode": "^1.5.6",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9.38.0",
     "globals": "^16.4.0",
     "nodemon": "^3.1.10",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
   }
 }
