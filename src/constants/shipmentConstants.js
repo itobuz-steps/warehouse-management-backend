@@ -1,7 +1,0 @@
-const SHIPMENT_TYPES = {
-  PENDING: 'PENDING',
-  SHIPPED: 'SHIPPED',
-  CANCELLED: 'CANCELLED',
-};
-
-export default SHIPMENT_TYPES;
